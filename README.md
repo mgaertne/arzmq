@@ -2,7 +2,7 @@
 
 [![Apache 2.0 licensed](https://img.shields.io/badge/license-Apache2.0-blue.svg)](./LICENSE-APACHE)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE-MIT)
-[![crates.io](http://meritbadge.herokuapp.com/zmq)](https://crates.io/crates/arzmq)
+![Crates.io Version](https://img.shields.io/crates/v/arzmq)
 [![docs](https://docs.rs/zmq/badge.svg)](https://docs.rs/arzmq)
 
 [Documentation](https://docs.rs/crate/arzmq/)
