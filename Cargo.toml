@@ -36,6 +36,16 @@ rust-version.workspace = true
 authors.workspace = true
 build = "build.rs"
 autotests = true
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/mgaertne/arzmq"
+documentation = "https://docs.rs/arzmq"
+keywords = ["zmq", "zeromq", "bindings", "protocol"]
+categories = ["api-bindings", "network-programming"]
+description = "High-level bindings to the zeromq library"
+
+[badges]
+maintenance = { status = "actively-maintained" }
 
 [lib]
 crate-type = ["lib", "staticlib", "dylib"]

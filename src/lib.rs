@@ -1,4 +1,4 @@
-//! # Asynchronous Rust bindings for 0MQ (arzmq)
+#![doc = include_str!("../README.md")]
 
 #![feature(cold_path, doc_cfg, stmt_expr_attributes)]
 #![allow(clippy::items_after_test_module)]
