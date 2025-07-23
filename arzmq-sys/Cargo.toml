@@ -9,6 +9,11 @@ autotests = false
 autobins = false
 autoexamples = false
 autobenches = false
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mgaertne/arzmq"
+keywords = ["zmq", "zeromq", "bindings", "ffi"]
+categories = ["external-ffi-bindings"]
+description = "Low-level bindings to the zeromq library"
 
 [lib]
 test = false
