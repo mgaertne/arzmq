@@ -1,0 +1,228 @@
+cargo-features = ["profile-rustflags"]
+
+[workspace]
+members = ["arzmq-sys"]
+resolver = "3"
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.89"
+authors = ["Markus 'ShiN0' Gaertner"]
+
+[workspace.dependencies]
+arzmq-sys = { path = "arzmq-sys" }
+
+[workspace.lints.rust]
+non_local_definitions = "allow"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[profile.release]
+strip = "symbols"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+rustflags = ["-Zlocation-detail=none"]
+
+[package]
+name = "arzmq"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+build = "build.rs"
+autotests = true
+
+[lib]
+crate-type = ["lib", "staticlib", "dylib"]
+test = true
+harness = true
+doctest = true
+doc = true
+doc-scrape-examples = true
+
+[dependencies]
+arzmq-sys = {workspace = true }
+
+num-traits = { version = ">=0.2.19", default-features = false }
+bitflags = { version = ">=2.9", default-features = false, features = ["core"]}
+derive_more = { version = ">=2.0", default-features = false, features = ["from", "debug", "display", "deref"]}
+thiserror = { version = ">=2.0.12", default-features = false }
+parking_lot = { version = ">=0.12.4", default-features = false, features = ["arc_lock"] }
+
+derive_builder = { version = ">=0.20", default-features = false, features = ["alloc"], optional = true }
+serde = { version = ">=1.0.219", default-features = false, optional = true, features = ["derive", "alloc"] }
+z85 = { version = ">=3.0.6", default-features = false, optional = true }
+async-trait = { version = ">=0.1.88", default-features = false, optional = true }
+futures = { version = ">=0.3.31", default-features = false, features = ["async-await", "alloc"], optional = true}
+
+# for async examples
+tokio = { version = ">=1.46", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time"], optional = true }
+async-std = { version = ">=1.13", default-features = false, features = ["attributes", "default"], optional = true }
+
+[build-dependencies]
+arzmq-sys = { workspace = true }
+
+[features]
+default = ["builder"]
+builder = ["dep:serde", "dep:derive_builder"]
+futures = ["dep:async-trait", "dep:futures"]
+draft-api = ["arzmq-sys/draft-api"]
+curve = ["arzmq-sys/libsodium", "dep:z85"]
+
+examples-tokio = ["futures", "dep:tokio"]
+examples-async-std = ["futures", "dep:async-std"]
+examples-futures = ["futures", "futures/executor", "futures/thread-pool"]
+examples-draft-api = ["draft-api", "arzmq-sys/draft-api"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true
+
+[[example]]
+name = "version"
+path = "examples/version.rs"
+
+[[example]]
+name = "push_pull"
+path = "examples/push_pull.rs"
+
+[[example]]
+name = "publish_subscribe"
+path = "examples/publish_subscribe.rs"
+
+[[example]]
+name = "publish_xsubscribe"
+path = "examples/publish_xsubscribe.rs"
+
+[[example]]
+name = "xpublish_subscribe"
+path = "examples/xpublish_subscribe.rs"
+
+[[example]]
+name = "xpublish_xsubscribe"
+path = "examples/xpublish_xsubscribe.rs"
+
+[[example]]
+name = "request_reply"
+path = "examples/request_reply.rs"
+
+[[example]]
+name = "request_router"
+path = "examples/request_router.rs"
+
+[[example]]
+name = "dealer_reply"
+path = "examples/dealer_reply.rs"
+
+[[example]]
+name = "dealer_router"
+path = "examples/dealer_router.rs"
+
+[[example]]
+name = "dealer_dealer"
+path = "examples/dealer_dealer.rs"
+
+[[example]]
+name = "stream_client"
+path = "examples/stream_client.rs"
+
+[[example]]
+name = "stream_server"
+path = "examples/stream_server.rs"
+
+[[example]]
+name = "pair_pair"
+path = "examples/pair_pair.rs"
+
+[[example]]
+name = "channel_channel"
+path = "examples/channel_channel.rs"
+required-features = ["examples-draft-api"]
+
+[[example]]
+name = "scatter_gather"
+path = "examples/scatter_gather.rs"
+required-features = ["examples-draft-api"]
+
+[[example]]
+name = "radio_dish"
+path = "examples/radio_dish.rs"
+required-features = ["examples-draft-api"]
+
+[[example]]
+name = "client_server"
+path = "examples/client_server.rs"
+required-features = ["examples-draft-api"]
+
+[[example]]
+name = "peer_peer"
+path = "examples/peer_peer.rs"
+required-features = ["examples-draft-api"]
+
+[[example]]
+name = "publish_subscribe_async_tokio"
+path = "examples/publish_subscribe_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
+name = "request_reply_async_tokio"
+path = "examples/request_reply_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
+name = "dealer_reply_async_tokio"
+path = "examples/dealer_reply_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
+name = "request_router_async_tokio"
+path = "examples/request_router_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
+name = "publish_subscribe_async_async_std"
+path = "examples/publish_subscribe_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
+name = "request_reply_async_async_std"
+path = "examples/request_reply_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
+name = "dealer_reply_async_async_std"
+path = "examples/dealer_reply_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
+name = "request_router_async_async_std"
+path = "examples/request_router_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
+name = "publish_subscribe_async_futures"
+path = "examples/publish_subscribe_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "request_reply_async_futures"
+path = "examples/request_reply_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "dealer_reply_async_futures"
+path = "examples/dealer_reply_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "request_router_async_futures"
+path = "examples/request_router_async_futures.rs"
+required-features = ["examples-futures"]

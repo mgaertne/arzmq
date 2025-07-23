@@ -1,0 +1,32 @@
+[package]
+name = "arzmq-sys"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+build = "build.rs"
+autotests = false
+autobins = false
+autoexamples = false
+autobenches = false
+
+[lib]
+test = false
+doc = false
+doctest = false
+bench = false
+
+[features]
+default = []
+draft-api = []
+libsodium = ["libsodium-sys-stable"]
+
+[target."cfg(not(windows))".dependencies]
+libsodium-sys-stable = { version = ">=1.22", optional = true }
+
+[build-dependencies]
+zeromq-src = { version = "0.3.5" }
+bindgen = { version = "0.72" }
+
+[target."cfg(unix)".dependencies]
+libc = { version = "1.0.0-alpha.1", default-features = false }

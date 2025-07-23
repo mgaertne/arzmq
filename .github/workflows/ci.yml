@@ -1,0 +1,318 @@
+on: [ push, pull_request ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Check
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack check --each-feature --clean-per-run
+
+  check-tests:
+    name: Check (tests)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack check --each-feature --clean-per-run --tests
+
+  check-examples:
+    name: Check (examples)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack check --each-feature --clean-per-run --examples
+
+  clippy:
+    name: Clippy
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: clippy
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack clippy --each-feature --clean-per-run -- -D warnings
+
+  clippy-tests:
+    name: Clippy (tests)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: clippy
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack clippy --each-feature --clean-per-run --tests -- -D warnings
+
+  clippy-examples:
+    name: Clippy (examples)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: clippy
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack clippy --each-feature --clean-per-run --examples -- -D warnings
+
+  rust-doc:
+    name: rust-documentation
+    runs-on: ubuntu-latest
+    needs: [ check, clippy ]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - run: cargo doc --no-deps --all-features
+
+  tests:
+    name: unit and doctests
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    needs: [ check, check-tests, clippy, clippy-tests ]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack test --each-feature --clean-per-run --verbose
+
+  examples:
+    name: examples
+    needs: [ check, check-examples, clippy, clippy-examples ]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: version
+        run: cargo run --release --verbose --example version
+      - name: pair_pair
+        run: cargo run --release --verbose --example pair_pair
+      - name: push_pull
+        run: cargo run --release --verbose --example push_pull
+      - name: publish_subscribe
+        run: cargo run --release --verbose --example publish_subscribe
+      - name: publish_xsubscribe
+        run: cargo run --release --verbose --example publish_xsubscribe
+      - name: xpublish_subscribe
+        run: cargo run --release --verbose --example xpublish_subscribe
+      - name: xpublish_xsubscribe
+        run: cargo run --release --verbose --example xpublish_xsubscribe
+      - name: request_reply
+        run: cargo run --release --verbose --example request_reply
+      - name: request_router
+        run: cargo run --release --verbose --example request_router
+      - name: dealer_reply
+        run: cargo run --release --verbose --example dealer_reply
+      - name: dealer_router
+        run: cargo run --release --verbose --example dealer_router
+      - name: dealer_dealer
+        run: cargo run --release --verbose --example dealer_dealer
+      - name: stream_client
+        run: cargo run --release --verbose --example stream_client
+      - name: stream_server
+        run: cargo run --release --verbose --example stream_server
+
+  examples-draft-api:
+    name: examples (Draft API)
+    needs: [ check, check-examples, clippy, clippy-examples ]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: version
+        run: cargo run --release --verbose --features examples-draft-api --example version
+      - name: pair_pair
+        run: cargo run --release --verbose --features examples-draft-api --example pair_pair
+      - name: push_pull
+        run: cargo run --release --verbose --features examples-draft-api --example push_pull
+      - name: publish_subscribe
+        run: cargo run --release --verbose --features examples-draft-api --example publish_subscribe
+      - name: publish_xsubscribe
+        run: cargo run --release --verbose --features examples-draft-api --example publish_xsubscribe
+      - name: xpublish_subscribe
+        run: cargo run --release --verbose --features examples-draft-api --example xpublish_subscribe
+      - name: xpublish_xsubscribe
+        run: cargo run --release --verbose --features examples-draft-api --example xpublish_xsubscribe
+      - name: request_reply
+        run: cargo run --release --verbose --features examples-draft-api --example request_reply
+      - name: request_router
+        run: cargo run --release --verbose --features examples-draft-api --example request_router
+      - name: dealer_reply
+        run: cargo run --release --verbose --features examples-draft-api --example dealer_reply
+      - name: dealer_router
+        run: cargo run --release --verbose --features examples-draft-api --example dealer_router
+      - name: dealer_dealer
+        run: cargo run --release --verbose --features examples-draft-api --example dealer_dealer
+      - name: stream_client
+        run: cargo run --release --verbose --features examples-draft-api --example stream_client
+      - name: stream_server
+        run: cargo run --release --verbose --features examples-draft-api --example stream_server
+      - name: channel_channel
+        run: cargo run --release --verbose --features examples-draft-api --example channel_channel
+      - name: scatter_gather
+        run: cargo run --release --verbose --features examples-draft-api --example scatter_gather
+      - name: client_server
+        run: cargo run --release --verbose --features examples-draft-api --example client_server
+      - name: radio_dish
+        run: cargo run --release --verbose --features examples-draft-api --example radio_dish
+      - name: peer_peer
+        run: cargo run --release --verbose --features examples-draft-api --example peer_peer
+
+  examples-tokio:
+    name: examples (tokio)
+    needs: [ check, check-examples, clippy, clippy-examples ]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: publish_subscribe_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example publish_subscribe_async_tokio
+      - name: request_reply_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example request_reply_async_tokio
+      - name: dealer_reply_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example dealer_reply_async_tokio
+      - name: request_router_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example request_router_async_tokio
+
+  examples-async-std:
+    name: examples (async-std)
+    needs: [ check, check-examples, clippy, clippy-examples ]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: publish_subscribe_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example publish_subscribe_async_async_std
+      - name: request_reply_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example request_reply_async_async_std
+      - name: dealer_reply_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example dealer_reply_async_async_std
+      - name: request_router_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example request_router_async_async_std
+
+  examples-futures:
+    name: examples (futures)
+    needs: [ check, check-examples, clippy, clippy-examples ]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: publish_subscribe_async_futures
+        run: cargo run --features examples-futures --release --verbose --example publish_subscribe_async_futures
+      - name: request_reply_async_futures
+        run: cargo run --features examples-futures --release --verbose --example request_reply_async_futures
+      - name: dealer_reply_async_futures
+        run: cargo run --features examples-futures --release --verbose --example dealer_reply_async_futures
+      - name: request_router_async_futures
+        run: cargo run --features examples-futures --release --verbose --example request_router_async_futures
