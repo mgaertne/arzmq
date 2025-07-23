@@ -3,7 +3,7 @@
 [![Apache 2.0 licensed](https://img.shields.io/badge/license-Apache2.0-blue.svg)](./LICENSE-APACHE)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE-MIT)
 ![Crates.io Version](https://img.shields.io/crates/v/arzmq)
-[![docs](https://docs.rs/zmq/badge.svg)](https://docs.rs/arzmq)
+![docs.rs](https://img.shields.io/docsrs/arzmq)
 
 [Documentation](https://docs.rs/crate/arzmq/)
 
