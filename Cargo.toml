@@ -11,7 +11,7 @@ rust-version = "1.89"
 authors = ["Markus 'ShiN0' Gaertner"]
 
 [workspace.dependencies]
-arzmq-sys = { path = "arzmq-sys", version = "0.1.0" }
+arzmq-sys = { version = "0.0.1" }
 
 [workspace.lints.rust]
 non_local_definitions = "allow"
