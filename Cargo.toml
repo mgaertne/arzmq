@@ -228,6 +228,11 @@ path = "examples/push_pull_async_tokio.rs"
 required-features = ["examples-tokio"]
 
 [[example]]
+name = "pair_pair_async_tokio"
+path = "examples/pair_pair_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
 name = "publish_subscribe_async_async_std"
 path = "examples/publish_subscribe_async_async_std.rs"
 required-features = ["examples-async-std"]
@@ -278,6 +283,11 @@ path = "examples/push_pull_async_async_std.rs"
 required-features = ["examples-async-std"]
 
 [[example]]
+name = "pair_pair_async_async_std"
+path = "examples/pair_pair_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
 name = "publish_subscribe_async_futures"
 path = "examples/publish_subscribe_async_futures.rs"
 required-features = ["examples-futures"]
@@ -325,4 +335,9 @@ required-features = ["examples-futures"]
 [[example]]
 name = "push_pull_async_futures"
 path = "examples/push_pull_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "pair_pair_async_futures"
+path = "examples/pair_pair_async_futures.rs"
 required-features = ["examples-futures"]
