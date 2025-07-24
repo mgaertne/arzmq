@@ -1,10 +1,8 @@
 use core::error::Error;
 use std::{io::prelude::*, net::TcpStream, thread};
 
-use arzmq::{
-    ZmqResult,
-    context::Context,
-    socket::{MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket},
+use arzmq::prelude::{
+    Context, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket, ZmqResult,
 };
 
 fn run_stream_socket(zmq_stream: &StreamSocket, _routing_id: &[u8], msg: &str) -> ZmqResult<()> {

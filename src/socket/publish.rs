@@ -153,7 +153,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`PublishSocket`].\n\n")]
     #[allow(dead_code)]
     struct PublishConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(default = false)]
         conflate: bool,
         #[builder(default = false)]
@@ -164,8 +164,8 @@ pub(crate) mod builder {
 
     impl PublishBuilder {
         pub fn apply(self, socket: &PublishSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(conflate) = self.conflate {

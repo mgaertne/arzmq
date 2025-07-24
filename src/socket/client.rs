@@ -108,7 +108,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`ClientSocket`].\n\n")]
     #[allow(dead_code)]
     struct ClientConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(setter(into), default)]
         hiccup_msg: String,
         #[builder(setter(into), default)]
@@ -117,8 +117,8 @@ pub(crate) mod builder {
 
     impl ClientBuilder {
         pub fn apply(self, socket: &ClientSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(hiccup_message) = self.hiccup_msg {

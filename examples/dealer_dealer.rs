@@ -1,6 +1,6 @@
 use std::thread;
 
-use arzmq::{ZmqResult, context::Context, socket::DealerSocket};
+use arzmq::prelude::{Context, DealerSocket, ZmqResult};
 
 mod common;
 

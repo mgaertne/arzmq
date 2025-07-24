@@ -1,11 +1,7 @@
 #![cfg(feature = "examples-async-std")]
 use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
-use arzmq::{
-    ZmqResult,
-    context::Context,
-    socket::{Receiver, ReplySocket, RequestSocket, SendFlags, Sender},
-};
+use arzmq::prelude::{Context, Receiver, ReplySocket, RequestSocket, SendFlags, Sender, ZmqResult};
 use async_std::task;
 use futures::join;
 

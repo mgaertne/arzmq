@@ -243,7 +243,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`XPublishSocket`].\n\n")]
     #[allow(dead_code)]
     struct XPublishConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(default = false)]
         invert_matching: bool,
         #[builder(default = false)]
@@ -270,8 +270,8 @@ pub(crate) mod builder {
 
     impl XPublishBuilder {
         pub fn apply(self, socket: &XPublishSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(invert_matching) = self.invert_matching {

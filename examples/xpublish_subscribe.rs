@@ -1,10 +1,8 @@
 use core::{error::Error, sync::atomic::Ordering};
 use std::thread;
 
-use arzmq::{
-    ZmqResult,
-    context::Context,
-    socket::{Receiver, RecvFlags, SendFlags, Sender, SubscribeSocket, XPublishSocket},
+use arzmq::prelude::{
+    Context, Receiver, RecvFlags, SendFlags, Sender, SubscribeSocket, XPublishSocket, ZmqResult,
 };
 
 mod common;

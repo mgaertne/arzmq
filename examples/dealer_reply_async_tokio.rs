@@ -1,11 +1,9 @@
 #![cfg(feature = "examples-tokio")]
 use core::sync::atomic::{AtomicI32, Ordering};
 
-use arzmq::{
+use arzmq::prelude::{
+    Context, DealerSocket, Message, MultipartReceiver, MultipartSender, ReplySocket, SendFlags,
     ZmqResult,
-    context::Context,
-    message::Message,
-    socket::{DealerSocket, MultipartReceiver, MultipartSender, ReplySocket, SendFlags},
 };
 use tokio::{join, task};
 

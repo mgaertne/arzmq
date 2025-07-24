@@ -158,7 +158,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`StreamSocket`].\n\n")]
     #[allow(dead_code)]
     struct StreamConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(setter(into), default = "Default::default()")]
         routing_id: String,
         #[builder(setter(into), default = "Default::default()")]
@@ -171,8 +171,8 @@ pub(crate) mod builder {
 
     impl StreamBuilder {
         pub fn apply(self, socket: &StreamSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(routing_id) = self.routing_id {

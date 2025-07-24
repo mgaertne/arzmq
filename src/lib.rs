@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-
 #![feature(cold_path, doc_cfg, stmt_expr_attributes)]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
@@ -34,6 +33,42 @@ pub(crate) use arzmq_sys as zmq_sys_crate;
 use derive_more::Display;
 #[doc(inline)]
 pub use error::{ZmqError, ZmqResult};
+
+pub mod prelude {
+    #[cfg(feature = "builder")]
+    #[doc(cfg(feature = "builder"))]
+    pub use crate::context::ContextBuilder;
+    #[cfg(all(feature = "draft-api", feature = "builder"))]
+    #[doc(cfg(all(feature = "draft-api", feature = "builder")))]
+    pub use crate::socket::{
+        ChannelBuilder, ClientBuilder, DishBuilder, GatherBuilder, PeerBuilder, RadioBuilder,
+        ScatterBuilder, ServerBuilder,
+    };
+    #[cfg(feature = "draft-api")]
+    #[doc(cfg(feature = "draft-api"))]
+    pub use crate::socket::{
+        ChannelSocket, ClientSocket, DishSocket, GatherSocket, PeerSocket, RadioSocket,
+        ScatterSocket, ServerSocket,
+    };
+    #[cfg(feature = "builder")]
+    #[doc(cfg(feature = "builder"))]
+    pub use crate::socket::{
+        DealerBuilder, PairBuilder, PublishBuilder, PullBuilder, PushBuilder, ReplyBuilder,
+        RequestBuilder, RouterBuilder, SocketBuilder, StreamBuilder, SubscribeBuilder,
+        XPublishBuilder, XSubscribeBuilder,
+    };
+    pub use crate::{
+        ZmqError, ZmqResult,
+        context::{Context, ContextOption},
+        message::{Message, MultipartMessage},
+        socket::{
+            DealerSocket, MonitorFlags, MonitorReceiver, MonitorSocket, MonitorSocketEvent,
+            MultipartReceiver, MultipartSender, PairSocket, PublishSocket, PullSocket, PushSocket,
+            Receiver, RecvFlags, ReplySocket, RequestSocket, RouterSocket, SendFlags, Sender,
+            Socket, SocketOption, StreamSocket, SubscribeSocket, XPublishSocket, XSubscribeSocket,
+        },
+    };
+}
 
 mod sealed {
     use crate::socket;

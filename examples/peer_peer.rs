@@ -1,10 +1,7 @@
 use std::thread;
 
-use arzmq::{
-    ZmqResult,
-    context::Context,
-    message::Message,
-    socket::{PeerSocket, Receiver, RecvFlags, SendFlags, Sender},
+use arzmq::prelude::{
+    Context, Message, PeerSocket, Receiver, RecvFlags, SendFlags, Sender, ZmqResult,
 };
 
 fn run_peer_server(peer: &PeerSocket, msg: &str) -> ZmqResult<()> {

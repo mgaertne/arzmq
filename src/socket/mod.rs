@@ -41,11 +41,7 @@
 //! # use core::sync::atomic::{Ordering, AtomicBool};
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{PublishSocket, SubscribeSocket, Sender, SendFlags, Receiver, RecvFlags},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, PublishSocket, SubscribeSocket, Sender, SendFlags, Receiver, RecvFlags};
 //! #
 //! static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 //!
@@ -112,11 +108,7 @@
 //! # use core::sync::atomic::{Ordering, AtomicBool};
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{Receiver, RecvFlags, SendFlags, Sender, XPublishSocket, XSubscribeSocket},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, Receiver, RecvFlags, SendFlags, Sender, XPublishSocket, XSubscribeSocket};
 //! #
 //! static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 //!
@@ -191,12 +183,7 @@
 //! # use std::thread;
 //! #
 //! # #[cfg(feature = "draft-api")]
-//! # use arzmq::{
-//! #     ZmqError, ZmqResult,
-//! #     context::Context,
-//! #     message::Message,
-//! #     socket::{ClientSocket, Receiver, RecvFlags, SendFlags, Sender, ServerSocket},
-//! # };
+//! # use arzmq::prelude::{ZmqError, ZmqResult, Context, Message, ClientSocket, Receiver, RecvFlags, SendFlags, Sender, ServerSocket};
 //! #
 //! # #[cfg(feature = "draft-api")]
 //! static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
@@ -284,12 +271,7 @@
 //! # use std::thread;
 //! #
 //! # #[cfg(feature = "draft-api")]
-//! # use arzmq::{
-//! #     ZmqError, ZmqResult,
-//! #     context::Context,
-//! #     message::Message,
-//! #     socket::{DishSocket, RadioSocket, Receiver, RecvFlags, SendFlags, Sender},
-//! # };
+//! # use arzmq::prelude::{ZmqError, ZmqResult, Context, Message, DishSocket, RadioSocket, Receiver, RecvFlags, SendFlags, Sender};
 //! #
 //! # #[cfg(feature = "draft-api")]
 //! static GROUP: &str = "radio-dish-ex";
@@ -359,11 +341,7 @@
 //! # use core::sync::atomic::{Ordering, AtomicBool};
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqError, ZmqResult,
-//! #     context::Context,
-//! #     socket::{PullSocket, PushSocket, Sender, SendFlags, Receiver, RecvFlags},
-//! # };
+//! # use arzmq::prelude::{ZmqError, ZmqResult, Context, PullSocket, PushSocket, Sender, SendFlags, Receiver, RecvFlags};
 //! #
 //! static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 //!
@@ -420,11 +398,7 @@
 //! # use std::thread;
 //! #
 //! # #[cfg(feature = "draft-api")]
-//! # use arzmq::{
-//! #     ZmqResult, ZmqError,
-//! #     context::Context,
-//! #     socket::{GatherSocket, Receiver, RecvFlags, ScatterSocket, SendFlags, Sender},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, ZmqError, Context, GatherSocket, Receiver, RecvFlags, ScatterSocket, SendFlags, Sender};
 //! #
 //! # #[cfg(feature = "draft-api")]
 //! static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
@@ -488,11 +462,7 @@
 //! ```
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{PairSocket, Sender, Receiver, SendFlags, RecvFlags}
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, PairSocket, Sender, Receiver, SendFlags, RecvFlags};
 //! #
 //! pub fn run_recv_send<S>(recv_send: &S, msg: &str) -> ZmqResult<()>
 //! where
@@ -552,12 +522,7 @@
 //! # use std::thread;
 //! #
 //! # #[cfg(feature = "draft-api")]
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     message::Message,
-//! #     socket::{PeerSocket, Receiver, RecvFlags, SendFlags, Sender},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, Message, PeerSocket, Receiver, RecvFlags, SendFlags, Sender};
 //! #
 //! # #[cfg(feature = "draft-api")]
 //! fn run_peer_server(peer: &PeerSocket, msg: &str) -> ZmqResult<()> {
@@ -619,11 +584,7 @@
 //! # use std::thread;
 //! #
 //! # #[cfg(feature = "draft-api")]
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{ChannelSocket, Sender, Receiver, SendFlags, RecvFlags}
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, ChannelSocket, Sender, Receiver, SendFlags, RecvFlags};
 //! #
 //! # #[cfg(feature = "draft-api")]
 //! pub fn run_recv_send<S>(recv_send: &S, msg: &str) -> ZmqResult<()>
@@ -687,12 +648,7 @@
 //! # use core::error::Error;
 //! # use std::{io::prelude::*, net::TcpListener, thread};
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     message::MultipartMessage,
-//! #     socket::{MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, MultipartMessage, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket};
 //! #
 //! fn run_tcp_server(endpoint: &str) -> Result<(), Box<dyn Error>> {
 //!     let tcp_listener = TcpListener::bind(endpoint)?;
@@ -756,11 +712,7 @@
 //! # use core::error::Error;
 //! # use std::{io::prelude::*, net::TcpStream, thread};
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket};
 //! #
 //! fn run_stream_socket(zmq_stream: &StreamSocket, _routing_id: &[u8], msg: &str) -> ZmqResult<()> {
 //!     let mut message = zmq_stream.recv_multipart(RecvFlags::empty())?;
@@ -828,11 +780,7 @@
 //! ```
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{ReplySocket, RequestSocket, Sender, Receiver, SendFlags, RecvFlags},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, ReplySocket, RequestSocket, Sender, Receiver, SendFlags, RecvFlags};
 //! #
 //! pub fn run_recv_send<S>(recv_send: &S, msg: &str) -> ZmqResult<()>
 //! where
@@ -886,11 +834,7 @@
 //! ```
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     socket::{RequestSocket, RouterSocket, Sender, Receiver, SendFlags, RecvFlags, MultipartSender, MultipartReceiver},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, RequestSocket, RouterSocket, Sender, Receiver, SendFlags, RecvFlags, MultipartSender, MultipartReceiver};
 //! #
 //! pub fn run_multipart_recv_reply<S>(recv_send: &S, msg: &str) -> ZmqResult<()>
 //! where
@@ -949,12 +893,7 @@
 //! ```
 //! # use std::thread;
 //! #
-//! # use arzmq::{
-//! #     ZmqResult,
-//! #     context::Context,
-//! #     message::Message,
-//! #     socket::{DealerSocket, RouterSocket, MultipartReceiver, MultipartSender, SendFlags, RecvFlags},
-//! # };
+//! # use arzmq::prelude::{ZmqResult, Context, Message, DealerSocket, RouterSocket, MultipartReceiver, MultipartSender, SendFlags, RecvFlags};
 //! #
 //! pub fn run_multipart_recv_reply<S>(recv_send: &S, msg: &str) -> ZmqResult<()>
 //! where
@@ -3202,8 +3141,7 @@ impl<T: sealed::SocketType> Socket<T> {
     where
         F: Into<MonitorFlags>,
     {
-        let fd = self
-            .get_sockopt_int::<usize>(SocketOption::FileDescriptor)?;
+        let fd = self.get_sockopt_int::<usize>(SocketOption::FileDescriptor)?;
         let monitor_endpoint = format!("inproc://monitor.s-{fd}");
 
         self.socket

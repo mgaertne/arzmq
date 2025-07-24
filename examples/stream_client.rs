@@ -1,11 +1,9 @@
 use core::error::Error;
 use std::{io::prelude::*, net::TcpListener, thread};
 
-use arzmq::{
-    ZmqResult,
-    context::Context,
-    message::MultipartMessage,
-    socket::{MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket},
+use arzmq::prelude::{
+    Context, MultipartMessage, MultipartReceiver, MultipartSender, RecvFlags, SendFlags,
+    StreamSocket, ZmqResult,
 };
 
 fn run_tcp_server(endpoint: &str) -> Result<(), Box<dyn Error>> {

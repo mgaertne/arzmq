@@ -141,7 +141,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`XSubscribeSocket`].\n\n")]
     #[allow(dead_code)]
     struct XSubscribeConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(setter(into), default = "Default::default()")]
         subscribe: String,
         #[cfg(feature = "draft-api")]
@@ -152,8 +152,8 @@ pub(crate) mod builder {
 
     impl XSubscribeBuilder {
         pub fn apply(self, socket: &XSubscribeSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             #[cfg(feature = "draft-api")]

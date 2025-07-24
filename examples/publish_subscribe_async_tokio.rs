@@ -1,10 +1,8 @@
 #![cfg(feature = "examples-tokio")]
 use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
-use arzmq::{
-    ZmqResult,
-    context::Context,
-    socket::{PublishSocket, Receiver, SendFlags, Sender, SubscribeSocket},
+use arzmq::prelude::{
+    Context, PublishSocket, Receiver, SendFlags, Sender, SubscribeSocket, ZmqResult,
 };
 use tokio::{join, task::spawn};
 

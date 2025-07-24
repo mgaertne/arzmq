@@ -1,9 +1,7 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use arzmq::{
-    ZmqResult,
-    message::Message,
-    socket::{MultipartReceiver, MultipartSender, Receiver, RecvFlags, SendFlags, Sender},
+use arzmq::prelude::{
+    Message, MultipartReceiver, MultipartSender, Receiver, RecvFlags, SendFlags, Sender, ZmqResult,
 };
 
 #[allow(dead_code)]

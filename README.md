@@ -28,7 +28,7 @@ The aim of this project is to track latest zmq releases as close as possible.
 ```rust
 use std::thread;
 
-use arzmq::{context::Context, socket::{RequestSocket, ReplySocket, SendFlags, Receiver, RecvFlags, Sender}};
+use arzmq::prelude::{Context, RequestSocket, ReplySocket, SendFlags, Receiver, RecvFlags, Sender};
 
 fn run_reply(context: &Context, endpoint: &str) {
     let socket = ReplySocket::from_context(context).unwrap();

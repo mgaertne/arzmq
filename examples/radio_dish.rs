@@ -1,11 +1,9 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
-use arzmq::{
-    ZmqError, ZmqResult,
-    context::Context,
-    message::Message,
-    socket::{DishSocket, RadioSocket, Receiver, RecvFlags, SendFlags, Sender},
+use arzmq::prelude::{
+    Context, DishSocket, Message, RadioSocket, Receiver, RecvFlags, SendFlags, Sender, ZmqError,
+    ZmqResult,
 };
 
 static GROUP: &str = "radio-dish-ex";

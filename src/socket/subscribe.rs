@@ -173,7 +173,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`SubscribeSocket`].\n\n")]
     #[allow(dead_code)]
     struct SubscribeConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(default = false)]
         conflate: bool,
         #[builder(default = false)]
@@ -184,8 +184,8 @@ pub(crate) mod builder {
 
     impl SubscribeBuilder {
         pub fn apply(self, socket: &SubscribeSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(conflate) = self.conflate {

@@ -12,14 +12,15 @@
 //!
 //! ## Example
 //! ```
-//! # use arzmq::{ZmqResult, context::Context, socket::SubscribeSocket};
+//! # use arzmq::prelude::{ZmqResult, Context, SubscribeSocket};
+//! #
 //! # fn main() -> ZmqResult<()> {
 //! #
 //! let context = Context::new()?;
 //! context.set_blocky(false)?;
 //!
 //! let socket = SubscribeSocket::from_context(&context)?;
-//!
+//! #
 //! # Ok(())
 //! # }
 //!

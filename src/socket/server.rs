@@ -103,7 +103,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`ServerSocket`].\n\n")]
     #[allow(dead_code)]
     struct ServerConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(setter(into), default = "Default::default()")]
         hello_message: String,
         #[builder(setter(into), default = "Default::default()")]
@@ -112,8 +112,8 @@ pub(crate) mod builder {
 
     impl ServerBuilder {
         pub fn apply(self, socket: &ServerSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(hello_message) = self.hello_message {

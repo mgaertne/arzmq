@@ -70,15 +70,15 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`RadioSocket`].\n\n")]
     #[allow(dead_code)]
     struct RadioConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(default = false)]
         multicast_loop: bool,
     }
 
     impl RadioBuilder {
         pub fn apply(self, socket: &RadioSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(multicast_loop) = self.multicast_loop {

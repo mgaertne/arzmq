@@ -151,7 +151,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`RequestSocket`].\n\n")]
     #[allow(dead_code)]
     pub struct RequestConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(default = false)]
         correlate: bool,
         #[builder(default = false)]
@@ -162,8 +162,8 @@ pub(crate) mod builder {
 
     impl RequestBuilder {
         pub fn apply(self, socket: &RequestSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(correlate) = self.correlate {

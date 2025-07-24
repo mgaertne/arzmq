@@ -156,7 +156,7 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`PeerSocket`].\n\n")]
     #[allow(dead_code)]
     struct PeerConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(setter(into), default = "Default::default()")]
         hiccup_msg: String,
         #[builder(setter(into), default = "Default::default()")]
@@ -167,8 +167,8 @@ pub(crate) mod builder {
 
     impl PeerBuilder {
         pub fn apply(self, socket: &PeerSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(hiccup_message) = self.hiccup_msg {

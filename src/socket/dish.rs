@@ -61,15 +61,15 @@ pub(crate) mod builder {
     #[builder_struct_attr(doc = "Builder for [`DishSocket`].\n\n")]
     #[allow(dead_code)]
     struct DishConfig {
-        socket_config: SocketBuilder,
+        socket_builder: SocketBuilder,
         #[builder(setter(into), default = "Default::default()")]
         join: String,
     }
 
     impl DishBuilder {
         pub fn apply(self, socket: &DishSocket) -> ZmqResult<()> {
-            if let Some(socket_config) = self.socket_config {
-                socket_config.apply(socket)?;
+            if let Some(socket_builder) = self.socket_builder {
+                socket_builder.apply(socket)?;
             }
 
             if let Some(join) = self.join {
