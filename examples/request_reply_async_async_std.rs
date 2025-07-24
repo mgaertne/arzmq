@@ -1,44 +1,25 @@
 #![cfg(feature = "examples-async-std")]
-use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use core::sync::atomic::Ordering;
 
-use arzmq::prelude::{Context, Receiver, ReplySocket, RequestSocket, SendFlags, Sender, ZmqResult};
+use arzmq::prelude::{Context, ReplySocket, RequestSocket, ZmqResult};
 use async_std::task;
 use futures::join;
 
-static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
-static ITERATIONS: AtomicI32 = AtomicI32::new(0);
+mod common;
 
-async fn run_replier(reply: ReplySocket) -> ZmqResult<()> {
+use common::{ITERATIONS, KEEP_RUNNING};
+
+async fn run_replier(reply: ReplySocket, msg: &str) {
     while KEEP_RUNNING.load(Ordering::Acquire) {
-        if let Some(message) = reply.recv_msg_async().await {
-            println!("Received request: {message}");
-            reply.send_msg_async("World", SendFlags::empty()).await;
-        }
+        common::run_recv_send_async(&reply, msg).await;
     }
-
-    Ok(())
 }
 
-async fn run_requester(request: RequestSocket) -> ZmqResult<()> {
+async fn run_requester(request: RequestSocket, msg: &str) {
     while ITERATIONS.load(Ordering::Acquire) > 0 {
-        let request_no = ITERATIONS.load(Ordering::Acquire);
-        println!("Sending request {request_no}");
-        let _ = request.send_msg_async("Hello", SendFlags::empty()).await;
-
-        loop {
-            if let Some(message) = request.recv_msg_async().await {
-                println!("Received reply {request_no}: {message}");
-
-                ITERATIONS.fetch_sub(1, Ordering::Release);
-
-                break;
-            }
-        }
+        common::run_send_recv_async(&request, msg).await;
     }
-
     KEEP_RUNNING.store(false, Ordering::Release);
-
-    Ok(())
 }
 
 #[async_std::main]
@@ -55,8 +36,8 @@ async fn main() -> ZmqResult<()> {
     let request = RequestSocket::from_context(&context)?;
     request.connect(format!("tcp://localhost:{port}"))?;
 
-    let request_handle = task::spawn(run_requester(request));
-    let reply_handle = task::spawn(run_replier(reply));
+    let request_handle = task::spawn(run_requester(request, "Hello"));
+    let reply_handle = task::spawn(run_replier(reply, "World"));
 
     let _ = join!(reply_handle, request_handle);
 

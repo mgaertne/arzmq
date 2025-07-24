@@ -1,40 +1,24 @@
 #![cfg(feature = "examples-tokio")]
-use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use core::sync::atomic::Ordering;
 
-use arzmq::prelude::{
-    Context, PublishSocket, Receiver, SendFlags, Sender, SubscribeSocket, ZmqResult,
-};
+use arzmq::prelude::{Context, PublishSocket, SendFlags, Sender, SubscribeSocket, ZmqResult};
 use tokio::{join, task::spawn};
 
-static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
-static ITERATIONS: AtomicI32 = AtomicI32::new(0);
+mod common;
 
-async fn run_subscriber(subscribe: SubscribeSocket) -> ZmqResult<()> {
+use common::{ITERATIONS, KEEP_RUNNING};
+
+async fn run_subscriber(subscribe: SubscribeSocket, subscribed_topic: &str) {
     while ITERATIONS.load(Ordering::Acquire) > 0 {
-        if let Some(zmq_msg) = subscribe.recv_msg_async().await {
-            let zmq_str = zmq_msg.to_string();
-            let pubsub_item = zmq_str.split_once(" ");
-            assert_eq!(Some(("arzmq-example", "important update")), pubsub_item);
-
-            let (topic, item) = pubsub_item.unwrap();
-            println!("Received msg for topic {topic:?}: {item}",);
-
-            ITERATIONS.fetch_sub(1, Ordering::Release);
-        };
+        common::run_subscribe_client_async(&subscribe, subscribed_topic).await;
     }
-
     KEEP_RUNNING.store(false, Ordering::Release);
-    Ok(())
 }
 
-async fn run_publisher(publisher: PublishSocket) -> ZmqResult<()> {
+async fn run_publisher(publisher: PublishSocket, msg: &str) {
     while KEEP_RUNNING.load(Ordering::Acquire) {
-        publisher
-            .send_msg_async("arzmq-example important update", SendFlags::empty())
-            .await;
+        publisher.send_msg_async(msg, SendFlags::empty()).await;
     }
-
-    Ok(())
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
@@ -52,8 +36,8 @@ async fn main() -> ZmqResult<()> {
     subscriber.subscribe("arzmq-example")?;
     subscriber.connect(format!("tcp://localhost:{port}"))?;
 
-    let publish_handle = spawn(run_publisher(publisher));
-    let subscribe_handle = spawn(run_subscriber(subscriber));
+    let publish_handle = spawn(run_publisher(publisher, "arzmq-example important update"));
+    let subscribe_handle = spawn(run_subscriber(subscriber, "arzmq-example"));
 
     let _ = join!(publish_handle, subscribe_handle);
 
