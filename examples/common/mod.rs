@@ -48,6 +48,7 @@ where
 }
 
 #[allow(dead_code)]
+#[cfg(feature = "futures")]
 pub async fn run_multipart_send_recv_async<S>(send_recv: &S, msg: &str)
 where
     S: MultipartReceiver + MultipartSender + Sync,
@@ -86,6 +87,7 @@ where
 }
 
 #[allow(dead_code)]
+#[cfg(feature = "futures")]
 pub async fn run_multipart_recv_reply_async<S>(recv_send: &S, msg: &str)
 where
     S: MultipartSender + MultipartReceiver + Sync,
