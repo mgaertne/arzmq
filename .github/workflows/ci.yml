@@ -274,6 +274,8 @@ jobs:
         run: cargo run --features examples-tokio --release --verbose --example xpublish_subscribe_async_tokio
       - name: xpublish_xsubscribe_async_tokio
         run: cargo run --features examples-tokio --release --verbose --example xpublish_xsubscribe_async_tokio
+      - name: push_pull_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example push_pull_async_tokio
 
   examples-async-std:
     name: examples (async-std)
@@ -310,6 +312,8 @@ jobs:
         run: cargo run --features examples-async-std --release --verbose --example xpublish_subscribe_async_async_std
       - name: xpublish_xsubscribe_async_async_std
         run: cargo run --features examples-async-std --release --verbose --example xpublish_xsubscribe_async_async_std
+      - name: push_pull_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example push_pull_async_async_std
 
   examples-futures:
     name: examples (futures)
@@ -346,3 +350,5 @@ jobs:
         run: cargo run --features examples-futures --release --verbose --example xpublish_subscribe_async_futures
       - name: xpublish_xsubscribe_async_futures
         run: cargo run --features examples-futures --release --verbose --example xpublish_xsubscribe_async_futures
+      - name: push_pull_async_futures
+        run: cargo run --features examples-futures --release --verbose --example push_pull_async_futures
