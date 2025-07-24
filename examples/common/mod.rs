@@ -1,4 +1,4 @@
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 use arzmq::prelude::{
     Message, MultipartReceiver, MultipartSender, Receiver, RecvFlags, SendFlags, Sender, ZmqResult,
@@ -6,6 +6,9 @@ use arzmq::prelude::{
 
 #[allow(dead_code)]
 pub static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
+
+#[allow(dead_code)]
+pub static ITERATIONS: AtomicI32 = AtomicI32::new(10);
 
 #[allow(dead_code)]
 pub fn run_publisher<S>(socket: &S, msg: &str) -> ZmqResult<()>
@@ -24,11 +27,11 @@ pub fn run_send_recv<S>(send_recv: &S, msg: &str) -> ZmqResult<()>
 where
     S: Sender + Receiver,
 {
-    println!("Sending message {msg:?}");
+    println!("Sending message: {msg:?}");
     send_recv.send_msg(msg, SendFlags::empty())?;
 
     let message = send_recv.recv_msg(RecvFlags::empty())?;
-    println!("Recevied message {message:?}");
+    println!("Recevied message: {message:?}");
 
     Ok(())
 }
@@ -39,9 +42,29 @@ where
     S: Receiver + Sender,
 {
     let message = recv_send.recv_msg(RecvFlags::empty())?;
-    println!("Received message {message:?}");
+    println!("Received message: {message:?}");
 
     recv_send.send_msg(msg, SendFlags::empty())
+}
+
+#[allow(dead_code)]
+pub async fn run_multipart_send_recv_async<S>(send_recv: &S, msg: &str)
+where
+    S: MultipartReceiver + MultipartSender + Sync,
+{
+    println!("Sending message {msg:?}");
+    let multipart: Vec<Message> = vec![vec![].into(), msg.into()];
+    let _ = send_recv
+        .send_multipart_async(multipart, SendFlags::empty())
+        .await;
+
+    let mut message = send_recv.recv_multipart_async().await;
+    let content = message.pop_back().unwrap();
+    if !content.is_empty() {
+        println!("Received reply: {content:?}",);
+
+        ITERATIONS.fetch_sub(1, Ordering::Release);
+    }
 }
 
 #[allow(dead_code)]
@@ -49,17 +72,33 @@ pub fn run_multipart_send_recv<S>(send_recv: &S, msg: &str) -> ZmqResult<()>
 where
     S: MultipartReceiver + MultipartSender,
 {
-    println!("Sending message {msg:?}");
+    println!("Sending message: {msg:?}");
     let multipart: Vec<Message> = vec![vec![].into(), msg.into()];
     send_recv.send_multipart(multipart, SendFlags::empty())?;
 
     let mut multipart = send_recv.recv_multipart(RecvFlags::empty())?;
     let content = multipart.pop_back().unwrap();
     if !content.is_empty() {
-        println!("Received reply {content:?}");
+        println!("Received reply: {content:?}");
     }
 
     Ok(())
+}
+
+#[allow(dead_code)]
+pub async fn run_multipart_recv_reply_async<S>(recv_send: &S, msg: &str)
+where
+    S: MultipartSender + MultipartReceiver + Sync,
+{
+    let mut multipart = recv_send.recv_multipart_async().await;
+    let content = multipart.pop_back().unwrap();
+    if !content.is_empty() {
+        println!("Received request: {content:?}");
+    }
+    multipart.push_back(msg.into());
+    recv_send
+        .send_multipart_async(multipart, SendFlags::empty())
+        .await;
 }
 
 #[allow(dead_code)]
