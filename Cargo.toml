@@ -71,7 +71,7 @@ async-trait = { version = ">=0.1.88", default-features = false, optional = true 
 futures = { version = ">=0.3.31", default-features = false, features = ["async-await", "alloc"], optional = true}
 
 # for async examples
-tokio = { version = ">=1.46", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time"], optional = true }
+tokio = { version = ">=1.46", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"], optional = true }
 async-std = { version = ">=1.13", default-features = false, features = ["attributes", "default"], optional = true }
 
 [build-dependencies]
@@ -230,6 +230,11 @@ required-features = ["examples-tokio"]
 [[example]]
 name = "pair_pair_async_tokio"
 path = "examples/pair_pair_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
+name = "stream_client_async_tokio"
+path = "examples/stream_client_async_tokio.rs"
 required-features = ["examples-tokio"]
 
 [[example]]
