@@ -213,6 +213,16 @@ path = "examples/publish_xsubscribe_async_tokio.rs"
 required-features = ["examples-tokio"]
 
 [[example]]
+name = "xpublish_subscribe_async_tokio"
+path = "examples/xpublish_subscribe_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
+name = "xpublish_xsubscribe_async_tokio"
+path = "examples/xpublish_xsubscribe_async_tokio.rs"
+required-features = ["examples-tokio"]
+
+[[example]]
 name = "publish_subscribe_async_async_std"
 path = "examples/publish_subscribe_async_async_std.rs"
 required-features = ["examples-async-std"]
@@ -248,6 +258,16 @@ path = "examples/publish_xsubscribe_async_async_std.rs"
 required-features = ["examples-async-std"]
 
 [[example]]
+name = "xpublish_subscribe_async_async_std"
+path = "examples/xpublish_subscribe_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
+name = "xpublish_xsubscribe_async_async_std"
+path = "examples/xpublish_xsubscribe_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
 name = "publish_subscribe_async_futures"
 path = "examples/publish_subscribe_async_futures.rs"
 required-features = ["examples-futures"]
@@ -280,4 +300,14 @@ required-features = ["examples-futures"]
 [[example]]
 name = "publish_xsubscribe_async_futures"
 path = "examples/publish_xsubscribe_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "xpublish_subscribe_async_futures"
+path = "examples/xpublish_subscribe_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "xpublish_xsubscribe_async_futures"
+path = "examples/xpublish_xsubscribe_async_futures.rs"
 required-features = ["examples-futures"]

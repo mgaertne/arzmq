@@ -270,6 +270,10 @@ jobs:
         run: cargo run --features examples-tokio --release --verbose --example dealer_router_async_tokio
       - name: publish_xsubscribe_async_tokio
         run: cargo run --features examples-tokio --release --verbose --example publish_xsubscribe_async_tokio
+      - name: xpublish_subscribe_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example xpublish_subscribe_async_tokio
+      - name: xpublish_xsubscribe_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example xpublish_xsubscribe_async_tokio
 
   examples-async-std:
     name: examples (async-std)
@@ -302,6 +306,10 @@ jobs:
         run: cargo run --features examples-async-std --release --verbose --example dealer_router_async_async_std
       - name: publish_xsubscribe_async_async_std
         run: cargo run --features examples-async-std --release --verbose --example publish_xsubscribe_async_async_std
+      - name: xpublish_subscribe_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example xpublish_subscribe_async_async_std
+      - name: xpublish_xsubscribe_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example xpublish_xsubscribe_async_async_std
 
   examples-futures:
     name: examples (futures)
@@ -334,3 +342,7 @@ jobs:
         run: cargo run --features examples-futures --release --verbose --example dealer_router_async_futures
       - name: publish_xsubscribe_async_futures
         run: cargo run --features examples-futures --release --verbose --example publish_xsubscribe_async_futures
+      - name: xpublish_subscribe_async_futures
+        run: cargo run --features examples-futures --release --verbose --example xpublish_subscribe_async_futures
+      - name: xpublish_xsubscribe_async_futures
+        run: cargo run --features examples-futures --release --verbose --example xpublish_xsubscribe_async_futures
