@@ -282,6 +282,16 @@ jobs:
         run: cargo run --features examples-tokio --release --verbose --example stream_client_async_tokio
       - name: stream_server_async_tokio
         run: cargo run --features examples-tokio --release --verbose --example stream_server_async_tokio
+      - name: peer_peer_async_tokio
+        run: cargo run --features "examples-tokio,draft-api" --release --verbose --example peer_peer_async_tokio
+      - name: channel_channel_async_tokio
+        run: cargo run --features "examples-tokio,draft-api" --release --verbose --example channel_channel_async_tokio
+      - name: client_server_async_tokio
+        run: cargo run --features "examples-tokio,draft-api" --release --verbose --example client_server_async_tokio
+      - name: scatter_gather_async_tokio
+        run: cargo run --features "examples-tokio,draft-api" --release --verbose --example scatter_gather_async_tokio
+      - name: radio_dish_async_tokio
+        run: cargo run --features "examples-tokio,draft-api" --release --verbose --example radio_dish_async_tokio
 
   examples-async-std:
     name: examples (async-std)
@@ -326,6 +336,16 @@ jobs:
         run: cargo run --features examples-async-std --release --verbose --example stream_client_async_async_std
       - name: stream_server_async_async_std
         run: cargo run --features examples-async-std --release --verbose --example stream_server_async_async_std
+      - name: peer_peer_async_async_std
+        run: cargo run --features "examples-async-std,draft-api" --release --verbose --example peer_peer_async_async_std
+      - name: channel_channel_async_async_std
+        run: cargo run --features "examples-async-std,draft-api" --release --verbose --example channel_channel_async_async_std
+      - name: client_server_async_async_std
+        run: cargo run --features "examples-async-std,draft-api" --release --verbose --example client_server_async_async_std
+      - name: scatter_gather_async_async_std
+        run: cargo run --features "examples-async-std,draft-api" --release --verbose --example scatter_gather_async_async_std
+      - name: radio_dish_async_async_std
+        run: cargo run --features "examples-async-std,draft-api" --release --verbose --example radio_dish_async_async_std
 
   examples-futures:
     name: examples (futures)
@@ -370,3 +390,13 @@ jobs:
         run: cargo run --features examples-futures --release --verbose --example stream_client_async_futures
       - name: stream_server_async_futures
         run: cargo run --features examples-futures --release --verbose --example stream_server_async_futures
+      - name: peer_peer_async_futures
+        run: cargo run --features "examples-futures,draft-api" --release --verbose --example peer_peer_async_futures
+      - name: channel_channel_async_futures
+        run: cargo run --features "examples-futures,draft-api" --release --verbose --example channel_channel_async_futures
+      - name: client_server_async_futures
+        run: cargo run --features "examples-futures,draft-api" --release --verbose --example client_server_async_futures
+      - name: scatter_gather_async_futures
+        run: cargo run --features "examples-futures,draft-api" --release --verbose --example scatter_gather_async_futures
+      - name: radio_dish_async_futures
+        run: cargo run --features "examples-futures,draft-api" --release --verbose --example radio_dish_async_futures

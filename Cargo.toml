@@ -243,6 +243,31 @@ path = "examples/stream_server_async_tokio.rs"
 required-features = ["examples-tokio"]
 
 [[example]]
+name = "peer_peer_async_tokio"
+path = "examples/peer_peer_async_tokio.rs"
+required-features = ["examples-tokio", "draft-api"]
+
+[[example]]
+name = "channel_channel_async_tokio"
+path = "examples/channel_channel_async_tokio.rs"
+required-features = ["examples-tokio", "draft-api"]
+
+[[example]]
+name = "client_server_async_tokio"
+path = "examples/client_server_async_tokio.rs"
+required-features = ["examples-tokio", "draft-api"]
+
+[[example]]
+name = "scatter_gather_async_tokio"
+path = "examples/scatter_gather_async_tokio.rs"
+required-features = ["examples-tokio", "draft-api"]
+
+[[example]]
+name = "radio_dish_async_tokio"
+path = "examples/radio_dish_async_tokio.rs"
+required-features = ["examples-tokio", "draft-api"]
+
+[[example]]
 name = "publish_subscribe_async_async_std"
 path = "examples/publish_subscribe_async_async_std.rs"
 required-features = ["examples-async-std"]
@@ -308,6 +333,31 @@ path = "examples/stream_server_async_async_std.rs"
 required-features = ["examples-async-std"]
 
 [[example]]
+name = "peer_peer_async_async_std"
+path = "examples/peer_peer_async_async_std.rs"
+required-features = ["examples-async-std", "draft-api"]
+
+[[example]]
+name = "channel_channel_async_async_std"
+path = "examples/channel_channel_async_async_std.rs"
+required-features = ["examples-async-std", "draft-api"]
+
+[[example]]
+name = "client_server_async_async_std"
+path = "examples/client_server_async_async_std.rs"
+required-features = ["examples-async-std", "draft-api"]
+
+[[example]]
+name = "scatter_gather_async_async_std"
+path = "examples/scatter_gather_async_async_std.rs"
+required-features = ["examples-async-std", "draft-api"]
+
+[[example]]
+name = "radio_dish_async_async_std"
+path = "examples/radio_dish_async_async_std.rs"
+required-features = ["examples-async-std", "draft-api"]
+
+[[example]]
 name = "publish_subscribe_async_futures"
 path = "examples/publish_subscribe_async_futures.rs"
 required-features = ["examples-futures"]
@@ -371,3 +421,28 @@ required-features = ["examples-futures"]
 name = "stream_server_async_futures"
 path = "examples/stream_server_async_futures.rs"
 required-features = ["examples-futures"]
+
+[[example]]
+name = "peer_peer_async_futures"
+path = "examples/peer_peer_async_futures.rs"
+required-features = ["examples-futures", "draft-api"]
+
+[[example]]
+name = "channel_channel_async_futures"
+path = "examples/channel_channel_async_futures.rs"
+required-features = ["examples-futures", "draft-api"]
+
+[[example]]
+name = "client_server_async_futures"
+path = "examples/client_server_async_futures.rs"
+required-features = ["examples-futures", "draft-api"]
+
+[[example]]
+name = "scatter_gather_async_futures"
+path = "examples/scatter_gather_async_futures.rs"
+required-features = ["examples-futures", "draft-api"]
+
+[[example]]
+name = "radio_dish_async_futures"
+path = "examples/radio_dish_async_futures.rs"
+required-features = ["examples-futures", "draft-api"]

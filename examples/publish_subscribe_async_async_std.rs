@@ -26,7 +26,7 @@ async fn run_publisher(publisher: PublishSocket, msg: &str) {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5556;
+    let port = 5555;
 
     let context = Context::new()?;
 

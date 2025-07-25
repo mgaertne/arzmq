@@ -27,7 +27,7 @@ fn main() -> ZmqResult<()> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5556;
+        let port = 5561;
 
         let context = Context::new()?;
 

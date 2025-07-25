@@ -25,7 +25,7 @@ async fn run_requester(request: RequestSocket, msg: &str) {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5556;
+    let port = 5560;
 
     let context = Context::new()?;
 

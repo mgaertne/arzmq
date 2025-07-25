@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5558;
+        let port = 5559;
 
         let context = Context::new()?;
 

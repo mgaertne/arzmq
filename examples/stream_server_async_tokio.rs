@@ -45,7 +45,7 @@ async fn run_tcp_client(mut tcp_stream: TcpStream, msg: &str) {
 async fn main() -> Result<(), Box<dyn Error>> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5558;
+    let port = 5559;
 
     let context = Context::new()?;
 
