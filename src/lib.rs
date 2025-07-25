@@ -175,6 +175,19 @@ pub fn version() -> (i32, i32, i32) {
     (major, minor, patch)
 }
 
+#[cfg(test)]
+mod version_tests {
+    use super::{version, zmq_sys_crate};
+
+    #[test]
+    fn version_returns_sys_values() {
+        let (major, minor, patch) = version();
+        assert_eq!(major, zmq_sys_crate::ZMQ_VERSION_MAJOR as i32);
+        assert_eq!(minor, zmq_sys_crate::ZMQ_VERSION_MINOR as i32);
+        assert_eq!(patch, zmq_sys_crate::ZMQ_VERSION_PATCH as i32);
+    }
+}
+
 use crate::socket::Socket;
 
 /// # Start built-in 0MQ proxy
@@ -200,11 +213,16 @@ use crate::socket::Socket;
 /// [`Dealer`]: socket::DealerSocket
 /// [`Push`]: socket::PushSocket
 /// [`Pair`]: socket::PairSocket
-pub fn proxy<T: sealed::SocketType>(
-    frontend: Socket<T>,
-    backend: Socket<T>,
-    capture: Option<Socket<T>>,
-) -> ZmqResult<()> {
+pub fn proxy<T, U, V>(
+    frontend: &Socket<T>,
+    backend: &Socket<U>,
+    capture: Option<&Socket<V>>,
+) -> ZmqResult<()>
+where
+    T: sealed::SocketType,
+    U: sealed::SocketType,
+    V: sealed::SocketType,
+{
     let frontend_guard = frontend.socket.socket.lock();
     let backend_guard = backend.socket.socket.lock();
     let return_code = match capture {
@@ -229,5 +247,152 @@ pub fn proxy<T: sealed::SocketType>(
         }
     }
 
-    Ok(())
+    unreachable!()
+}
+
+#[cfg(test)]
+mod proxy_tests {
+    use std::thread;
+
+    use super::{ZmqError, proxy};
+    use crate::prelude::{
+        Context, DealerSocket, MultipartReceiver, PairSocket, RecvFlags, RouterSocket, SendFlags,
+        Sender, ZmqResult,
+    };
+
+    #[test]
+    fn proxy_between_frontend_and_backend() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let frontend_router = RouterSocket::from_context(&context)?;
+        frontend_router.bind("inproc://proxy-frontend")?;
+
+        let external_dealer = DealerSocket::from_context(&context)?;
+        external_dealer.connect("inproc://proxy-frontend")?;
+
+        let backend_dealer = DealerSocket::from_context(&context)?;
+        backend_dealer.bind("inproc://proxy-backend")?;
+
+        let receiving_dealer = DealerSocket::from_context(&context)?;
+        receiving_dealer.connect("inproc://proxy-backend")?;
+
+        thread::spawn(move || {
+            let _ = proxy(&frontend_router, &backend_dealer, None::<&PairSocket>);
+        });
+
+        external_dealer.send_msg("proxied msg", SendFlags::empty())?;
+
+        let mut received = receiving_dealer.recv_multipart(RecvFlags::empty())?;
+
+        assert_eq!(
+            received
+                .pop_back()
+                .expect("this should not happen")
+                .to_string(),
+            "proxied msg"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn proxy_between_frontend_and_backend_with_capture() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let frontend_router = RouterSocket::from_context(&context)?;
+        frontend_router.bind("inproc://proxy-frontend")?;
+
+        let external_dealer = DealerSocket::from_context(&context)?;
+        external_dealer.connect("inproc://proxy-frontend")?;
+
+        let backend_dealer = DealerSocket::from_context(&context)?;
+        backend_dealer.bind("inproc://proxy-backend")?;
+
+        let receiving_dealer = DealerSocket::from_context(&context)?;
+        receiving_dealer.connect("inproc://proxy-backend")?;
+
+        let capture_socket = PairSocket::from_context(&context)?;
+        capture_socket.bind("inproc://proxy-capture")?;
+
+        let capture_pair = PairSocket::from_context(&context)?;
+        capture_pair.connect("inproc://proxy-capture")?;
+
+        thread::spawn(move || {
+            let _ = proxy(&frontend_router, &backend_dealer, Some(&capture_socket));
+        });
+
+        external_dealer.send_msg("proxied msg", SendFlags::empty())?;
+
+        let mut captured = capture_pair.recv_multipart(RecvFlags::empty())?;
+        assert!(
+            captured
+                .pop_back()
+                .is_some_and(|message| message.to_string() == "proxied msg")
+        );
+
+        let mut received = receiving_dealer.recv_multipart(RecvFlags::empty())?;
+
+        assert!(
+            received
+                .pop_back()
+                .is_some_and(|message| message.to_string() == "proxied msg")
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn proxy_when_frontend_context_is_terminated() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let frontend_router = RouterSocket::from_context(&context)?;
+        let backend_dealer = DealerSocket::from_context(&context)?;
+
+        context.shutdown()?;
+
+        let result = proxy(&frontend_router, &backend_dealer, None::<&PairSocket>);
+
+        assert!(result.is_err_and(|err| err == ZmqError::ContextTerminated));
+
+        Ok(())
+    }
+
+    #[test]
+    fn proxy_when_backend_context_is_terminated() -> ZmqResult<()> {
+        let frontend_context = Context::new()?;
+        let frontend_router = RouterSocket::from_context(&frontend_context)?;
+
+        let backend_context = Context::new()?;
+        let backend_dealer = DealerSocket::from_context(&backend_context)?;
+
+        backend_context.shutdown()?;
+
+        let result = proxy(&frontend_router, &backend_dealer, None::<&PairSocket>);
+
+        assert!(result.is_err_and(|err| err == ZmqError::ContextTerminated));
+
+        Ok(())
+    }
+
+    #[test]
+    fn proxy_when_context_is_shutdown_while_running() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let frontend_router = RouterSocket::from_context(&context)?;
+
+        let backend_dealer = DealerSocket::from_context(&context)?;
+
+        let handle =
+            thread::spawn(move || proxy(&frontend_router, &backend_dealer, None::<&PairSocket>));
+
+        context.shutdown()?;
+
+        let result = handle.join();
+
+        assert!(
+            result.is_ok_and(|result| result.is_err_and(|err| err == ZmqError::ContextTerminated))
+        );
+
+        Ok(())
+    }
 }

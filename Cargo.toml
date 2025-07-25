@@ -77,6 +77,9 @@ async-std = { version = ">=1.13", default-features = false, features = ["attribu
 [build-dependencies]
 arzmq-sys = { workspace = true }
 
+[dev-dependencies]
+rstest = { version = ">=0.25", default-features = false}
+
 [features]
 default = ["builder"]
 builder = ["dep:serde", "dep:derive_builder"]

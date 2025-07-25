@@ -422,7 +422,7 @@ mod builder {
     #[builder_struct_attr(doc = "Builder for [`Context`].\n\n")]
     #[allow(dead_code)]
     struct ContextConfig {
-        #[builder(default = false)]
+        #[builder(default = true)]
         /// Blocky behavior, see [`set_blocky()`].
         ///
         /// [`set_blocky()`]: Context::set_blocky
@@ -495,5 +495,207 @@ mod builder {
 
             Ok(context)
         }
+    }
+
+    #[cfg(test)]
+    mod context_builder_tests {
+        use super::ContextBuilder;
+        use crate::prelude::ZmqResult;
+
+        #[test]
+        fn context_builder_with_default_settings() -> ZmqResult<()> {
+            let context = ContextBuilder::default().build()?;
+
+            assert!(context.blocky()?);
+            assert_eq!(context.max_message_size()?, i32::MAX);
+            assert!(!context.ipv6()?);
+            assert_eq!(context.max_sockets()?, 1023);
+            assert_eq!(context.io_threads()?, 1);
+
+            Ok(())
+        }
+
+        #[test]
+        fn context_builder_with_custom_settings() -> ZmqResult<()> {
+            let context = ContextBuilder::default()
+                .blocky(true)
+                .max_message_size(42)
+                .ipv6(true)
+                .max_sockets(21)
+                .io_threads(2)
+                .build()?;
+
+            assert!(context.blocky()?);
+            assert_eq!(context.max_message_size()?, 42);
+            assert!(context.ipv6()?);
+            assert_eq!(context.max_sockets()?, 21);
+            assert_eq!(context.io_threads()?, 2);
+
+            Ok(())
+        }
+
+        #[cfg(feature = "draft-api")]
+        #[test]
+        fn context_builder_with_draft_api_settings() -> ZmqResult<()> {
+            let context = ContextBuilder::default()
+                .zero_copy_receiving(false)
+                .build()?;
+
+            assert!(!context.zero_copy_receiving()?);
+
+            Ok(())
+        }
+    }
+}
+
+#[cfg(test)]
+mod context_tests {
+    use rstest::*;
+
+    use super::Context;
+    #[cfg(feature = "draft-api")]
+    use crate::prelude::ContextOption;
+    use crate::prelude::{ZmqError, ZmqResult};
+
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn context_with_blocky_option(#[case] option_value: bool) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_blocky(option_value)?;
+
+        assert_eq!(context.blocky()?, option_value);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(0)]
+    #[case(1)]
+    #[case(42)]
+    #[case(i32::MAX)]
+    fn context_with_io_threads(#[case] option_value: i32) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_io_threads(option_value)?;
+
+        assert_eq!(context.io_threads()?, option_value);
+
+        Ok(())
+    }
+
+    #[test]
+    fn context_with_invalid_io_threads() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let result = context.set_io_threads(-1);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(0)]
+    #[case(1)]
+    #[case(42)]
+    #[case(i32::MAX)]
+    fn context_with_max_message_size(#[case] option_value: i32) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_max_message_size(option_value)?;
+
+        assert_eq!(context.max_message_size()?, option_value);
+        Ok(())
+    }
+
+    #[test]
+    fn context_with_invalid_max_message_size() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let result = context.set_max_message_size(-1);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(1)]
+    #[case(42)]
+    #[case(i32::MAX)]
+    fn context_with_max_sockets(#[case] option_value: i32) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_max_sockets(option_value)?;
+
+        assert_eq!(context.max_sockets()?, option_value);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(0)]
+    #[case(-1)]
+    fn context_with_invalid_max_sockets(#[case] option_value: i32) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let result = context.set_max_sockets(option_value);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[test]
+    fn context_socket_limit() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        assert_eq!(context.socket_limit()?, 65535);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn context_with_ipv6(#[case] option_value: bool) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_ipv6(option_value)?;
+
+        assert_eq!(context.ipv6()?, option_value);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn context_with_zero_copy_receiving(#[case] option_value: bool) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_zero_copy_receiving(option_value)?;
+
+        assert_eq!(context.zero_copy_receiving()?, option_value);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn context_with_threadname_prefix() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        context.set_option_string(ContextOption::ThreadNamePrefix, "asdf")?;
+
+        assert_eq!(
+            context.get_option_string(ContextOption::ThreadNamePrefix)?,
+            "asdf"
+        );
+
+        Ok(())
     }
 }

@@ -115,7 +115,8 @@ impl RawContext {
     #[cfg(feature = "draft-api")]
     #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn get_ext(&self, option: i32) -> ZmqResult<String> {
-        let mut buffer: [u8; MAX_OPTION_STR_LEN] = [0; MAX_OPTION_STR_LEN];
+        let mut buffer: [u8; 1024usize] = [0; 1024usize];
+        let mut length: usize = buffer.len();
 
         let context = self.context.lock();
         if unsafe {
@@ -123,7 +124,7 @@ impl RawContext {
                 *context,
                 option,
                 buffer.as_mut_ptr() as *mut c_void,
-                &mut buffer.len(),
+                &mut length,
             )
         } == -1
         {
@@ -135,7 +136,7 @@ impl RawContext {
                 _ => unreachable!(),
             }
         }
-        CStr::from_bytes_until_nul(&buffer)?
+        CStr::from_bytes_until_nul(buffer.as_ref())?
             .to_owned()
             .into_string()
             .map_err(ZmqError::from)
