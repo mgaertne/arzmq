@@ -58,14 +58,15 @@ impl RawContext {
     #[doc(cfg(feature = "draft-api"))]
     fn set_ext(&self, option: i32, value: &str) -> ZmqResult<()> {
         let c_value = CString::from_str(value)?;
+        let bytes = c_value.as_bytes_with_nul();
 
         let context = self.context.lock();
         if unsafe {
             zmq_sys_crate::zmq_ctx_set_ext(
                 *context,
                 option,
-                c_value.as_ptr() as *const c_void,
-                value.len(),
+                bytes.as_ptr() as *mut c_void,
+                bytes.len(),
             )
         } == -1
         {
@@ -115,8 +116,8 @@ impl RawContext {
     #[cfg(feature = "draft-api")]
     #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn get_ext(&self, option: i32) -> ZmqResult<String> {
+        let mut length: usize = 1024usize;
         let mut buffer: [u8; 1024usize] = [0; 1024usize];
-        let mut length: usize = buffer.len();
 
         let context = self.context.lock();
         if unsafe {
@@ -136,7 +137,7 @@ impl RawContext {
                 _ => unreachable!(),
             }
         }
-        CStr::from_bytes_until_nul(buffer.as_ref())?
+        CStr::from_bytes_until_nul(&buffer)?
             .to_owned()
             .into_string()
             .map_err(ZmqError::from)
