@@ -1,7 +1,10 @@
 #![cfg(feature = "examples-futures")]
 use core::{error::Error, sync::atomic::Ordering};
-use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::{
+    io::{Read, Write},
+    net::TcpListener,
+};
+
 use arzmq::prelude::{
     Context, MultipartMessage, MultipartReceiver, MultipartSender, SendFlags, StreamSocket,
 };
