@@ -1,15 +1,15 @@
-#![cfg(feature = "examples-tokio")]
+#![cfg(feature = "examples-async-std")]
 use core::{error::Error, sync::atomic::Ordering};
 
 use arzmq::prelude::{
     Context, MultipartMessage, MultipartReceiver, MultipartSender, SendFlags, StreamSocket,
 };
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    join,
+use async_std::{
+    io::{ReadExt, WriteExt},
     net::TcpListener,
-    spawn,
+    task::spawn,
 };
+use futures::join;
 
 mod common;
 
@@ -54,7 +54,7 @@ async fn run_stream_socket(zmq_stream: StreamSocket, routing_id: Vec<u8>, msg: &
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+#[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     ITERATIONS.store(10, Ordering::Release);
 

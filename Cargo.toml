@@ -293,6 +293,11 @@ path = "examples/pair_pair_async_async_std.rs"
 required-features = ["examples-async-std"]
 
 [[example]]
+name = "stream_client_async_async_std"
+path = "examples/stream_client_async_async_std.rs"
+required-features = ["examples-async-std"]
+
+[[example]]
 name = "publish_subscribe_async_futures"
 path = "examples/publish_subscribe_async_futures.rs"
 required-features = ["examples-futures"]
@@ -345,4 +350,9 @@ required-features = ["examples-futures"]
 [[example]]
 name = "pair_pair_async_futures"
 path = "examples/pair_pair_async_futures.rs"
+required-features = ["examples-futures"]
+
+[[example]]
+name = "stream_client_async_futures"
+path = "examples/stream_client_async_futures.rs"
 required-features = ["examples-futures"]
