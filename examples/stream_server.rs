@@ -5,7 +5,7 @@ use arzmq::prelude::{
     Context, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket, ZmqResult,
 };
 
-fn run_stream_socket(zmq_stream: &StreamSocket, _routing_id: &[u8], msg: &str) -> ZmqResult<()> {
+fn run_stream_socket(zmq_stream: &StreamSocket, msg: &str) -> ZmqResult<()> {
     let mut message = zmq_stream.recv_multipart(RecvFlags::empty())?;
     println!("Received request: {:?}", message.pop_back().unwrap());
 
@@ -49,10 +49,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     thread::spawn(move || {
         let mut connect_msg = zmq_stream.recv_multipart(RecvFlags::empty()).unwrap();
-        let routing_id = connect_msg.pop_front().unwrap();
+        let _routing_id = connect_msg.pop_front().unwrap();
 
         loop {
-            run_stream_socket(&zmq_stream, &routing_id.bytes(), "World").unwrap();
+            run_stream_socket(&zmq_stream, "World").unwrap();
         }
     });
 

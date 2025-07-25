@@ -280,6 +280,8 @@ jobs:
         run: cargo run --features examples-tokio --release --verbose --example pair_pair_async_tokio
       - name: stream_client_async_tokio
         run: cargo run --features examples-tokio --release --verbose --example stream_client_async_tokio
+      - name: stream_server_async_tokio
+        run: cargo run --features examples-tokio --release --verbose --example stream_server_async_tokio
 
   examples-async-std:
     name: examples (async-std)
@@ -322,6 +324,8 @@ jobs:
         run: cargo run --features examples-async-std --release --verbose --example pair_pair_async_async_std
       - name: stream_client_async_async_std
         run: cargo run --features examples-async-std --release --verbose --example stream_client_async_async_std
+      - name: stream_server_async_async_std
+        run: cargo run --features examples-async-std --release --verbose --example stream_server_async_async_std
 
   examples-futures:
     name: examples (futures)
@@ -364,3 +368,5 @@ jobs:
         run: cargo run --features examples-futures --release --verbose --example pair_pair_async_futures
       - name: stream_client_async_futures
         run: cargo run --features examples-futures --release --verbose --example stream_client_async_futures
+      - name: stream_server_async_futures
+        run: cargo run --features examples-futures --release --verbose --example stream_server_async_futures
