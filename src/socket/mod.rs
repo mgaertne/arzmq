@@ -967,7 +967,7 @@ use derive_more::From;
 use num_traits::PrimInt;
 
 use crate::{
-    ZmqResult,
+    ZmqError, ZmqResult,
     context::Context,
     ffi::RawSocket,
     message::{Message, MultipartMessage, Sendable},
@@ -2080,8 +2080,10 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`POLL_OUT`]: PollEvents::POLL_OUT
     /// [`FileDescriptor`]: SocketOption::FileDescriptor
     pub fn events(&self) -> ZmqResult<PollEvents> {
-        self.get_sockopt_int::<i16>(SocketOption::Events)
+        self.get_sockopt_int::<i32>(SocketOption::Events)?
+            .try_into()
             .map(PollEvents::from_bits_truncate)
+            .map_err(|_err| ZmqError::InvalidArgument)
     }
 
     /// # Disable GSSAPI encryption `ZMQ_GSSAPI_PLAINTEXT`
@@ -3321,8 +3323,7 @@ impl<T: sealed::SocketType> Socket<T> {
     where
         E: Into<PollEvents>,
     {
-        let poll_events = PollEvents::from_bits_truncate(events.into().bits());
-        self.socket.poll(poll_events, timeout_ms)
+        self.socket.poll(events.into(), timeout_ms)
     }
 }
 
@@ -3749,10 +3750,11 @@ mod socket_tests {
 
     #[cfg(feature = "draft-api")]
     use super::ReconnectStop;
-    use super::{PairSocket, SocketOption};
+    use super::{PairSocket, PollEvents, SocketOption};
     use crate::{
+        ZmqError,
         prelude::{Context, ZmqResult},
-        security::SecurityMechanism,
+        security::{GssApiNametype, SecurityMechanism},
     };
 
     #[test]
@@ -3767,6 +3769,7 @@ mod socket_tests {
         Ok(())
     }
 
+    #[cfg(feature = "draft-api")]
     #[test]
     fn set_backlog_sets_backlog() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -3787,6 +3790,195 @@ mod socket_tests {
         socket.set_connect_timeout(42)?;
 
         assert_eq!(socket.connect_timeout()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn events_when_no_events_available() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+
+        assert_eq!(socket.events()?, PollEvents::empty());
+
+        Ok(())
+    }
+
+    #[test]
+    fn events_when_connected() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let endpoint = "inproc://test";
+        let server_socket = PairSocket::from_context(&context)?;
+        server_socket.bind(endpoint)?;
+
+        let client_socket = PairSocket::from_context(&context)?;
+        client_socket.connect(endpoint)?;
+
+        assert_eq!(client_socket.events()?, PollEvents::POLL_OUT);
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn set_gssapi_plaintext_with_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.set_gssapi_plaintext(true);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(zmq_have_gssapi)]
+    #[test]
+    fn set_gssapi_plaintext_sets_gssapi_plaintext() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_plaintext(true)?;
+
+        assert!(socket.gssapi_plaintext()?);
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn gssapi_plaintext_with_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.gssapi_plaintext();
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn set_gssapi_service_principal_with_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.set_gssapi_service_principal_nametype(GssApiNametype::NtHostbased);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(zmq_have_gssapi)]
+    #[test]
+    fn set_gssapi_service_principal_sets_gssapi_service_principal() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_service_principal_nametype(GssApiNametype::NtUsername)?;
+
+        assert_eq!(
+            socket.gssapi_service_principal_nametype()?,
+            GssApiNametype::NtUsername
+        );
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn gssapi_service_principal_with_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.gssapi_service_principal_nametype();
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn set_gssapi_principal_when_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.set_gssapi_principal("test");
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(zmq_have_gssapi)]
+    #[test]
+    fn set_gssapi_principal_sets_gssapi_principal() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_principal("test")?;
+
+        assert_eq!(socket.gssapi_principal()?, "test");
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn gssapi_principal_when_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.gssapi_principal();
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn set_gssapi_principal_nametype_when_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.set_gssapi_principal_nametype(GssApiNametype::NtHostbased);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[cfg(zmq_have_gssapi)]
+    #[test]
+    fn set_gssapi_principal_nametype_sets_gssapi_principal_nametype() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_principal_nametype(GssApiNametype::NtHostbased)?;
+
+        assert_eq!(
+            socket.gssapi_principal_nametype()?,
+            GssApiNametype::NtHostbased
+        );
+
+        Ok(())
+    }
+
+    #[cfg(not(zmq_have_gssapi))]
+    #[test]
+    fn gssapi_principal_nametype_when_gssapi_disabled() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        let result = socket.gssapi_principal_nametype();
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
 
         Ok(())
     }
@@ -3880,6 +4072,29 @@ mod socket_tests {
         socket.set_linger(42)?;
 
         assert_eq!(socket.linger()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn last_endpoint_when_not_bound_or_connected() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+
+        assert_eq!(socket.last_endpoint()?, "");
+
+        Ok(())
+    }
+
+    #[test]
+    fn last_endpoint_when_bound() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.bind("inproc://last-endpoint-test")?;
+
+        assert_eq!(socket.last_endpoint()?, "inproc://last-endpoint-test");
 
         Ok(())
     }
@@ -4194,6 +4409,50 @@ mod socket_tests {
         socket.set_zap_domain(&"zap".into())?;
 
         assert_eq!(socket.zap_domain()?, "zap".into());
+
+        Ok(())
+    }
+
+    #[test]
+    fn unbind_unbinds_endpoint() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let endpoint = "inproc://unbind-test";
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.bind(endpoint)?;
+
+        assert!(socket.unbind(endpoint).is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn connect_connects_to_endpoint() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let endpoint = "inproc://connect-test";
+
+        let server_socket = PairSocket::from_context(&context)?;
+        server_socket.bind(endpoint)?;
+
+        let client_socket = PairSocket::from_context(&context)?;
+        assert!(client_socket.connect(endpoint).is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn disconnect_disconnects_from_endpoint() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let endpoint = "inproc://disconnect-test";
+        let server_socket = PairSocket::from_context(&context)?;
+        server_socket.bind(endpoint)?;
+
+        let client_socket = PairSocket::from_context(&context)?;
+        client_socket.connect(endpoint)?;
+        assert!(client_socket.disconnect(endpoint).is_ok());
 
         Ok(())
     }
