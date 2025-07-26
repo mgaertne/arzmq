@@ -94,6 +94,31 @@ impl From<ContextOption> for i32 {
     }
 }
 
+#[cfg(test)]
+mod context_option_tests {
+    use rstest::*;
+
+    use super::ContextOption;
+    use crate::zmq_sys_crate;
+
+    #[rstest]
+    #[case(ContextOption::Blocky, zmq_sys_crate::ZMQ_BLOCKY as i32)]
+    #[case(ContextOption::IoThreads, zmq_sys_crate::ZMQ_IO_THREADS as i32)]
+    #[case(ContextOption::SocketLimit, zmq_sys_crate::ZMQ_SOCKET_LIMIT as i32)]
+    #[case(ContextOption::ThreadSchedulingPolicy, zmq_sys_crate::ZMQ_THREAD_SCHED_POLICY as i32)]
+    #[case(ContextOption::ThreadPriority, zmq_sys_crate::ZMQ_THREAD_PRIORITY as i32)]
+    #[case(ContextOption::ThreadAffinityCPUAdd, zmq_sys_crate::ZMQ_THREAD_AFFINITY_CPU_ADD as i32)]
+    #[case(ContextOption::ThreadAffinityCPURemove, zmq_sys_crate::ZMQ_THREAD_AFFINITY_CPU_REMOVE as i32)]
+    #[case(ContextOption::ThreadNamePrefix, zmq_sys_crate::ZMQ_THREAD_NAME_PREFIX as i32)]
+    #[case(ContextOption::MaxMessageSize, zmq_sys_crate::ZMQ_MAX_MSGSZ as i32)]
+    #[case(ContextOption::MaxSockets, zmq_sys_crate::ZMQ_MAX_SOCKETS as i32)]
+    #[case(ContextOption::IPv6, zmq_sys_crate::ZMQ_IPV6 as i32)]
+    #[cfg_attr(feature = "draft-api", case(ContextOption::ZeroCopyReceiving, zmq_sys_crate::ZMQ_ZERO_COPY_RECV as i32))]
+    fn context_options_convert_to_i32(#[case] option: ContextOption, #[case] expected: i32) {
+        assert_eq!(<ContextOption as Into<i32>>::into(option), expected);
+    }
+}
+
 #[derive(DebugDeriveMore, DisplayDeriveMore)]
 #[debug("ZmqContext {{ ... }}")]
 #[display("ZmqContext")]

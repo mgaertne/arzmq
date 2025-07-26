@@ -1215,6 +1215,40 @@ impl From<SocketType> for i32 {
     }
 }
 
+#[cfg(test)]
+mod socket_type_tests {
+    use rstest::*;
+
+    use super::SocketType;
+    use crate::zmq_sys_crate;
+
+    #[rstest]
+    #[case(SocketType::Pair, zmq_sys_crate::ZMQ_PAIR as i32)]
+    #[case(SocketType::Publish, zmq_sys_crate::ZMQ_PUB as i32)]
+    #[case(SocketType::Subscribe, zmq_sys_crate::ZMQ_SUB as i32)]
+    #[case(SocketType::Request, zmq_sys_crate::ZMQ_REQ as i32)]
+    #[case(SocketType::Reply, zmq_sys_crate::ZMQ_REP as i32)]
+    #[case(SocketType::Dealer, zmq_sys_crate::ZMQ_DEALER as i32)]
+    #[case(SocketType::Router, zmq_sys_crate::ZMQ_ROUTER as i32)]
+    #[case(SocketType::Pull, zmq_sys_crate::ZMQ_PULL as i32)]
+    #[case(SocketType::Push, zmq_sys_crate::ZMQ_PUSH as i32)]
+    #[case(SocketType::XPublish, zmq_sys_crate::ZMQ_XPUB as i32)]
+    #[case(SocketType::XSubscribe, zmq_sys_crate::ZMQ_XSUB as i32)]
+    #[case(SocketType::Stream, zmq_sys_crate::ZMQ_STREAM as i32)]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Server, zmq_sys_crate::ZMQ_SERVER as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Client, zmq_sys_crate::ZMQ_CLIENT as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Radio, zmq_sys_crate::ZMQ_RADIO as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Dish, zmq_sys_crate::ZMQ_DISH as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Gather, zmq_sys_crate::ZMQ_GATHER as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Scatter, zmq_sys_crate::ZMQ_SCATTER as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Datagram, zmq_sys_crate::ZMQ_DGRAM as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Peer, zmq_sys_crate::ZMQ_PEER as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketType::Channel, zmq_sys_crate::ZMQ_CHANNEL as i32))]
+    fn converts_to_raw(#[case] socket_type: SocketType, #[case] raw: i32) {
+        assert_eq!(<SocketType as Into<i32>>::into(socket_type), raw);
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[non_exhaustive]
 /// Options that can be set or retrieved on a 0MQ socket
@@ -1653,6 +1687,123 @@ impl From<SocketOption> for i32 {
             #[cfg(feature = "draft-api")]
             SocketOption::NormPush => zmq_sys_crate::ZMQ_NORM_PUSH as i32,
         }
+    }
+}
+
+#[cfg(test)]
+mod socket_option_tests {
+    use rstest::*;
+
+    use super::SocketOption;
+    use crate::zmq_sys_crate;
+
+    #[rstest]
+    #[case(SocketOption::Affinity, zmq_sys_crate::ZMQ_AFFINITY as i32)]
+    #[case(SocketOption::RoutingId, zmq_sys_crate::ZMQ_ROUTING_ID as i32)]
+    #[case(SocketOption::Subscribe, zmq_sys_crate::ZMQ_SUBSCRIBE as i32)]
+    #[case(SocketOption::Unsubscribe, zmq_sys_crate::ZMQ_UNSUBSCRIBE as i32)]
+    #[case(SocketOption::Rate, zmq_sys_crate::ZMQ_RATE as i32)]
+    #[case(SocketOption::RecoveryInterval, zmq_sys_crate::ZMQ_RECOVERY_IVL as i32)]
+    #[case(SocketOption::SendBuffer, zmq_sys_crate::ZMQ_SNDBUF as i32)]
+    #[case(SocketOption::ReceiveBuffer, zmq_sys_crate::ZMQ_RCVBUF as i32)]
+    #[case(SocketOption::ReceiveMore, zmq_sys_crate::ZMQ_RCVMORE as i32)]
+    #[case(SocketOption::FileDescriptor, zmq_sys_crate::ZMQ_FD as i32)]
+    #[case(SocketOption::Events, zmq_sys_crate::ZMQ_EVENTS as i32)]
+    #[case(SocketOption::Type, zmq_sys_crate::ZMQ_TYPE as i32)]
+    #[case(SocketOption::Linger, zmq_sys_crate::ZMQ_LINGER as i32)]
+    #[case(SocketOption::ReconnectInterval, zmq_sys_crate::ZMQ_RECONNECT_IVL as i32)]
+    #[case(SocketOption::Backlog, zmq_sys_crate::ZMQ_BACKLOG as i32)]
+    #[case(SocketOption::ReconnectIntervalMax, zmq_sys_crate::ZMQ_RECONNECT_IVL_MAX as i32)]
+    #[case(SocketOption::MaxMessageSize, zmq_sys_crate::ZMQ_MAXMSGSIZE as i32)]
+    #[case(SocketOption::SendHighWatermark, zmq_sys_crate::ZMQ_SNDHWM as i32)]
+    #[case(SocketOption::ReceiveHighWatermark, zmq_sys_crate::ZMQ_RCVHWM as i32)]
+    #[case(SocketOption::MulticastHops, zmq_sys_crate::ZMQ_MULTICAST_HOPS as i32)]
+    #[case(SocketOption::ReceiveTimeout, zmq_sys_crate::ZMQ_RCVTIMEO as i32)]
+    #[case(SocketOption::SendTimeout, zmq_sys_crate::ZMQ_SNDTIMEO as i32)]
+    #[case(SocketOption::LastEndpoint, zmq_sys_crate::ZMQ_LAST_ENDPOINT as i32)]
+    #[case(SocketOption::RouterMandatory, zmq_sys_crate::ZMQ_ROUTER_MANDATORY as i32)]
+    #[case(SocketOption::TcpKeepalive, zmq_sys_crate::ZMQ_TCP_KEEPALIVE as i32)]
+    #[case(SocketOption::TcpKeepaliveCount, zmq_sys_crate::ZMQ_TCP_KEEPALIVE_CNT as i32)]
+    #[case(SocketOption::TcpKeepaliveIdle, zmq_sys_crate::ZMQ_TCP_KEEPALIVE_IDLE as i32)]
+    #[case(SocketOption::TcpKeepaliveInterval, zmq_sys_crate::ZMQ_TCP_KEEPALIVE_INTVL as i32)]
+    #[case(SocketOption::TcpAcceptFilter, zmq_sys_crate::ZMQ_TCP_ACCEPT_FILTER as i32)]
+    #[case(SocketOption::Immediate, zmq_sys_crate::ZMQ_IMMEDIATE as i32)]
+    #[case(SocketOption::XpubVerbose, zmq_sys_crate::ZMQ_XPUB_VERBOSE as i32)]
+    #[case(SocketOption::IPv6, zmq_sys_crate::ZMQ_IPV6 as i32)]
+    #[case(SocketOption::Mechanism, zmq_sys_crate::ZMQ_MECHANISM as i32)]
+    #[case(SocketOption::PlainServer, zmq_sys_crate::ZMQ_PLAIN_SERVER as i32)]
+    #[case(SocketOption::PlainUsername, zmq_sys_crate::ZMQ_PLAIN_USERNAME as i32)]
+    #[case(SocketOption::PlainPassword, zmq_sys_crate::ZMQ_PLAIN_PASSWORD as i32)]
+    #[cfg_attr(feature = "curve", case(SocketOption::CurvePublicKey, zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32))]
+    #[cfg_attr(feature = "curve", case(SocketOption::CurveSecretKey, zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32))]
+    #[cfg_attr(feature = "curve", case(SocketOption::CurveServer, zmq_sys_crate::ZMQ_CURVE_SERVER as i32))]
+    #[cfg_attr(feature = "curve", case(SocketOption::CurveServerKey, zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32))]
+    #[case(SocketOption::ProbeRouter, zmq_sys_crate::ZMQ_PROBE_ROUTER as i32)]
+    #[case(SocketOption::RequestCorrelate, zmq_sys_crate::ZMQ_REQ_CORRELATE as i32)]
+    #[case(SocketOption::RequestRelaxed, zmq_sys_crate::ZMQ_REQ_RELAXED as i32)]
+    #[case(SocketOption::Conflate, zmq_sys_crate::ZMQ_CONFLATE as i32)]
+    #[case(SocketOption::ZapDomain, zmq_sys_crate::ZMQ_ZAP_DOMAIN as i32)]
+    #[case(SocketOption::RouterHandover, zmq_sys_crate::ZMQ_ROUTER_HANDOVER as i32)]
+    #[case(SocketOption::TypeOfService, zmq_sys_crate::ZMQ_TOS as i32)]
+    #[case(SocketOption::IpcFilterProcessId, zmq_sys_crate::ZMQ_IPC_FILTER_PID as i32)]
+    #[case(SocketOption::IpcFilterUserId, zmq_sys_crate::ZMQ_IPC_FILTER_UID as i32)]
+    #[case(SocketOption::IpcFilterGroupId, zmq_sys_crate::ZMQ_IPC_FILTER_GID as i32)]
+    #[case(SocketOption::ConnectRoutingId, zmq_sys_crate::ZMQ_CONNECT_ROUTING_ID as i32)]
+    #[case(SocketOption::GssApiServer, zmq_sys_crate::ZMQ_GSSAPI_SERVER as i32)]
+    #[case(SocketOption::GssApiPrincipal, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL as i32)]
+    #[case(SocketOption::GssApiServicePrincipal, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL as i32)]
+    #[case(SocketOption::GssApiPlainText, zmq_sys_crate::ZMQ_GSSAPI_PLAINTEXT as i32)]
+    #[case(SocketOption::HandshakeInterval, zmq_sys_crate::ZMQ_HANDSHAKE_IVL as i32)]
+    #[case(SocketOption::SocksProxy, zmq_sys_crate::ZMQ_SOCKS_PROXY as i32)]
+    #[case(SocketOption::XpubNoDrop, zmq_sys_crate::ZMQ_XPUB_NODROP as i32)]
+    #[case(SocketOption::XpubManual, zmq_sys_crate::ZMQ_XPUB_MANUAL as i32)]
+    #[case(SocketOption::XpubWelcomeMessage, zmq_sys_crate::ZMQ_XPUB_WELCOME_MSG as i32)]
+    #[case(SocketOption::StreamNotify, zmq_sys_crate::ZMQ_STREAM_NOTIFY as i32)]
+    #[case(SocketOption::InvertMatching, zmq_sys_crate::ZMQ_INVERT_MATCHING as i32)]
+    #[case(SocketOption::HeartbeatInterval, zmq_sys_crate::ZMQ_HEARTBEAT_IVL as i32)]
+    #[case(SocketOption::HeartbeatTimeToLive, zmq_sys_crate::ZMQ_HEARTBEAT_TTL as i32)]
+    #[case(SocketOption::HeartbeatTimeout, zmq_sys_crate::ZMQ_HEARTBEAT_TIMEOUT as i32)]
+    #[case(SocketOption::XpubVerboser, zmq_sys_crate::ZMQ_XPUB_VERBOSER as i32)]
+    #[case(SocketOption::ConnectTimeout, zmq_sys_crate::ZMQ_CONNECT_TIMEOUT as i32)]
+    #[case(SocketOption::MaxTcpRetransmitTimeout, zmq_sys_crate::ZMQ_TCP_MAXRT as i32)]
+    #[case(SocketOption::MulticastMaxTransportDataUnitSize, zmq_sys_crate::ZMQ_MULTICAST_MAXTPDU as i32)]
+    #[case(SocketOption::ThreadSafe, zmq_sys_crate::ZMQ_THREAD_SAFE as i32)]
+    #[case(SocketOption::VmciBufferSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32)]
+    #[case(SocketOption::VmciBufferMinSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32)]
+    #[case(SocketOption::VmciBufferMaxSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32)]
+    #[case(SocketOption::VmciConntectTimeout, zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32)]
+    #[case(SocketOption::UseFd, zmq_sys_crate::ZMQ_USE_FD as i32)]
+    #[case(SocketOption::GssApiPrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE as i32)]
+    #[case(SocketOption::GssApiServicePrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE as i32)]
+    #[case(SocketOption::BindToDevice, zmq_sys_crate::ZMQ_BINDTODEVICE as i32)]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::ZapEnforceDomain, zmq_sys_crate::ZMQ_ZAP_ENFORCE_DOMAIN as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::Metadata, zmq_sys_crate::ZMQ_METADATA as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::MulticastLoop, zmq_sys_crate::ZMQ_MULTICAST_LOOP as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::RouterNotify, zmq_sys_crate::ZMQ_ROUTER_NOTIFY as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::XpubManualLastValue, zmq_sys_crate::ZMQ_XPUB_MANUAL_LAST_VALUE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::SocksUsername, zmq_sys_crate::ZMQ_SOCKS_USERNAME as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::SocksPassword, zmq_sys_crate::ZMQ_SOCKS_PASSWORD as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::InBatchSize, zmq_sys_crate::ZMQ_IN_BATCH_SIZE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::OutBatchSize, zmq_sys_crate::ZMQ_OUT_BATCH_SIZE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::OnlyFirstSubscribe, zmq_sys_crate::ZMQ_ONLY_FIRST_SUBSCRIBE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::ReconnectStop, zmq_sys_crate::ZMQ_RECONNECT_STOP as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::HelloMessage, zmq_sys_crate::ZMQ_HELLO_MSG as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::DisconnectMessage, zmq_sys_crate::ZMQ_DISCONNECT_MSG as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::Priority, zmq_sys_crate::ZMQ_PRIORITY as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::BusyPoll, zmq_sys_crate::ZMQ_BUSY_POLL as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::HiccupMessage, zmq_sys_crate::ZMQ_HICCUP_MSG as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::XsubVerboseUnsubscribe, zmq_sys_crate::ZMQ_XSUB_VERBOSE_UNSUBSCRIBE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::TopicsCount, zmq_sys_crate::ZMQ_TOPICS_COUNT as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormMode, zmq_sys_crate::ZMQ_NORM_MODE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormUnicastNack, zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormBufferSize, zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormSegmentSize, zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormBlockSize, zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormNumnParity, zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormNumnAutoParity, zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32))]
+    #[cfg_attr(feature = "draft-api", case(SocketOption::NormPush, zmq_sys_crate::ZMQ_NORM_PUSH as i32))]
+    fn converts_to_raw(#[case] option: SocketOption, #[case] expected: i32) {
+        assert_eq!(<SocketOption as Into<i32>>::into(option), expected);
     }
 }
 
@@ -2762,7 +2913,7 @@ impl<T: sealed::SocketType> Socket<T> {
         V: AsRef<str>,
     {
         match value {
-            None => self.set_sockopt_bytes(SocketOption::SocksProxy, vec![]),
+            None => self.set_sockopt_string(SocketOption::SocksUsername, ""),
             Some(ref_value) => self.set_sockopt_string(SocketOption::SocksProxy, ref_value),
         }
     }
@@ -3589,6 +3740,456 @@ bitflags! {
         const AFTER_DISCONNECT = zmq_sys_crate::ZMQ_RECONNECT_STOP_AFTER_DISCONNECT as i32;
 }}
 
+#[cfg(test)]
+mod socket_tests {
+    use rstest::*;
+
+    use super::{PairSocket, ReconnectStop, SocketOption};
+    use crate::{
+        prelude::{Context, ZmqResult},
+        security::SecurityMechanism,
+    };
+
+    #[test]
+    fn set_affinity_sets_affinity() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_affinity(42)?;
+
+        assert_eq!(socket.affinity()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_backlog_sets_backlog() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_backlog(42)?;
+
+        assert_eq!(socket.backlog()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_connect_timeout_sets_connect_timeout() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_connect_timeout(42)?;
+
+        assert_eq!(socket.connect_timeout()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_handshake_interval_sets_handshake_interval() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_handshake_interval(42)?;
+
+        assert_eq!(socket.handshake_interval()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_heartbeat_interval_sets_heartbeat_interval() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_heartbeat_interval(42)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
+            42
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_heartbeat_timeout_sets_heartbeat_timeout() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_heartbeat_timeout(42)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
+            42
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_heartbeat_timetolive_sets_heartbeat_ttl() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_heartbeat_timetolive(42_000)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
+            42_000
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_immediate_sets_immediate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_immediate(true)?;
+
+        assert!(socket.immediate()?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_ipv6_sets_ipv6() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_ipv6(true)?;
+
+        assert!(socket.ipv6()?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_linger_sets_linger() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_linger(42)?;
+
+        assert_eq!(socket.linger()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_max_msg_size_sets_max_msg_size() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_max_message_size(42)?;
+
+        assert_eq!(socket.max_message_size()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_security_mechanism_set_security_mechanism() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_security_mechanism(&SecurityMechanism::Plain {
+            username: "username".into(),
+            password: "supersecret".into(),
+        })?;
+
+        assert_eq!(
+            socket.security_mechanism()?,
+            SecurityMechanism::Plain {
+                username: "username".into(),
+                password: "supersecret".into()
+            }
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_multicast_hops_sets_multicast_hops() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_multicast_hops(42)?;
+
+        assert_eq!(socket.multicast_hops()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_rate_sets_rate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_rate(42)?;
+
+        assert_eq!(socket.rate()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_receive_buffer_sets_receive_buffer() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_receive_buffer(42)?;
+
+        assert_eq!(socket.receive_buffer()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_receive_high_watermark_sets_receive_high_watermark() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_receive_highwater_mark(42)?;
+
+        assert_eq!(socket.receive_highwater_mark()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_receive_timeout_sets_receive_timeout() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_receive_timeout(42)?;
+
+        assert_eq!(socket.receive_timeout()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_reconnect_interval_sets_reconnect_interval() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_reconnect_interval(42)?;
+
+        assert_eq!(socket.reconnect_interval()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_reconnect_interval_max_sets_reconnect_interval_max() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_reconnect_interval_max(42)?;
+
+        assert_eq!(socket.reconnect_interval_max()?, 42);
+
+        Ok(())
+    }
+
+    #[cfg_attr(feature = "draft-api", test)]
+    fn set_reconnect_stop_sets_reconnect_stop() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_reconnect_stop(
+            ReconnectStop::AFTER_DISCONNECT | ReconnectStop::CONNECTION_REFUSED,
+        )?;
+
+        assert_eq!(
+            socket.reconnect_stop()?,
+            ReconnectStop::AFTER_DISCONNECT | ReconnectStop::CONNECTION_REFUSED
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_recoveery_interval_sets_recovery_interval() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_recovery_interval(42)?;
+
+        assert_eq!(socket.recovery_interval()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_send_buffer_sets_send_buffer() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_send_buffer(42)?;
+
+        assert_eq!(socket.send_buffer()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_send_high_watermark_sets_send_high_watermark() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_send_highwater_mark(42)?;
+
+        assert_eq!(socket.send_highwater_mark()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_send_timeout_sets_send_timeout() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_send_timeout(42)?;
+
+        assert_eq!(socket.send_timeout()?, 42);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(None)]
+    #[case(Some("asdf"))]
+    fn set_socks_proxy_sets_proxy_value(#[case] socks_proxy: Option<&str>) -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_socks_proxy(socks_proxy)?;
+
+        assert_eq!(socket.socks_proxy()?, socks_proxy.unwrap_or(""));
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_socks_username_sets_proxy_username() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_socks_username("username")?;
+
+        assert_eq!(
+            socket.get_sockopt_string(SocketOption::SocksUsername)?,
+            "username"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_socks_password_sets_proxy_password() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_socks_password("password")?;
+
+        assert_eq!(
+            socket.get_sockopt_string(SocketOption::SocksPassword)?,
+            "password"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_tcp_keepalive_sets_tcp_keepalive() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_tcp_keepalive(1)?;
+
+        assert_eq!(socket.tcp_keepalive()?, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_tcp_keepalive_count_sets_tcp_keepalive_count() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_tcp_keepalive_count(42)?;
+
+        assert_eq!(socket.tcp_keepalive_count()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_tcp_keepalive_idle_sets_tcp_keepalive_idle() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_tcp_keepalive_idle(42)?;
+
+        assert_eq!(socket.tcp_keepalive_idle()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_tcp_keepalive_interval_sets_tcp_keepalive_interval() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_tcp_keepalive_interval(42)?;
+
+        assert_eq!(socket.tcp_keepalive_interval()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_tcp_max_retransmit_timout_set_retransmit_timeout() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_tcp_max_retransmit_timeout(42)?;
+
+        assert_eq!(socket.tcp_max_retransmit_timeout()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_type_of_service_sets_type_of_service() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_type_of_service(42)?;
+
+        assert_eq!(socket.type_of_service()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_zap_domain_sets_zap_domain() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_zap_domain(&"zap".into())?;
+
+        assert_eq!(socket.zap_domain()?, "zap".into());
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use derive_builder::Builder;
@@ -3753,6 +4354,126 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod socket_builder_tests {
+        use super::SocketBuilder;
+        use crate::{
+            auth::ZapDomain,
+            prelude::{Context, PairSocket, SocketOption, ZmqResult},
+            security::SecurityMechanism,
+        };
+
+        #[test]
+        fn default_socket_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let builder = SocketBuilder::default();
+            let socket = PairSocket::from_context(&context)?;
+
+            builder.apply(&socket)?;
+
+            assert_eq!(socket.connect_timeout()?, 0);
+            assert_eq!(socket.handshake_interval()?, 30_000);
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
+                0
+            );
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
+                -1
+            );
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
+                0
+            );
+            assert!(!socket.immediate()?);
+            assert!(!socket.ipv6()?);
+            assert_eq!(socket.linger()?, -1);
+            assert_eq!(socket.max_message_size()?, -1);
+            assert_eq!(socket.receive_buffer()?, -1);
+            assert_eq!(socket.receive_highwater_mark()?, 1_000);
+            assert_eq!(socket.receive_timeout()?, -1);
+            assert_eq!(socket.reconnect_interval()?, 100);
+            assert_eq!(socket.reconnect_interval_max()?, 0);
+            assert_eq!(socket.send_buffer()?, -1);
+            assert_eq!(socket.send_highwater_mark()?, 1_000);
+            assert_eq!(socket.send_timeout()?, -1);
+            assert_eq!(socket.zap_domain()?, ZapDomain::new("".into()));
+            assert_eq!(socket.security_mechanism()?, SecurityMechanism::Null);
+
+            Ok(())
+        }
+
+        #[test]
+        fn builder_with_custom_setttings() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let builder = SocketBuilder::default()
+                .connect_timeout(42)
+                .handshake_interval(21)
+                .heartbeat_interval(666)
+                .heartbeat_timeout(1337)
+                .heartbeat_timetolive(420)
+                .immediate(true)
+                .ipv6(true)
+                .linger(1337)
+                .max_message_size(1337)
+                .receive_buffer(1337)
+                .receive_highwater_mark(1337)
+                .receive_timeout(1337)
+                .reconnect_interval(1337)
+                .reconnect_interval_max(1337)
+                .send_buffer(1337)
+                .send_highwater_mark(1337)
+                .send_timeout(1337)
+                .zap_domain(ZapDomain::new("test".into()))
+                .security_mechanism(SecurityMechanism::Plain {
+                    username: "username".into(),
+                    password: "supersecret".into(),
+                });
+            let socket = PairSocket::from_context(&context)?;
+
+            builder.apply(&socket)?;
+
+            assert_eq!(socket.connect_timeout()?, 42);
+            assert_eq!(socket.handshake_interval()?, 21);
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
+                666
+            );
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
+                1337
+            );
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
+                400
+            );
+            assert!(socket.immediate()?);
+            assert!(socket.ipv6()?);
+            assert_eq!(socket.linger()?, 1337);
+            assert_eq!(socket.max_message_size()?, 1337);
+            assert_eq!(socket.receive_buffer()?, 1337);
+            assert_eq!(socket.receive_highwater_mark()?, 1337);
+            assert_eq!(socket.receive_timeout()?, 1337);
+            assert_eq!(socket.reconnect_interval()?, 1337);
+            assert_eq!(socket.reconnect_interval_max()?, 1337);
+            assert_eq!(socket.send_buffer()?, 1337);
+            assert_eq!(socket.send_highwater_mark()?, 1337);
+            assert_eq!(socket.send_timeout()?, 1337);
+            assert_eq!(socket.zap_domain()?, ZapDomain::new("test".into()));
+            assert_eq!(
+                socket.security_mechanism()?,
+                SecurityMechanism::Plain {
+                    username: "username".into(),
+                    password: "supersecret".into()
+                }
+            );
+
+            Ok(())
         }
     }
 }

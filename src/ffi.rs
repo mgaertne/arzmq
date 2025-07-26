@@ -103,12 +103,15 @@ impl RawContext {
     fn get(&self, option: i32) -> ZmqResult<i32> {
         let context = self.context.lock();
         match unsafe { zmq_sys_crate::zmq_ctx_get(*context, option) } {
-            -1 => match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
-                    Err(ZmqError::from(errno))
+            -1 => {
+                cold_path();
+                match unsafe { zmq_sys_crate::zmq_errno() } {
+                    errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
+                        Err(ZmqError::from(errno))
+                    }
+                    _ => unreachable!(),
                 }
-                _ => unreachable!(),
-            },
+            }
             value => Ok(value),
         }
     }
@@ -675,6 +678,7 @@ impl RawMessage {
             .to_owned()
             .into_string()
             .ok()
+            .filter(|group| !group.is_empty())
     }
 }
 

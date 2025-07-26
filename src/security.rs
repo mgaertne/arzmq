@@ -32,12 +32,9 @@ pub enum SecurityMechanism {
     #[default]
     /// Null security
     Null,
-    #[display("PlainClient {{ username = {username}, password = {password} }}")]
-    /// Plain-text client authentication using username and password
-    PlainClient { username: String, password: String },
-    #[display("PlainServer {{ username = {username}, password = {password} }}")]
-    /// Plain-text server authentication using username and password
-    PlainServer { username: String, password: String },
+    #[display("Plain {{ username = {username}, password = {password} }}")]
+    /// Plain-textauthentication using username and password
+    Plain { username: String, password: String },
     #[cfg(feature = "curve")]
     #[doc(cfg(all(feature = "curve", not(windows))))]
     #[display("CurveClient {{ ... }}")]
@@ -67,12 +64,7 @@ impl SecurityMechanism {
     pub fn apply<T: sealed::SocketType>(&self, socket: &Socket<T>) -> ZmqResult<()> {
         match self {
             SecurityMechanism::Null => socket.set_sockopt_bool(SocketOption::PlainServer, false)?,
-            SecurityMechanism::PlainServer { username, password } => {
-                socket.set_sockopt_bool(SocketOption::PlainServer, true)?;
-                socket.set_sockopt_string(SocketOption::PlainUsername, username)?;
-                socket.set_sockopt_string(SocketOption::PlainPassword, password)?;
-            }
-            SecurityMechanism::PlainClient { username, password } => {
+            SecurityMechanism::Plain { username, password } => {
                 socket.set_sockopt_bool(SocketOption::PlainServer, true)?;
                 socket.set_sockopt_string(SocketOption::PlainUsername, username)?;
                 socket.set_sockopt_string(SocketOption::PlainPassword, password)?;
@@ -116,11 +108,7 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
             value if value == zmq_sys_crate::ZMQ_PLAIN as i32 => {
                 let username = socket.get_sockopt_string(SocketOption::PlainUsername)?;
                 let password = socket.get_sockopt_string(SocketOption::PlainPassword)?;
-                if socket.get_sockopt_bool(SocketOption::PlainServer)? {
-                    Ok(Self::PlainServer { username, password })
-                } else {
-                    Ok(Self::PlainClient { username, password })
-                }
+                Ok(Self::Plain { username, password })
             }
             #[cfg(feature = "curve")]
             value if value == zmq_sys_crate::ZMQ_CURVE as i32 => {
