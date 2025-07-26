@@ -6,7 +6,7 @@
 //! compiled in.
 //!
 //! [`Null`]: SecurityMechanism::Null
-//! [`Plain`]: SecurityMechanism::PlainServer
+//! [`Plain`]: SecurityMechanism::Plain
 //! [`Curve`]: SecurityMechanism::CurveServer
 //! [`GSSAPI`]: SecurityMechanism::GssApiServer
 
