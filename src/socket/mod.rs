@@ -2908,6 +2908,8 @@ impl<T: sealed::SocketType> Socket<T> {
     /// | not set       | all, when using TCP transport |
     ///
     /// [`SocksUsername`]: SocketOption::SocksUsername
+    #[cfg(feature = "draft-api")]
+    #[doc(cfg(feature = "draft-api"))]
     pub fn set_socks_proxy<V>(&self, value: Option<V>) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -3742,9 +3744,12 @@ bitflags! {
 
 #[cfg(test)]
 mod socket_tests {
+    #[cfg(feature = "draft-api")]
     use rstest::*;
 
-    use super::{PairSocket, ReconnectStop, SocketOption};
+    #[cfg(feature = "draft-api")]
+    use super::ReconnectStop;
+    use super::{PairSocket, SocketOption};
     use crate::{
         prelude::{Context, ZmqResult},
         security::SecurityMechanism,
@@ -3996,7 +4001,8 @@ mod socket_tests {
         Ok(())
     }
 
-    #[cfg_attr(feature = "draft-api", test)]
+    #[cfg(feature = "draft-api")]
+    #[test]
     fn set_reconnect_stop_sets_reconnect_stop() -> ZmqResult<()> {
         let context = Context::new()?;
 
@@ -4061,6 +4067,7 @@ mod socket_tests {
         Ok(())
     }
 
+    #[cfg(feature = "draft-api")]
     #[rstest]
     #[case(None)]
     #[case(Some("asdf"))]
@@ -4075,6 +4082,7 @@ mod socket_tests {
         Ok(())
     }
 
+    #[cfg(feature = "draft-api")]
     #[test]
     fn set_socks_username_sets_proxy_username() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -4090,6 +4098,7 @@ mod socket_tests {
         Ok(())
     }
 
+    #[cfg(feature = "draft-api")]
     #[test]
     fn set_socks_password_sets_proxy_password() -> ZmqResult<()> {
         let context = Context::new()?;
