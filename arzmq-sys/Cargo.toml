@@ -30,7 +30,7 @@ libsodium = ["libsodium-sys-stable"]
 libsodium-sys-stable = { version = ">=1.22", optional = true }
 
 [build-dependencies]
-zeromq-src = { version = "0.3.5" }
+zeromq-src = { version = "0.3.6" }
 bindgen = { version = "0.72" }
 
 [target."cfg(unix)".dependencies]
