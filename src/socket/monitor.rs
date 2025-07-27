@@ -367,8 +367,8 @@ mod monitor_socket_event_tests {
     )]
     #[case(
         MonitorFlags::HandshakeFailedNoDetail,
-        11,
-        Ok(MonitorSocketEvent::HandshakeFailedNoDetail(ZmqError::Again))
+        14,
+        Ok(MonitorSocketEvent::HandshakeFailedNoDetail(ZmqError::ContextInvalid))
     )]
     #[case(
         MonitorFlags::HandshakeSucceeded,
