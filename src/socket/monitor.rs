@@ -85,6 +85,100 @@ impl From<u32> for HandshakeProtocolError {
     }
 }
 
+#[cfg(test)]
+mod handshake_protocol_error_tests {
+    use rstest::*;
+
+    use super::HandshakeProtocolError;
+    use crate::zmq_sys_crate;
+
+    #[rstest]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_UNSPECIFIED,
+        HandshakeProtocolError::ZmtpUnspecified
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_UNEXPECTED_COMMAND,
+        HandshakeProtocolError::ZmtpUnexpectedCommand
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_INVALID_SEQUENCE,
+        HandshakeProtocolError::ZmtpInvalidSequence
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_KEY_EXCHANGE,
+        HandshakeProtocolError::ZmtpKeyEchange
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_UNSPECIFIED,
+        HandshakeProtocolError::ZmtpMalformedCommandUnspecified
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_MESSAGE,
+        HandshakeProtocolError::ZmtpMalformedCommandMessage
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_HELLO,
+        HandshakeProtocolError::ZmtpMalformedCommandHello
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_INITIATE,
+        HandshakeProtocolError::ZmtpMalformedCommandInitiate
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_ERROR,
+        HandshakeProtocolError::ZmtpMalformedCommandError
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_READY,
+        HandshakeProtocolError::ZmtpMalformedCommandReady
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_WELCOME,
+        HandshakeProtocolError::ZmtpMalformedCommandWelcome
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_INVALID_METADATA,
+        HandshakeProtocolError::ZapInvalidMetadata
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_CRYPTOGRAPHIC,
+        HandshakeProtocolError::ZmtpCryptographic
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_MECHANISM_MISMATCH,
+        HandshakeProtocolError::ZmtpMechanismMismatch
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZAP_UNSPECIFIED,
+        HandshakeProtocolError::ZapUnspecified
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZAP_MALFORMED_REPLY,
+        HandshakeProtocolError::ZapMalformedReply
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZAP_BAD_REQUEST_ID,
+        HandshakeProtocolError::ZapBadRequestId
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZAP_BAD_VERSION,
+        HandshakeProtocolError::ZapBadVersion
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZAP_INVALID_STATUS_CODE,
+        HandshakeProtocolError::ZapInvalidStatusCode
+    )]
+    #[case(
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZAP_INVALID_METADATA,
+        HandshakeProtocolError::ZapInvalidMetadata
+    )]
+    #[case(666, HandshakeProtocolError::UnsupportedError(666))]
+    fn converts_from_raw(#[case] raw_value: u32, #[case] expected: HandshakeProtocolError) {
+        assert_eq!(HandshakeProtocolError::from(raw_value), expected);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 /// Monitor events that can be received from a monitor socket
 pub enum MonitorSocketEvent {
@@ -180,7 +274,7 @@ impl TryFrom<MultipartMessage> for MonitorSocketEvent {
         }
 
         let Some(first_msg) = zmq_msgs.get(0) else {
-            return Err(ZmqError::InvalidArgument);
+            unreachable!();
         };
 
         if first_msg.len() != 6 {
@@ -193,7 +287,7 @@ impl TryFrom<MultipartMessage> for MonitorSocketEvent {
             .map(|raw_event_id| u16::from_le_bytes(*raw_event_id))
             .map(MonitorFlags::from)
         else {
-            return Err(ZmqError::InvalidArgument);
+            unreachable!();
         };
 
         let Some(event_value) = first_msg
@@ -201,7 +295,7 @@ impl TryFrom<MultipartMessage> for MonitorSocketEvent {
             .last_chunk::<4>()
             .map(|raw_event_value| u32::from_le_bytes(*raw_event_value))
         else {
-            return Err(ZmqError::InvalidArgument);
+            unreachable!();
         };
 
         match event_id {
@@ -225,8 +319,120 @@ impl TryFrom<MultipartMessage> for MonitorSocketEvent {
                 Ok(Self::HandshakeFailedProtocol(event_value.into()))
             }
             MonitorFlags::HandshakeFailedAuth => Ok(Self::HandshakeFailedAuth(event_value)),
-            event_id => Ok(Self::UnSupported(event_id, 0)),
+            event_id => Ok(Self::UnSupported(event_id, event_value)),
         }
+    }
+}
+
+#[cfg(test)]
+mod monitor_socket_event_tests {
+    use rstest::*;
+
+    use super::{HandshakeProtocolError, MonitorSocketEvent};
+    use crate::{
+        prelude::{MonitorFlags, MultipartMessage, ZmqError, ZmqResult},
+        zmq_sys_crate,
+    };
+
+    #[rstest]
+    #[case(MonitorFlags::Connected, 0, Ok(MonitorSocketEvent::Connected))]
+    #[case(
+        MonitorFlags::ConnectDelayed,
+        0,
+        Ok(MonitorSocketEvent::ConnectDelayed)
+    )]
+    #[case(
+        MonitorFlags::ConnectRetried,
+        42,
+        Ok(MonitorSocketEvent::ConnectRetried(42))
+    )]
+    #[case(MonitorFlags::Listening, 0, Ok(MonitorSocketEvent::Listening))]
+    #[case(MonitorFlags::Accepted, 0, Ok(MonitorSocketEvent::Accepted))]
+    #[case(
+        MonitorFlags::AcceptFailed,
+        50,
+        Ok(MonitorSocketEvent::AcceptFailed(ZmqError::NetworkDown))
+    )]
+    #[case(MonitorFlags::Closed, 0, Ok(MonitorSocketEvent::Closed))]
+    #[case(
+        MonitorFlags::CloseFailed,
+        14,
+        Ok(MonitorSocketEvent::CloseFailed(ZmqError::ContextInvalid))
+    )]
+    #[case(MonitorFlags::Disconnected, 0, Ok(MonitorSocketEvent::Disconnected))]
+    #[case(
+        MonitorFlags::MonitorStopped,
+        0,
+        Ok(MonitorSocketEvent::MonitorStopped)
+    )]
+    #[case(
+        MonitorFlags::HandshakeFailedNoDetail,
+        53,
+        Ok(MonitorSocketEvent::HandshakeFailedNoDetail(ZmqError::ConnectionAborted))
+    )]
+    #[case(
+        MonitorFlags::HandshakeSucceeded,
+        0,
+        Ok(MonitorSocketEvent::HandshakeSucceeded)
+    )]
+    #[case(
+        MonitorFlags::HandshakeFailedProtocol,
+        zmq_sys_crate::ZMQ_PROTOCOL_ERROR_ZMTP_UNSPECIFIED,
+        Ok(MonitorSocketEvent::HandshakeFailedProtocol(HandshakeProtocolError::ZmtpUnspecified))
+    )]
+    #[case(
+        MonitorFlags::HandshakeFailedAuth,
+        404,
+        Ok(MonitorSocketEvent::HandshakeFailedAuth(404))
+    )]
+    #[case(
+        MonitorFlags::HandshakeFailedAuth | MonitorFlags::Connected,
+        42,
+        Ok(MonitorSocketEvent::UnSupported(MonitorFlags::HandshakeFailedAuth | MonitorFlags::Connected, 42))
+    )]
+    fn try_from_multipart_succeeds(
+        #[case] upper_chunk: MonitorFlags,
+        #[case] lower_chunk: u32,
+        #[case] expected: ZmqResult<MonitorSocketEvent>,
+    ) {
+        let mut first = upper_chunk.bits().to_le_bytes().to_vec();
+        first.extend(lower_chunk.to_le_bytes());
+        let multipart: MultipartMessage = vec![first.into(), vec![].into()].into();
+
+        assert_eq!(MonitorSocketEvent::try_from(multipart), expected);
+    }
+
+    #[test]
+    fn try_from_mutipart_with_too_few_parts() {
+        let multipart: MultipartMessage = vec!["asdf".into()].into();
+        let result = MonitorSocketEvent::try_from(multipart);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+    }
+
+    #[test]
+    fn try_from_mutipart_with_too_many_parts() {
+        let multipart: MultipartMessage = vec!["asdf".into(), "asdf".into(), "asdf".into()].into();
+        let result = MonitorSocketEvent::try_from(multipart);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+    }
+
+    #[test]
+    fn try_from_mutipart_with_too_short_first_part() {
+        let multipart: MultipartMessage = vec![vec![1, 2, 3, 4, 5].into(), "asdf".into()].into();
+        let result = MonitorSocketEvent::try_from(multipart);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+    }
+
+    #[test]
+    fn try_from_mutipart_with_too_long_first_part() {
+        let multipart: MultipartMessage =
+            vec![vec![1, 2, 3, 4, 5, 6, 7].into(), "asdf".into()].into();
+        let result = MonitorSocketEvent::try_from(multipart);
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
     }
 }
 

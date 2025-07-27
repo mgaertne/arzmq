@@ -4497,6 +4497,40 @@ mod socket_tests {
         Ok(())
     }
 
+    #[cfg(feature = "futures")]
+    #[test]
+    fn monitor_sets_up_async_socket_monitor() -> ZmqResult<()> {
+        futures::executor::block_on(async {
+            let context = Context::new()?;
+
+            let dealer_server = DealerSocket::from_context(&context)?;
+
+            thread::spawn(move || {
+                dealer_server.bind("tcp://127.0.0.1:5551").unwrap();
+                loop {
+                    thread::sleep(Duration::from_millis(10));
+                }
+            });
+
+            let dealer_client = DealerSocket::from_context(&context)?;
+            let dealer_monitor = dealer_client.monitor(MonitorFlags::Connected)?;
+
+            dealer_client.connect("tcp://127.0.0.1:5551")?;
+
+            loop {
+                match dealer_monitor.recv_monitor_event_async().await {
+                    Some(event) => {
+                        assert_eq!(event, MonitorSocketEvent::Connected);
+                        break;
+                    }
+                    _ => continue,
+                }
+            }
+
+            Ok(())
+        })
+    }
+
     #[test]
     fn poll_on_socket_when_no_events_available() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -4509,7 +4543,7 @@ mod socket_tests {
     }
 
     #[test]
-    fn poll_on_when_event_available() -> ZmqResult<()> {
+    fn poll_on_socket_when_event_available() -> ZmqResult<()> {
         let context = Context::new()?;
 
         let endpoint = "inproc://poll-test";
