@@ -1,26 +1,29 @@
 #![cfg(feature = "examples-futures")]
 use core::{error::Error, sync::atomic::Ordering};
-use std::{
-    io::{Read, Write},
-    net::TcpListener,
-};
+use std::net::TcpListener;
 
 use arzmq::prelude::{
     Context, MultipartMessage, MultipartReceiver, MultipartSender, SendFlags, StreamSocket,
 };
-use futures::{executor::ThreadPool, join, task::SpawnExt};
+use futures::{
+    executor::ThreadPool,
+    io::{self, AllowStdIo, AsyncReadExt, AsyncWriteExt},
+    join,
+    task::SpawnExt,
+};
 
 mod common;
 
 use common::{ITERATIONS, KEEP_RUNNING};
 
-async fn run_tcp_server(listener: TcpListener, msg: &str) {
+async fn run_tcp_server(listener: TcpListener, msg: &str) -> io::Result<()> {
     while KEEP_RUNNING.load(Ordering::Acquire) {
-        let (mut tcp_stream, _socket_addr) = listener.accept().unwrap();
-        tcp_stream.write_all("".as_bytes()).unwrap();
+        let (tcp_stream, _socket_addr) = listener.accept()?;
+        let mut tcp_stream = AllowStdIo::new(tcp_stream);
+        tcp_stream.write_all("".as_bytes()).await?;
         loop {
             let mut buffer = [0; 256];
-            if let Ok(length) = tcp_stream.read(&mut buffer) {
+            if let Ok(length) = tcp_stream.read(&mut buffer).await {
                 if length == 0 {
                     break;
                 }
@@ -29,10 +32,12 @@ async fn run_tcp_server(listener: TcpListener, msg: &str) {
                     "Received request: {}",
                     str::from_utf8(recevied_msg).unwrap()
                 );
-                tcp_stream.write_all(msg.as_bytes()).unwrap();
+                tcp_stream.write_all(msg.as_bytes()).await?;
             }
         }
     }
+
+    Ok(())
 }
 
 async fn run_stream_socket(zmq_stream: StreamSocket, routing_id: Vec<u8>, msg: &str) {

@@ -1,12 +1,14 @@
 #![cfg(feature = "examples-futures")]
 use core::{error::Error, sync::atomic::Ordering};
-use std::{
-    io::{Read, Write},
-    net::TcpStream,
-};
+use std::net::TcpStream;
 
 use arzmq::prelude::{Context, MultipartReceiver, StreamSocket};
-use futures::{executor::ThreadPool, join, task::SpawnExt};
+use futures::{
+    executor::ThreadPool,
+    io::{self, AllowStdIo, AsyncReadExt, AsyncWriteExt},
+    join,
+    task::SpawnExt,
+};
 
 mod common;
 
@@ -21,12 +23,12 @@ async fn run_stream_server(zmq_stream: StreamSocket, msg: &str) {
     }
 }
 
-async fn run_tcp_client(mut tcp_stream: TcpStream, msg: &str) {
+async fn run_tcp_client(mut tcp_stream: AllowStdIo<TcpStream>, msg: &str) -> io::Result<()> {
     while ITERATIONS.load(Ordering::Acquire) > 0 {
-        tcp_stream.write_all(msg.as_bytes()).unwrap();
+        tcp_stream.write_all(msg.as_bytes()).await?;
 
         let mut buffer = [0; 256];
-        if let Ok(length) = tcp_stream.read(&mut buffer)
+        if let Ok(length) = tcp_stream.read(&mut buffer).await
             && length != 0
         {
             let recevied_msg = &buffer[..length];
@@ -38,6 +40,8 @@ async fn run_tcp_client(mut tcp_stream: TcpStream, msg: &str) {
             ITERATIONS.fetch_sub(1, Ordering::Release);
         }
     }
+
+    Ok(())
 }
 
 #[cfg(feature = "examples-futures")]
@@ -58,7 +62,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let tcp_endpoint = format!("127.0.0.1:{port}");
         let tcp_stream = TcpStream::connect(tcp_endpoint)?;
 
-        let tcp_handle = executor.spawn_with_handle(run_tcp_client(tcp_stream, "Hello"))?;
+        let tcp_handle =
+            executor.spawn_with_handle(run_tcp_client(AllowStdIo::new(tcp_stream), "Hello"))?;
         let zmq_stream_handle =
             executor.spawn_with_handle(run_stream_server(zmq_stream, "World"))?;
 
