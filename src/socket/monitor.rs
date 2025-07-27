@@ -350,8 +350,8 @@ mod monitor_socket_event_tests {
     #[case(MonitorFlags::Accepted, 0, Ok(MonitorSocketEvent::Accepted))]
     #[case(
         MonitorFlags::AcceptFailed,
-        50,
-        Ok(MonitorSocketEvent::AcceptFailed(ZmqError::NetworkDown))
+        14,
+        Ok(MonitorSocketEvent::AcceptFailed(ZmqError::ContextInvalid))
     )]
     #[case(MonitorFlags::Closed, 0, Ok(MonitorSocketEvent::Closed))]
     #[case(
@@ -367,8 +367,8 @@ mod monitor_socket_event_tests {
     )]
     #[case(
         MonitorFlags::HandshakeFailedNoDetail,
-        53,
-        Ok(MonitorSocketEvent::HandshakeFailedNoDetail(ZmqError::ConnectionAborted))
+        11,
+        Ok(MonitorSocketEvent::HandshakeFailedNoDetail(ZmqError::Again))
     )]
     #[case(
         MonitorFlags::HandshakeSucceeded,
