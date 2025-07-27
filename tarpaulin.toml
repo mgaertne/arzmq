@@ -1,0 +1,12 @@
+[all]
+engine = "Llvm"
+line = true
+branch = true
+count = true
+no-fail-fast = true
+include-tests = true
+all-features = true
+run-types = ["AllTargets", "Examples", "Doctests", "Tests"]
+
+[report]
+out = ["Xml", "Html"]
