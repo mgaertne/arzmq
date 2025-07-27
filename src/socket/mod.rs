@@ -3319,11 +3319,15 @@ impl<T: sealed::SocketType> Socket<T> {
     /// # input/output multiplexing
     ///
     /// Poll this socket for input/output events.
-    pub fn poll<E>(&self, events: E, timeout_ms: i64) -> ZmqResult<i32>
+    pub fn poll<E>(&self, events: E, timeout_ms: i64) -> ZmqResult<PollEvents>
     where
         E: Into<PollEvents>,
     {
-        self.socket.poll(events.into(), timeout_ms)
+        self.socket
+            .poll(events.into(), timeout_ms)?
+            .try_into()
+            .map(PollEvents::from_bits_truncate)
+            .map_err(|_err| ZmqError::InvalidArgument)
     }
 }
 
@@ -3745,15 +3749,20 @@ bitflags! {
 
 #[cfg(test)]
 mod socket_tests {
+    use std::{thread, time::Duration};
+
     #[cfg(feature = "draft-api")]
     use rstest::*;
 
     #[cfg(feature = "draft-api")]
     use super::ReconnectStop;
-    use super::{PairSocket, PollEvents, SocketOption};
+    use super::{
+        DealerSocket, MonitorFlags, MonitorSocketEvent, PairSocket, PollEvents, SendFlags,
+        SocketOption,
+    };
     use crate::{
         ZmqError,
-        prelude::{Context, ZmqResult},
+        prelude::{Context, MonitorReceiver, Sender, ZmqResult},
         security::{GssApiNametype, SecurityMechanism},
     };
 
@@ -4453,6 +4462,68 @@ mod socket_tests {
         let client_socket = PairSocket::from_context(&context)?;
         client_socket.connect(endpoint)?;
         assert!(client_socket.disconnect(endpoint).is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn monitor_sets_up_socket_monitor() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let dealer_server = DealerSocket::from_context(&context)?;
+
+        thread::spawn(move || {
+            dealer_server.bind("tcp://127.0.0.1:5551").unwrap();
+            loop {
+                thread::sleep(Duration::from_millis(10));
+            }
+        });
+
+        let dealer_client = DealerSocket::from_context(&context)?;
+        let dealer_monitor = dealer_client.monitor(MonitorFlags::Connected)?;
+
+        dealer_client.connect("tcp://127.0.0.1:5551")?;
+
+        loop {
+            match dealer_monitor.recv_monitor_event() {
+                Err(_) => continue,
+                Ok(event) => {
+                    assert_eq!(event, MonitorSocketEvent::Connected);
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn poll_on_socket_when_no_events_available() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+
+        assert_eq!(socket.poll(PollEvents::all(), 0)?, PollEvents::empty());
+
+        Ok(())
+    }
+
+    #[test]
+    fn poll_on_when_event_available() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let endpoint = "inproc://poll-test";
+        let pair_server = PairSocket::from_context(&context)?;
+        pair_server.bind(endpoint)?;
+
+        let pair_client = PairSocket::from_context(&context)?;
+        pair_client.connect(endpoint)?;
+
+        pair_server.send_msg("msg1", SendFlags::empty())?;
+        pair_server.send_msg("msg2", SendFlags::empty())?;
+        pair_server.send_msg("msg3", SendFlags::empty())?;
+
+        assert_eq!(pair_client.poll(PollEvents::all(), 0)?, PollEvents::POLL_IN);
 
         Ok(())
     }
