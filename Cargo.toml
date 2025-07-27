@@ -71,14 +71,14 @@ async-trait = { version = ">=0.1.88", default-features = false, optional = true 
 futures = { version = ">=0.3.31", default-features = false, features = ["async-await", "alloc"], optional = true}
 
 # for async examples
-tokio = { version = ">=1.46", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"], optional = true }
+tokio = { version = ">=1.47", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"], optional = true }
 async-std = { version = ">=1.13", default-features = false, features = ["attributes", "default"], optional = true }
 
 [build-dependencies]
 arzmq-sys = { workspace = true }
 
 [dev-dependencies]
-rstest = { version = ">=0.25", default-features = false}
+rstest = { version = ">=0.26", default-features = false}
 
 [features]
 default = ["builder"]
