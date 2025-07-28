@@ -82,6 +82,7 @@ mod pair_tests {
         Ok(())
     }
 
+    #[cfg(feature = "futures")]
     #[test]
     fn pair_pair_async() -> ZmqResult<()> {
         let endpoint = "inproc://pair-test";
