@@ -27,15 +27,14 @@ fn main() -> ZmqResult<()> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5561;
-
         let context = Context::new()?;
 
         let router = RouterSocket::from_context(&context)?;
-        router.bind(format!("tcp://*:{port}"))?;
+        router.bind("tcp://127.0.0.1:*")?;
+        let request_endpoint = router.last_endpoint()?;
 
         let request = RequestSocket::from_context(&context)?;
-        request.connect(format!("tcp://localhost:{port}"))?;
+        request.connect(request_endpoint)?;
 
         let request_handle = executor
             .spawn_with_handle(run_requester(request, "Hello"))

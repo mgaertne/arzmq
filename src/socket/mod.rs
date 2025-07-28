@@ -71,15 +71,13 @@
 //! }
 //!
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5555;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let publish = PublishSocket::from_context(&context)?;
-//!
-//!     let publish_endpoint = format!("tcp://*:{port}");
-//!     publish.bind(&publish_endpoint)?;
+//!     publish.bind("tcp://127.0.0.1:*")?;
+//!     let subscribe_endpoint = publish.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         let published_msg = format!("{SUBSCRIBED_TOPIC} important update");
@@ -87,10 +85,7 @@
 //!     });
 //!
 //!     let subscribe = SubscribeSocket::from_context(&context)?;
-//!
-//!     let subscribe_endpoint = format!("tcp://localhost:{port}");
 //!     subscribe.connect(&subscribe_endpoint)?;
-//!
 //!     subscribe.subscribe(SUBSCRIBED_TOPIC)?;
 //!
 //!     (0..iterations).try_for_each(|number| {
@@ -136,25 +131,20 @@
 //! }
 //!
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5556;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let xpublish = XPublishSocket::from_context(&context)?;
-//!
-//!     let xpublish_endpoint = format!("tcp://*:{port}");
-//!     xpublish.bind(&xpublish_endpoint)?;
+//!     xpublish.bind("tcp://127.0.0.1:*")?;
+//!     let xsubscribe_endpoint = xpublish.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         run_xpublish_socket(&xpublish, "important update").unwrap();
 //!     });
 //!
 //!     let xsubscribe = XSubscribeSocket::from_context(&context)?;
-//!
-//!     let xsubscribe_endpoint = format!("tcp://localhost:{port}");
 //!     xsubscribe.connect(&xsubscribe_endpoint)?;
-//!
 //!     xsubscribe.subscribe(SUBSCRIBED_TOPIC)?;
 //!
 //!     (0..iterations).try_for_each(|number| {
@@ -217,23 +207,19 @@
 //!
 //! # #[cfg(feature = "draft-api")]
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5678;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let server = ServerSocket::from_context(&context)?;
-//!
-//!     let server_endpoint = format!("tcp://*:{port}");
-//!     server.bind(&server_endpoint)?;
+//!     server.bind("tcp://127.0.0.1:*")?;
+//!     let client_endpoint = server.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!             run_server_socket(&server, "World").unwrap();
 //!     });
 //!
 //!     let client = ClientSocket::from_context(&context)?;
-//!
-//!     let client_endpoint = format!("tcp://localhost:{port}");
 //!     client.connect(&client_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|number| {
@@ -293,23 +279,19 @@
 //!
 //! # #[cfg(feature = "draft-api")]
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5679;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let radio = RadioSocket::from_context(&context)?;
-//!
-//!     let radio_endpoint = format!("tcp://*:{port}");
-//!     radio.bind(&radio_endpoint)?;
+//!     radio.bind("tcp://127.0.0.1:*")?;
+//!     let dish_endpoint = radio.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         run_radio_socket(&radio, "radio msg").unwrap();
 //!     });
 //!
 //!     let dish = DishSocket::from_context(&context)?;
-//!
-//!     let dish_endpoint = format!("tcp://localhost:{port}");
 //!     dish.connect(&dish_endpoint)?;
 //!     dish.join(GROUP)?;
 //!
@@ -346,15 +328,13 @@
 //! static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 //!
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5557;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let push = PushSocket::from_context(&context)?;
-//!
-//!     let push_endpoint = format!("tcp://*:{port}");
-//!     push.bind(&push_endpoint)?;
+//!     push.bind("tcp://127.0.0.1:*")?;
+//!     let pull_endpoint = push.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         while KEEP_RUNNING.load(Ordering::Acquire) {
@@ -363,8 +343,6 @@
 //!     });
 //!
 //!     let pull = PullSocket::from_context(&context)?;
-//!
-//!     let pull_endpoint = format!("tcp://localhost:{port}");
 //!     pull.connect(&pull_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| {
@@ -417,23 +395,19 @@
 //!
 //! # #[cfg(feature = "draft-api")]
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5680;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let scatter = ScatterSocket::from_context(&context)?;
-//!
-//!     let scatter_endpoint = format!("tcp://*:{port}");
-//!     scatter.bind(&scatter_endpoint)?;
+//!     scatter.bind("tcp://127.0.0.1:*")?;
+//!     let gather_endpoint = scatter.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         run_publisher(&scatter, "important update").unwrap();
 //!     });
 //!
 //!     let gather = GatherSocket::from_context(&context)?;
-//!
-//!     let gather_endpoint = format!("tcp://localhost:{port}");
 //!     gather.connect(&gather_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| {
@@ -743,15 +717,13 @@
 //! }
 //!
 //! fn main() -> Result<(), Box<dyn Error>> {
-//!     let port = 5559;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let zmq_stream = StreamSocket::from_context(&context)?;
-//!
-//!     let stream_endpoint = format!("tcp://*:{port}");
-//!     zmq_stream.bind(&stream_endpoint)?;
+//!     zmq_stream.bind("tcp://127.0.0.1:*")?;
+//!     let tcp_endpoint = zmq_stream.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         let mut connect_msg = zmq_stream.recv_multipart(RecvFlags::empty()).unwrap();
@@ -762,8 +734,7 @@
 //!         }
 //!     });
 //!
-//!     let tcp_endpoint = format!("127.0.0.1:{port}");
-//!     run_tcp_client(&tcp_endpoint, iterations)?;
+//!     run_tcp_client(tcp_endpoint.strip_prefix("tcp://").unwrap(), iterations)?;
 //!
 //!     Ok(())
 //! }
@@ -805,15 +776,13 @@
 //! }
 //!
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5560;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let reply = ReplySocket::from_context(&context)?;
-//!
-//!     let reply_endpoint = format!("tcp://*:{port}");
-//!     reply.bind(&reply_endpoint)?;
+//!     reply.bind("tcp://127.0.0.1:*")?;
+//!     let request_endpoint = reply.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         (1..=iterations)
@@ -822,8 +791,6 @@
 //!     });
 //!
 //!     let request = RequestSocket::from_context(&context)?;
-//!
-//!     let request_endpoint = format!("tcp://localhost:{port}");
 //!     request.connect(&request_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| run_send_recv(&request, "Hello"))
@@ -864,15 +831,13 @@
 //! }
 //!
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5561;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let router = RouterSocket::from_context(&context)?;
-//!
-//!     let router_endpoint = format!("tcp://*:{port}");
-//!     router.bind(&router_endpoint)?;
+//!     router.bind("tcp://127.0.0.1:*")?;
+//!     let request_endpoint = router.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         (0..iterations)
@@ -881,8 +846,6 @@
 //!     });
 //!
 //!     let request = RequestSocket::from_context(&context)?;
-//!
-//!     let request_endpoint = format!("tcp://localhost:{port}");
 //!     request.connect(&request_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| run_send_recv(&request, "Hello"))
@@ -928,14 +891,13 @@
 //! }
 //!
 //! fn main() -> ZmqResult<()> {
-//!     let port = 5564;
 //!     let iterations = 10;
 //!
 //!     let context = Context::new()?;
 //!
 //!     let router = RouterSocket::from_context(&context)?;
-//!     let router_endpoint = format!("tcp://*:{port}");
-//!     router.bind(&router_endpoint)?;
+//!     router.bind("tcp://127.0.0.1:*")?;
+//!     let dealer_endpoint = router.last_endpoint()?;
 //!
 //!     thread::spawn(move || {
 //!         (0..iterations)
@@ -944,8 +906,6 @@
 //!     });
 //!
 //!     let dealer = DealerSocket::from_context(&context)?;
-//!
-//!     let dealer_endpoint = format!("tcp://localhost:{port}");
 //!     dealer.connect(&dealer_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| run_multipart_send_recv(&dealer, "Hello"))

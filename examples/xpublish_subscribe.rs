@@ -11,42 +11,35 @@ use common::KEEP_RUNNING;
 
 const SUBSCRIBED_TOPIC: &str = "arzmq-example";
 
-fn run_xpublish_socket(context: &Context, endpoint: &str) -> ZmqResult<()> {
-    let xpublish = XPublishSocket::from_context(context)?;
-    xpublish.bind(endpoint)?;
+fn run_xpublish_socket(xpublish: &XPublishSocket, msg: &str) -> ZmqResult<()> {
+    let subscription = xpublish.recv_msg(RecvFlags::empty())?;
+    let subscription_bytes = subscription.bytes();
+    let (first_byte, subscription_topic) = (
+        subscription_bytes[0],
+        str::from_utf8(&subscription_bytes[1..]).unwrap(),
+    );
+    println!("{first_byte} {subscription_topic}");
 
-    thread::spawn(move || {
-        while KEEP_RUNNING.load(Ordering::Acquire) {
-            let subscription = xpublish.recv_msg(RecvFlags::empty()).unwrap();
-            let subscription_bytes = subscription.bytes();
-            let (first_byte, subscription_topic) = (
-                subscription_bytes[0],
-                str::from_utf8(&subscription_bytes[1..]).unwrap(),
-            );
-            assert_eq!(first_byte, 1);
-            println!("{first_byte} {subscription_topic}");
-
-            let published_msg = format!("{SUBSCRIBED_TOPIC} important update");
-            xpublish
-                .send_msg(&published_msg, SendFlags::empty())
-                .unwrap();
-        }
-    });
-
-    Ok(())
+    let published_msg = format!("{SUBSCRIBED_TOPIC} {msg}");
+    xpublish.send_msg(&published_msg, SendFlags::empty())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let port = 5556;
     let iterations = 10;
 
     let context = Context::new()?;
 
-    let xpublish_endpoint = format!("tcp://*:{port}");
-    run_xpublish_socket(&context, &xpublish_endpoint)?;
+    let xpublish = XPublishSocket::from_context(&context)?;
+    xpublish.bind("tcp://127.0.0.1:*")?;
+    let subscribe_endpoint = xpublish.last_endpoint()?;
+
+    thread::spawn(move || {
+        while KEEP_RUNNING.load(Ordering::Acquire) {
+            run_xpublish_socket(&xpublish, "important update").unwrap();
+        }
+    });
 
     let subscribe = SubscribeSocket::from_context(&context)?;
-    let subscribe_endpoint = format!("tcp://localhost:{port}");
     subscribe.connect(&subscribe_endpoint)?;
 
     subscribe.subscribe(SUBSCRIBED_TOPIC)?;

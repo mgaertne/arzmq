@@ -32,15 +32,14 @@ async fn run_scatter(gather: ScatterSocket, msg: &str) {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5680;
-
     let context = Context::new()?;
 
     let scatter = ScatterSocket::from_context(&context)?;
-    scatter.bind(format!("tcp://*:{port}"))?;
+    scatter.bind("tcp://127.0.0.1:*")?;
+    let gather_endpoint = scatter.last_endpoint()?;
 
     let gather = GatherSocket::from_context(&context)?;
-    gather.connect(format!("tcp://localhost:{port}"))?;
+    gather.connect(gather_endpoint)?;
 
     let scatter_handle = task::spawn(run_scatter(scatter, "important update"));
     let gather_handle = task::spawn(run_gather(gather));

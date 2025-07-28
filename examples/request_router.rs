@@ -5,15 +5,13 @@ use arzmq::prelude::{Context, RequestSocket, RouterSocket, ZmqResult};
 mod common;
 
 fn main() -> ZmqResult<()> {
-    let port = 5561;
     let iterations = 10;
 
     let context = Context::new()?;
 
     let router = RouterSocket::from_context(&context)?;
-
-    let router_endpoint = format!("tcp://*:{port}");
-    router.bind(&router_endpoint)?;
+    router.bind("tcp://127.0.0.1:*")?;
+    let request_endpoint = router.last_endpoint()?;
 
     thread::spawn(move || {
         (0..iterations)
@@ -22,8 +20,6 @@ fn main() -> ZmqResult<()> {
     });
 
     let request = RequestSocket::from_context(&context)?;
-
-    let request_endpoint = format!("tcp://localhost:{port}");
     request.connect(&request_endpoint)?;
 
     (0..iterations).try_for_each(|_| common::run_send_recv(&request, "Hello"))

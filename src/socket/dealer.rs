@@ -169,7 +169,10 @@ impl Socket<Dealer> {
 #[cfg(test)]
 mod dealer_tests {
     use super::DealerSocket;
-    use crate::prelude::{Context, SocketOption, ZmqResult};
+    use crate::prelude::{
+        Context, Message, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, SocketOption,
+        ZmqResult,
+    };
 
     #[test]
     fn set_conflate_sets_conflate() -> ZmqResult<()> {
@@ -225,6 +228,83 @@ mod dealer_tests {
         socket.set_hello_message("test123")?;
 
         Ok(())
+    }
+
+    #[test]
+    fn dealer_dealer() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let dealer_server = DealerSocket::from_context(&context)?;
+        dealer_server.bind("tcp://127.0.0.1:*")?;
+        let client_endpoint = dealer_server.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            let mut multipart = dealer_server.recv_multipart(RecvFlags::empty()).unwrap();
+
+            let content = multipart.pop_back().unwrap();
+            assert!(!content.is_empty());
+            assert_eq!(content.to_string(), "Hello");
+
+            multipart.push_back("World".into());
+            dealer_server
+                .send_multipart(multipart, SendFlags::empty())
+                .unwrap();
+        });
+
+        let dealer_client = DealerSocket::from_context(&context)?;
+        dealer_client.connect(&client_endpoint)?;
+
+        let multipart: Vec<Message> = vec![vec![].into(), "Hello".into()];
+        dealer_client.send_multipart(multipart, SendFlags::empty())?;
+
+        let mut response = dealer_client.recv_multipart(RecvFlags::empty())?;
+
+        let content = response.pop_back().unwrap();
+        assert!(!content.is_empty());
+        assert_eq!(content.to_string(), "World");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn dealer_dealer_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let dealer_server = DealerSocket::from_context(&context)?;
+        dealer_server.bind("tcp://127.0.0.1:*")?;
+        let client_endpoint = dealer_server.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            let mut multipart = dealer_server.recv_multipart(RecvFlags::empty()).unwrap();
+
+            let content = multipart.pop_back().unwrap();
+            assert!(!content.is_empty());
+            assert_eq!(content.to_string(), "Hello");
+
+            multipart.push_back("World".into());
+            dealer_server
+                .send_multipart(multipart, SendFlags::empty())
+                .unwrap();
+        });
+
+        let dealer_client = DealerSocket::from_context(&context)?;
+        dealer_client.connect(&client_endpoint)?;
+
+        futures::executor::block_on(async {
+            let multipart: Vec<Message> = vec![vec![].into(), "Hello".into()];
+            dealer_client
+                .send_multipart_async(multipart, SendFlags::empty())
+                .await;
+
+            let mut response = dealer_client.recv_multipart_async().await;
+
+            let content = response.pop_back().unwrap();
+            assert!(!content.is_empty());
+            assert_eq!(content.to_string(), "World");
+
+            Ok(())
+        })
     }
 }
 

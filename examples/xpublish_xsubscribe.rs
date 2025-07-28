@@ -25,15 +25,13 @@ fn run_xpublish_socket(xpublish: &XPublishSocket, msg: &str) -> ZmqResult<()> {
 }
 
 fn main() -> ZmqResult<()> {
-    let port = 5556;
     let iterations = 10;
 
     let context = Context::new()?;
 
     let xpublish = XPublishSocket::from_context(&context)?;
-
-    let xpublish_endpoint = format!("tcp://*:{port}");
-    xpublish.bind(&xpublish_endpoint)?;
+    xpublish.bind("tcp://127.0.0.1:*")?;
+    let xsubscribe_endpoint = xpublish.last_endpoint()?;
 
     thread::spawn(move || {
         while KEEP_RUNNING.load(Ordering::Acquire) {
@@ -42,8 +40,6 @@ fn main() -> ZmqResult<()> {
     });
 
     let xsubscribe = XSubscribeSocket::from_context(&context)?;
-
-    let xsubscribe_endpoint = format!("tcp://localhost:{port}");
     xsubscribe.connect(&xsubscribe_endpoint)?;
 
     xsubscribe.subscribe(SUBSCRIBED_TOPIC)?;

@@ -10,15 +10,13 @@ use common::KEEP_RUNNING;
 const SUBSCRIBED_TOPIC: &str = "arzmq-example";
 
 fn main() -> ZmqResult<()> {
-    let port = 5555;
     let iterations = 10;
 
     let context = Context::new()?;
 
     let publish = PublishSocket::from_context(&context)?;
-
-    let publish_endpoint = format!("tcp://*:{port}");
-    publish.bind(&publish_endpoint)?;
+    publish.bind("tcp://127.0.0.1:*")?;
+    let subscribe_endpoint = publish.last_endpoint()?;
 
     thread::spawn(move || {
         let published_msg = format!("{SUBSCRIBED_TOPIC} important update");
@@ -26,10 +24,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let subscribe = SubscribeSocket::from_context(&context)?;
-
-    let subscribe_endpoint = format!("tcp://localhost:{port}");
     subscribe.connect(&subscribe_endpoint)?;
-
     subscribe.subscribe(SUBSCRIBED_TOPIC)?;
 
     (0..iterations).try_for_each(|number| {

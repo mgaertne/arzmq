@@ -26,15 +26,14 @@ fn main() -> ZmqResult<()> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5563;
-
         let context = Context::new()?;
 
         let reply = ReplySocket::from_context(&context)?;
-        reply.bind(format!("tcp://*:{port}"))?;
+        reply.bind("tcp://127.0.0.1:*")?;
+        let dealer_endpoint = reply.last_endpoint()?;
 
         let dealer = DealerSocket::from_context(&context)?;
-        dealer.connect(format!("tcp://localhost:{port}"))?;
+        dealer.connect(dealer_endpoint)?;
 
         let dealer_handle = executor
             .spawn_with_handle(run_dealer(dealer, "Hello"))

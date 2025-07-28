@@ -37,15 +37,14 @@ fn run_tcp_client(endpoint: &str, iterations: i32) -> Result<(), Box<dyn Error>>
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let port = 5559;
     let iterations = 10;
 
     let context = Context::new()?;
 
     let zmq_stream = StreamSocket::from_context(&context)?;
 
-    let stream_endpoint = format!("tcp://*:{port}");
-    zmq_stream.bind(&stream_endpoint)?;
+    zmq_stream.bind("tcp://127.0.0.1:*")?;
+    let tcp_endpoint = zmq_stream.last_endpoint()?;
 
     thread::spawn(move || {
         let mut connect_msg = zmq_stream.recv_multipart(RecvFlags::empty()).unwrap();
@@ -56,8 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    let tcp_endpoint = format!("127.0.0.1:{port}");
-    run_tcp_client(&tcp_endpoint, iterations)?;
+    run_tcp_client(tcp_endpoint.strip_prefix("tcp://").unwrap(), iterations)?;
 
     Ok(())
 }

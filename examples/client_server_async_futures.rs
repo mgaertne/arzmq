@@ -49,15 +49,14 @@ fn main() -> ZmqResult<()> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5678;
-
         let context = Context::new()?;
 
         let server = ServerSocket::from_context(&context)?;
-        server.bind(format!("tcp://*:{port}"))?;
+        server.bind("tcp://127.0.0.1:*")?;
+        let client_endpoint = server.last_endpoint()?;
 
         let client = ClientSocket::from_context(&context)?;
-        client.connect(format!("tcp://localhost:{port}"))?;
+        client.connect(&client_endpoint)?;
 
         let client_handle = executor
             .spawn_with_handle(run_client(client, "Hello"))

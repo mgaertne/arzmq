@@ -50,17 +50,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5559;
-
         let context = Context::new()?;
 
         let zmq_stream = StreamSocket::from_context(&context)?;
+        zmq_stream.bind("tcp://127.0.0.1:*")?;
+        let tcp_endpoint = zmq_stream.last_endpoint()?;
 
-        let stream_endpoint = format!("tcp://127.0.0.1:{port}");
-        zmq_stream.bind(&stream_endpoint)?;
-
-        let tcp_endpoint = format!("127.0.0.1:{port}");
-        let tcp_stream = TcpStream::connect(tcp_endpoint)?;
+        let tcp_stream = TcpStream::connect(tcp_endpoint.strip_prefix("tcp://").unwrap())?;
 
         let tcp_handle =
             executor.spawn_with_handle(run_tcp_client(AllowStdIo::new(tcp_stream), "Hello"))?;

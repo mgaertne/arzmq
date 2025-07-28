@@ -36,15 +36,14 @@ async fn run_radio(radio: RadioSocket, msg: &str) -> ZmqResult<()> {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5679;
-
     let context = Context::new()?;
 
     let radio = RadioSocket::from_context(&context)?;
-    radio.bind(format!("tcp://*:{port}"))?;
+    radio.bind("tcp://127.0.0.1:*")?;
+    let dish_endpoint = radio.last_endpoint()?;
 
     let dish = DishSocket::from_context(&context)?;
-    dish.connect(format!("tcp://localhost:{port}"))?;
+    dish.connect(dish_endpoint)?;
     dish.join(GROUP)?;
 
     let radio_handle = spawn(run_radio(radio, "important update"));

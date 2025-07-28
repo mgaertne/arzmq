@@ -46,15 +46,14 @@ async fn run_client(peer: ClientSocket, msg: &str) {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5678;
-
     let context = Context::new()?;
 
     let server = ServerSocket::from_context(&context)?;
-    server.bind(format!("tcp://*:{port}"))?;
+    server.bind("tcp://127.0.0.1:*")?;
+    let client_endpoint = server.last_endpoint()?;
 
     let client = ClientSocket::from_context(&context)?;
-    client.connect(format!("tcp://localhost:{port}"))?;
+    client.connect(&client_endpoint)?;
 
     let client_handle = task::spawn(run_client(client, "Hello"));
     let server_handle = task::spawn(run_server(server, "World"));

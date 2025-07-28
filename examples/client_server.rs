@@ -19,15 +19,13 @@ fn run_server_socket(server: &ServerSocket, reply: &str) -> ZmqResult<()> {
 }
 
 fn main() -> ZmqResult<()> {
-    let port = 5678;
     let iterations = 10;
 
     let context = Context::new()?;
 
     let server = ServerSocket::from_context(&context)?;
-
-    let server_endpoint = format!("tcp://*:{port}");
-    server.bind(&server_endpoint)?;
+    server.bind("tcp://127.0.0.1:*")?;
+    let client_endpoint = server.last_endpoint()?;
 
     thread::spawn(move || {
         while KEEP_RUNNING.load(Ordering::Acquire) {
@@ -36,8 +34,6 @@ fn main() -> ZmqResult<()> {
     });
 
     let client = ClientSocket::from_context(&context)?;
-
-    let client_endpoint = format!("tcp://localhost:{port}");
     client.connect(&client_endpoint)?;
 
     (0..iterations).try_for_each(|_| common::run_send_recv(&client, "Hello"))?;

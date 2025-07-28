@@ -27,19 +27,18 @@ fn main() -> ZmqResult<()> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5556;
-
         let context = Context::new()?;
 
-        let publisher = PublishSocket::from_context(&context)?;
-        publisher.bind(format!("tcp://*:{port}"))?;
+        let publish = PublishSocket::from_context(&context)?;
+        publish.bind("tcp://127.0.0.1:*")?;
+        let xsubscribe_endpoint = publish.last_endpoint()?;
 
         let xsubscribe = XSubscribeSocket::from_context(&context)?;
         xsubscribe.subscribe("arzmq-example")?;
-        xsubscribe.connect(format!("tcp://localhost:{port}"))?;
+        xsubscribe.connect(xsubscribe_endpoint)?;
 
         let publish_handle = executor
-            .spawn_with_handle(run_publisher(publisher, "arzmq-example important update"))
+            .spawn_with_handle(run_publisher(publish, "arzmq-example important update"))
             .unwrap();
         let subscribe_handle = executor
             .spawn_with_handle(run_subscriber(xsubscribe, "arzmq-example"))

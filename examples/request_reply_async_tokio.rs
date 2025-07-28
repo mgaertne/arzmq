@@ -25,15 +25,14 @@ async fn run_requester(request: RequestSocket, msg: &str) {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5560;
-
     let context = Context::new()?;
 
     let reply = ReplySocket::from_context(&context)?;
-    reply.bind(format!("tcp://*:{port}"))?;
+    reply.bind("tcp://127.0.0.1:*")?;
+    let request_endpoint = reply.last_endpoint()?;
 
     let request = RequestSocket::from_context(&context)?;
-    request.connect(format!("tcp://localhost:{port}"))?;
+    request.connect(request_endpoint.as_str())?;
 
     let request_handle = task::spawn(run_requester(request, "Hello"));
     let reply_handle = task::spawn(run_replier(reply, "World"));

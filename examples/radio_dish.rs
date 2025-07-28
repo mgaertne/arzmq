@@ -19,15 +19,13 @@ fn run_radio_socket(radio: &RadioSocket, message: &str) -> ZmqResult<()> {
 }
 
 fn main() -> ZmqResult<()> {
-    let port = 5679;
     let iterations = 10;
 
     let context = Context::new()?;
 
     let radio = RadioSocket::from_context(&context)?;
-
-    let radio_endpoint = format!("tcp://*:{port}");
-    radio.bind(&radio_endpoint)?;
+    radio.bind("tcp://127.0.0.1:*")?;
+    let dish_endpoint = radio.last_endpoint()?;
 
     thread::spawn(move || {
         while KEEP_RUNNING.load(Ordering::Acquire) {
@@ -36,8 +34,6 @@ fn main() -> ZmqResult<()> {
     });
 
     let dish = DishSocket::from_context(&context)?;
-
-    let dish_endpoint = format!("tcp://localhost:{port}");
     dish.connect(&dish_endpoint)?;
     dish.join(GROUP)?;
 

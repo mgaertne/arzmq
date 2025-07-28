@@ -45,17 +45,13 @@ async fn run_tcp_client(mut tcp_stream: TcpStream, msg: &str) {
 async fn main() -> Result<(), Box<dyn Error>> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5559;
-
     let context = Context::new()?;
 
     let zmq_stream = StreamSocket::from_context(&context)?;
+    zmq_stream.bind("tcp://127.0.0.1:*")?;
+    let tcp_endpoint = zmq_stream.last_endpoint()?;
 
-    let stream_endpoint = format!("tcp://127.0.0.1:{port}");
-    zmq_stream.bind(&stream_endpoint)?;
-
-    let tcp_endpoint = format!("127.0.0.1:{port}");
-    let tcp_stream = TcpStream::connect(tcp_endpoint).await?;
+    let tcp_stream = TcpStream::connect(tcp_endpoint.strip_prefix("tcp://").unwrap()).await?;
 
     let tcp_handle = spawn(run_tcp_client(tcp_stream, "Hello"));
     let zmq_stream_handle = spawn(run_stream_server(zmq_stream, "World"));

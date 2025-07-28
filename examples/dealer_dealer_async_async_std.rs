@@ -25,15 +25,14 @@ async fn run_dealer_client(dealer: DealerSocket, msg: &str) {
 async fn main() -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5562;
-
     let context = Context::new()?;
 
     let dealer_server = DealerSocket::from_context(&context)?;
-    dealer_server.bind(format!("tcp://*:{port}"))?;
+    dealer_server.bind("tcp://127.0.0.1:*")?;
+    let client_endpoint = dealer_server.last_endpoint()?;
 
     let dealer_client = DealerSocket::from_context(&context)?;
-    dealer_client.connect(format!("tcp://localhost:{port}"))?;
+    dealer_client.connect(&client_endpoint)?;
 
     let dealer_handle = task::spawn(run_dealer_client(dealer_client, "Hello"));
     let reply_handle = task::spawn(run_dealer_server(dealer_server, "World"));

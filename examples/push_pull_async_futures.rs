@@ -33,15 +33,14 @@ fn main() -> ZmqResult<()> {
     futures::executor::block_on(async {
         ITERATIONS.store(10, Ordering::Release);
 
-        let port = 5557;
-
         let context = Context::new()?;
 
         let push = PushSocket::from_context(&context)?;
-        push.bind(format!("tcp://*:{port}"))?;
+        push.bind("tcp://127.0.0.1:*")?;
+        let pull_endpoint = push.last_endpoint()?;
 
         let pull = PullSocket::from_context(&context)?;
-        pull.connect(format!("tcp://localhost:{port}"))?;
+        pull.connect(pull_endpoint)?;
 
         let push_handle = executor
             .spawn_with_handle(run_publisher(push, "important update"))
