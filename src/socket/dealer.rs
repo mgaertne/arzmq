@@ -323,13 +323,17 @@ pub(crate) mod builder {
 
             let socket_builder = SocketBuilder::default();
 
-            let socket = DealerBuilder::default()
+            let dealer_builder = DealerBuilder::default()
                 .socket_builder(socket_builder)
                 .conflate(true)
-                .routing_id("test123")
+                .routing_id("test123");
+
+            #[cfg(feature = "draft-api")]
+            let dealer_builder = dealer_builder
                 .hello_message("hello123")
-                .hiccup_msg("hiccup123")
-                .build_from_context(&context)?;
+                .hiccup_msg("hiccup123");
+
+            let socket = dealer_builder.build_from_context(&context)?;
 
             assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
             assert_eq!(socket.routing_id()?, "test123");
