@@ -87,6 +87,32 @@ impl Socket<Client> {
     }
 }
 
+#[cfg(test)]
+mod client_tests {
+    use super::ClientSocket;
+    use crate::prelude::{Context, ZmqResult};
+
+    #[test]
+    fn set_hello_message_set_hello_msg() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = ClientSocket::from_context(&context)?;
+        socket.set_hello_message("hello123")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_hiccup_message_set_hiccup_msg() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = ClientSocket::from_context(&context)?;
+        socket.set_hiccup_message("hiccup123")?;
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -121,13 +147,13 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(hiccup_message) = self.hiccup_msg {
-                socket.set_hiccup_message(hiccup_message)?;
-            }
+            self.hiccup_msg
+                .iter()
+                .try_for_each(|hiccup_message| socket.set_hiccup_message(hiccup_message))?;
 
-            if let Some(hello_message) = self.hello_message {
-                socket.set_hello_message(hello_message)?;
-            }
+            self.hello_message
+                .iter()
+                .try_for_each(|hello_message| socket.set_hello_message(hello_message))?;
 
             Ok(())
         }
@@ -138,6 +164,34 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod client_builder_tests {
+        use super::ClientBuilder;
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_client_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            ClientBuilder::default().build_from_context(&context)?;
+
+            Ok(())
+        }
+
+        #[test]
+        fn client_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            ClientBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .hello_message("hello123")
+                .hiccup_msg("hiccup123")
+                .build_from_context(&context)?;
+
+            Ok(())
         }
     }
 }

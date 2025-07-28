@@ -50,6 +50,74 @@ impl MultipartReceiver for Socket<Pair> {}
 
 impl Socket<Pair> {}
 
+#[cfg(test)]
+mod pair_tests {
+    use super::PairSocket;
+    use crate::prelude::{Context, Receiver, RecvFlags, SendFlags, Sender, ZmqResult};
+
+    #[test]
+    fn pair_pair() -> ZmqResult<()> {
+        let endpoint = "inproc://pair-test";
+
+        let context = Context::new()?;
+
+        let pair_server = PairSocket::from_context(&context)?;
+        pair_server.bind(endpoint)?;
+
+        std::thread::spawn(move || {
+            let msg = pair_server.recv_msg(RecvFlags::empty()).unwrap();
+
+            assert_eq!(msg.to_string(), "Hello");
+            pair_server.send_msg("World", SendFlags::empty()).unwrap();
+        });
+
+        let pair_client = PairSocket::from_context(&context)?;
+        pair_client.connect(endpoint)?;
+
+        pair_client.send_msg("Hello", SendFlags::empty())?;
+        let msg = pair_client.recv_msg(RecvFlags::empty())?;
+
+        assert_eq!(msg.to_string(), "World");
+
+        Ok(())
+    }
+
+    #[test]
+    fn pair_pair_async() -> ZmqResult<()> {
+        let endpoint = "inproc://pair-test";
+
+        let context = Context::new()?;
+
+        let pair_server = PairSocket::from_context(&context)?;
+        pair_server.bind(endpoint)?;
+
+        std::thread::spawn(move || {
+            let msg = pair_server.recv_msg(RecvFlags::empty()).unwrap();
+
+            assert_eq!(msg.to_string(), "Hello");
+            pair_server.send_msg("World", SendFlags::empty()).unwrap();
+        });
+
+        let pair_client = PairSocket::from_context(&context)?;
+        pair_client.connect(endpoint)?;
+
+        futures::executor::block_on(async {
+            pair_client
+                .send_msg_async("Hello", SendFlags::empty())
+                .await;
+
+            loop {
+                if let Some(msg) = pair_client.recv_msg_async().await {
+                    assert_eq!(msg.to_string(), "World");
+                    break;
+                }
+            }
+
+            Ok(())
+        })
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use crate::socket::SocketBuilder;
