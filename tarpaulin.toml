@@ -4,9 +4,9 @@ line = true
 branch = true
 count = true
 no-fail-fast = true
-include-tests = true
+include-tests = false
 all-features = true
-run-types = ["AllTargets", "Examples", "Doctests", "Tests"]
+run-types = ["AllTargets", "Tests"]
 
 [report]
 out = ["Xml", "Html"]
