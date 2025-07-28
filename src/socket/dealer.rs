@@ -166,6 +166,68 @@ impl Socket<Dealer> {
     }
 }
 
+#[cfg(test)]
+mod dealer_tests {
+    use super::DealerSocket;
+    use crate::prelude::{Context, SocketOption, ZmqResult};
+
+    #[test]
+    fn set_conflate_sets_conflate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_conflate(true)?;
+
+        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_routing_id_sets_routing_id() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_routing_id("test123")?;
+
+        assert_eq!(socket.routing_id()?, "test123");
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_probe_router_sets_probe_router() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_probe_router(true)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_hiccup_message_sets_hiccup_message() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_hiccup_message("test123")?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_hello_message_sets_hello_message() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_hello_message("test123")?;
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -208,23 +270,23 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(conflate) = self.conflate {
-                socket.set_conflate(conflate)?;
-            }
+            self.conflate
+                .iter()
+                .try_for_each(|conflate| socket.set_conflate(*conflate))?;
 
             #[cfg(feature = "draft-api")]
-            if let Some(hiccup_message) = self.hiccup_msg {
-                socket.set_hiccup_message(&hiccup_message)?;
-            }
+            self.hiccup_msg
+                .iter()
+                .try_for_each(|hiccup_msg| socket.set_hiccup_message(hiccup_msg))?;
 
             #[cfg(feature = "draft-api")]
-            if let Some(hello_message) = self.hello_message {
-                socket.set_hello_message(&hello_message)?;
-            }
+            self.hello_message
+                .iter()
+                .try_for_each(|hello_message| socket.set_hello_message(hello_message))?;
 
-            if let Some(routing_id) = self.routing_id {
-                socket.set_routing_id(&routing_id)?;
-            }
+            self.routing_id
+                .iter()
+                .try_for_each(|routing_id| socket.set_routing_id(routing_id))?;
 
             Ok(())
         }
@@ -235,6 +297,44 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod dealer_builder_tests {
+        use super::DealerBuilder;
+        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+
+        #[test]
+        fn default_dealer_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = DealerBuilder::default().build_from_context(&context)?;
+
+            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert_eq!(socket.get_sockopt_string(SocketOption::RoutingId)?, "");
+
+            Ok(())
+        }
+
+        #[test]
+        fn dealer_builder_with_custom_value() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket_builder = SocketBuilder::default();
+
+            let socket = DealerBuilder::default()
+                .socket_builder(socket_builder)
+                .conflate(true)
+                .routing_id("test123")
+                .hello_message("hello123")
+                .hiccup_msg("hiccup123")
+                .build_from_context(&context)?;
+
+            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert_eq!(socket.routing_id()?, "test123");
+
+            Ok(())
         }
     }
 }

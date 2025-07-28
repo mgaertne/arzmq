@@ -4471,9 +4471,10 @@ mod socket_tests {
         let context = Context::new()?;
 
         let dealer_server = DealerSocket::from_context(&context)?;
+        dealer_server.bind("tcp://127.0.0.1:*")?;
+        let client_endpoint = dealer_server.last_endpoint()?;
 
         thread::spawn(move || {
-            dealer_server.bind("tcp://127.0.0.1:5551").unwrap();
             loop {
                 thread::sleep(Duration::from_millis(10));
             }
@@ -4482,7 +4483,7 @@ mod socket_tests {
         let dealer_client = DealerSocket::from_context(&context)?;
         let dealer_monitor = dealer_client.monitor(MonitorFlags::Connected)?;
 
-        dealer_client.connect("tcp://127.0.0.1:5551")?;
+        dealer_client.connect(client_endpoint)?;
 
         loop {
             match dealer_monitor.recv_monitor_event() {
@@ -4500,22 +4501,23 @@ mod socket_tests {
     #[cfg(feature = "futures")]
     #[test]
     fn monitor_sets_up_async_socket_monitor() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let dealer_server = DealerSocket::from_context(&context)?;
+        dealer_server.bind("tcp://127.0.0.1:*")?;
+        let client_endpoint = dealer_server.last_endpoint()?;
+
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_millis(10));
+            }
+        });
+
         futures::executor::block_on(async {
-            let context = Context::new()?;
-
-            let dealer_server = DealerSocket::from_context(&context)?;
-
-            thread::spawn(move || {
-                dealer_server.bind("tcp://127.0.0.1:5551").unwrap();
-                loop {
-                    thread::sleep(Duration::from_millis(10));
-                }
-            });
-
             let dealer_client = DealerSocket::from_context(&context)?;
             let dealer_monitor = dealer_client.monitor(MonitorFlags::Connected)?;
 
-            dealer_client.connect("tcp://127.0.0.1:5551")?;
+            dealer_client.connect(client_endpoint)?;
 
             loop {
                 match dealer_monitor.recv_monitor_event_async().await {
@@ -4635,85 +4637,103 @@ pub(crate) mod builder {
             T: sealed::SocketType,
         {
             #[cfg(feature = "draft-api")]
-            if let Some(busy_poll) = self.busy_poll {
-                socket.set_busy_poll(busy_poll)?;
-            }
+            self.busy_poll
+                .iter()
+                .try_for_each(|busy_poll| socket.set_busy_poll(*busy_poll))?;
 
-            if let Some(connect_timeout) = self.connect_timeout {
-                socket.set_connect_timeout(connect_timeout)?;
-            }
+            self.connect_timeout
+                .iter()
+                .try_for_each(|connect_timeout| socket.set_connect_timeout(*connect_timeout))?;
 
-            if let Some(handshake_interval) = self.handshake_interval {
-                socket.set_handshake_interval(handshake_interval)?;
-            }
+            self.handshake_interval
+                .iter()
+                .try_for_each(|handshake_interval| {
+                    socket.set_handshake_interval(*handshake_interval)
+                })?;
 
-            if let Some(heartbeat_interval) = self.heartbeat_interval {
-                socket.set_heartbeat_interval(heartbeat_interval)?;
-            }
+            self.heartbeat_interval
+                .iter()
+                .try_for_each(|heartbeat_interval| {
+                    socket.set_heartbeat_interval(*heartbeat_interval)
+                })?;
 
-            if let Some(heartbeat_timeout) = self.heartbeat_timeout {
-                socket.set_heartbeat_timeout(heartbeat_timeout)?;
-            }
+            self.heartbeat_timeout
+                .iter()
+                .try_for_each(|heartbeat_timeout| {
+                    socket.set_heartbeat_timeout(*heartbeat_timeout)
+                })?;
 
-            if let Some(heartbeat_timetolive) = self.heartbeat_timetolive {
-                socket.set_heartbeat_timetolive(heartbeat_timetolive)?;
-            }
+            self.heartbeat_timetolive
+                .iter()
+                .try_for_each(|heartbeat_timetolive| {
+                    socket.set_heartbeat_timetolive(*heartbeat_timetolive)
+                })?;
 
-            if let Some(immediate) = self.immediate {
-                socket.set_immediate(immediate)?;
-            }
+            self.immediate
+                .iter()
+                .try_for_each(|immediate| socket.set_immediate(*immediate))?;
 
-            if let Some(ipv6) = self.ipv6 {
-                socket.set_ipv6(ipv6)?;
-            }
+            self.ipv6
+                .iter()
+                .try_for_each(|ipv6| socket.set_ipv6(*ipv6))?;
 
-            if let Some(linger) = self.linger {
-                socket.set_linger(linger)?;
-            }
+            self.linger
+                .iter()
+                .try_for_each(|linger| socket.set_linger(*linger))?;
 
-            if let Some(max_msg_size) = self.max_message_size {
-                socket.set_max_message_size(max_msg_size)?;
-            }
+            self.max_message_size
+                .iter()
+                .try_for_each(|max_message_size| socket.set_max_message_size(*max_message_size))?;
 
-            if let Some(receive_buffer) = self.receive_buffer {
-                socket.set_receive_buffer(receive_buffer)?;
-            }
+            self.receive_buffer
+                .iter()
+                .try_for_each(|receive_buffer| socket.set_receive_buffer(*receive_buffer))?;
 
-            if let Some(receive_highwater_mark) = self.receive_highwater_mark {
-                socket.set_receive_highwater_mark(receive_highwater_mark)?;
-            }
+            self.receive_highwater_mark
+                .iter()
+                .try_for_each(|receive_highwater_mark| {
+                    socket.set_receive_highwater_mark(*receive_highwater_mark)
+                })?;
 
-            if let Some(receive_timeout) = self.receive_timeout {
-                socket.set_receive_timeout(receive_timeout)?;
-            }
+            self.receive_timeout
+                .iter()
+                .try_for_each(|receive_timeout| socket.set_receive_timeout(*receive_timeout))?;
 
-            if let Some(reconnect_interval) = self.reconnect_interval {
-                socket.set_reconnect_interval(reconnect_interval)?;
-            }
+            self.reconnect_interval
+                .iter()
+                .try_for_each(|reconnect_interval| {
+                    socket.set_reconnect_interval(*reconnect_interval)
+                })?;
 
-            if let Some(reconnect_interval_max) = self.reconnect_interval_max {
-                socket.set_reconnect_interval_max(reconnect_interval_max)?;
-            }
+            self.reconnect_interval_max
+                .iter()
+                .try_for_each(|reconnect_interval_max| {
+                    socket.set_reconnect_interval_max(*reconnect_interval_max)
+                })?;
 
-            if let Some(send_buffer) = self.send_buffer {
-                socket.set_send_buffer(send_buffer)?;
-            }
+            self.send_buffer
+                .iter()
+                .try_for_each(|send_buffer| socket.set_send_buffer(*send_buffer))?;
 
-            if let Some(send_highwater_mark) = self.send_highwater_mark {
-                socket.set_send_highwater_mark(send_highwater_mark)?;
-            }
+            self.send_highwater_mark
+                .iter()
+                .try_for_each(|send_highwater_mark| {
+                    socket.set_send_highwater_mark(*send_highwater_mark)
+                })?;
 
-            if let Some(send_timeout) = self.send_timeout {
-                socket.set_send_timeout(send_timeout)?;
-            }
+            self.send_timeout
+                .iter()
+                .try_for_each(|send_timeout| socket.set_send_timeout(*send_timeout))?;
 
-            if let Some(zap_domain) = self.zap_domain {
-                socket.set_zap_domain(&zap_domain)?;
-            }
+            self.zap_domain
+                .iter()
+                .try_for_each(|zap_domain| socket.set_zap_domain(zap_domain))?;
 
-            if let Some(security_mechanism) = self.security_mechanism {
-                socket.set_security_mechanism(&security_mechanism)?;
-            }
+            self.security_mechanism
+                .iter()
+                .try_for_each(|security_mechanism| {
+                    socket.set_security_mechanism(security_mechanism)
+                })?;
 
             Ok(())
         }

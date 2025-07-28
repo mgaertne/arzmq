@@ -56,4 +56,52 @@ pub(crate) mod builder {
 
     /// Builder for [`PairSocket`](super::PairSocket)
     pub type PairBuilder = SocketBuilder;
+
+    #[cfg(test)]
+    mod pair_builder_tests {
+        use super::PairBuilder;
+        use crate::{
+            auth::ZapDomain,
+            prelude::{Context, PairSocket, SocketOption, ZmqResult},
+            security::SecurityMechanism,
+        };
+
+        #[test]
+        fn builder_from_default() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket: PairSocket = PairBuilder::default().build_from_context(&context)?;
+
+            assert_eq!(socket.connect_timeout()?, 0);
+            assert_eq!(socket.handshake_interval()?, 30_000);
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
+                0
+            );
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
+                -1
+            );
+            assert_eq!(
+                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
+                0
+            );
+            assert!(!socket.immediate()?);
+            assert!(!socket.ipv6()?);
+            assert_eq!(socket.linger()?, -1);
+            assert_eq!(socket.max_message_size()?, -1);
+            assert_eq!(socket.receive_buffer()?, -1);
+            assert_eq!(socket.receive_highwater_mark()?, 1_000);
+            assert_eq!(socket.receive_timeout()?, -1);
+            assert_eq!(socket.reconnect_interval()?, 100);
+            assert_eq!(socket.reconnect_interval_max()?, 0);
+            assert_eq!(socket.send_buffer()?, -1);
+            assert_eq!(socket.send_highwater_mark()?, 1_000);
+            assert_eq!(socket.send_timeout()?, -1);
+            assert_eq!(socket.zap_domain()?, ZapDomain::new("".into()));
+            assert_eq!(socket.security_mechanism()?, SecurityMechanism::Null);
+
+            Ok(())
+        }
+    }
 }
