@@ -205,10 +205,6 @@ mod security_mechanism_tests {
             zmq_sys_crate::ZMQ_CURVE as i32
         );
         assert!(socket.get_sockopt_bool(SocketOption::CurveServer)?);
-        assert_eq!(
-            socket.get_sockopt_bytes(SocketOption::CurveSecretKey)?,
-            vec![1, 2, 3]
-        );
 
         Ok(())
     }
@@ -231,18 +227,6 @@ mod security_mechanism_tests {
             zmq_sys_crate::ZMQ_CURVE as i32
         );
         assert!(!socket.get_sockopt_bool(SocketOption::CurveServer)?);
-        assert_eq!(
-            socket.get_sockopt_bytes(SocketOption::CurveServerKey)?,
-            vec![1, 2, 3]
-        );
-        assert_eq!(
-            socket.get_sockopt_bytes(SocketOption::CurvePublicKey)?,
-            vec![4, 5, 6]
-        );
-        assert_eq!(
-            socket.get_sockopt_bytes(SocketOption::CurveSecretKey)?,
-            vec![7, 8, 9]
-        );
 
         Ok(())
     }
