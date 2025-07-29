@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let zmq_stream = StreamSocket::from_context(&context)?;
 
         let stream_endpoint = format!("tcp://127.0.0.1:{port}");
-        zmq_stream.connect(&stream_endpoint)?;
+        zmq_stream.connect(stream_endpoint)?;
 
         let mut connect_msg = zmq_stream.recv_multipart_async().await;
         let routing_id = connect_msg.pop_front().unwrap();

@@ -1,16 +1,15 @@
 //! 0MQ security mechanisms
 //!
-//! Currently only support [`Null`] and [`Plain`] across different platforms. [`Curve`] is
+//! Currently only support [`Null`] and [`Plain`] across different platforms. Curve is
 //! available with the <span class="stab portability"><code>curve</code></span> feature on Linux
 //! and MacOS, but not on Windows. [`GSSAPI`] values are available across the crate, but are not
 //! compiled in.
 //!
 //! [`Null`]: SecurityMechanism::Null
 //! [`Plain`]: SecurityMechanism::Plain
-//! [`Curve`]: SecurityMechanism::CurveServer
 //! [`GSSAPI`]: SecurityMechanism::GssApiServer
 
-#[cfg(feature = "curve")]
+#[cfg(all(feature = "curve", not(windows)))]
 use core::{ffi::c_char, hint::cold_path};
 
 use derive_more::Display;
@@ -35,7 +34,7 @@ pub enum SecurityMechanism {
     #[display("Plain {{ username = {username}, password = {password} }}")]
     /// Plain-textauthentication using username and password
     Plain { username: String, password: String },
-    #[cfg(feature = "curve")]
+    #[cfg(all(feature = "curve", not(windows)))]
     #[doc(cfg(all(feature = "curve", not(windows))))]
     #[display("CurveClient {{ ... }}")]
     /// Elliptic curve client authentication and encryption
@@ -44,7 +43,7 @@ pub enum SecurityMechanism {
         public_key: Vec<u8>,
         secret_key: Vec<u8>,
     },
-    #[cfg(feature = "curve")]
+    #[cfg(all(feature = "curve", not(windows)))]
     #[doc(cfg(all(feature = "curve", not(windows))))]
     #[display("CurveServer {{ ... }}")]
     /// Elliptic curve server authentication and encryption
@@ -69,12 +68,12 @@ impl SecurityMechanism {
                 socket.set_sockopt_string(SocketOption::PlainUsername, username)?;
                 socket.set_sockopt_string(SocketOption::PlainPassword, password)?;
             }
-            #[cfg(feature = "curve")]
+            #[cfg(all(feature = "curve", not(windows)))]
             SecurityMechanism::CurveServer { secret_key } => {
                 socket.set_sockopt_bool(SocketOption::CurveServer, true)?;
                 socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key)?;
             }
-            #[cfg(feature = "curve")]
+            #[cfg(all(feature = "curve", not(windows)))]
             SecurityMechanism::CurveClient {
                 server_key,
                 public_key,
@@ -84,13 +83,11 @@ impl SecurityMechanism {
                 socket.set_sockopt_bytes(SocketOption::CurvePublicKey, public_key)?;
                 socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key)?;
             }
-            #[cfg(zmq_have_gssapi)]
-            SecurityMechanism::GssApiClient { service_principal } => {
+            SecurityMechanism::GssApiClient { service_principal } if cfg!(zmq_have_gssapi) => {
                 socket
                     .set_sockopt_string(SocketOption::GssApiServicePrincipal, service_principal)?;
             }
-            #[cfg(zmq_have_gssapi)]
-            SecurityMechanism::GssApiServer => {
+            SecurityMechanism::GssApiServer if cfg!(zmq_have_gssapi) => {
                 socket.set_sockopt_bool(SocketOption::GssApiServer, true)?;
             }
             _ => (),
@@ -110,7 +107,7 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
                 let password = socket.get_sockopt_string(SocketOption::PlainPassword)?;
                 Ok(Self::Plain { username, password })
             }
-            #[cfg(feature = "curve")]
+            #[cfg(all(feature = "curve", not(windows)))]
             value if value == zmq_sys_crate::ZMQ_CURVE as i32 => {
                 let secret_key = socket.get_sockopt_bytes(SocketOption::CurveSecretKey)?;
                 if socket.get_sockopt_bool(SocketOption::CurveServer)? {
@@ -140,11 +137,122 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
     }
 }
 
-#[cfg(feature = "curve")]
+#[cfg(test)]
+mod security_mechanism_tests {
+    use super::SecurityMechanism;
+    use crate::{
+        prelude::{Context, DealerSocket, SocketOption, ZmqResult},
+        zmq_sys_crate,
+    };
+
+    #[test]
+    fn apply_null_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+
+        SecurityMechanism::Null.apply(&socket)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::Mechanism)?,
+            zmq_sys_crate::ZMQ_NULL as i32
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn apply_plain_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        let security = SecurityMechanism::Plain {
+            username: "username".to_string(),
+            password: "password".to_string(),
+        };
+
+        security.apply(&socket)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::Mechanism)?,
+            zmq_sys_crate::ZMQ_PLAIN as i32
+        );
+        assert_eq!(
+            socket.get_sockopt_string(SocketOption::PlainUsername)?,
+            "username"
+        );
+        assert_eq!(
+            socket.get_sockopt_string(SocketOption::PlainPassword)?,
+            "password"
+        );
+
+        Ok(())
+    }
+
+    #[cfg(all(feature = "curve", not(windows)))]
+    #[test]
+    fn apply_curve_server_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        let security = SecurityMechanism::CurveServer {
+            secret_key: vec![1, 2, 3],
+        };
+        security.apply(&socket)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::Mechanism)?,
+            zmq_sys_crate::ZMQ_CURVE as i32
+        );
+        assert_eq!(socket.get_sockopt_bool(SocketOption::CurveServer)?, true);
+        assert_eq!(
+            socket.get_sockopt_bytes(SocketOption::CurveSecretKey)?,
+            vec![1, 2, 3]
+        );
+
+        Ok(())
+    }
+
+    #[cfg(all(feature = "curve", not(windows)))]
+    #[test]
+    fn apply_curve_client_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        let security = SecurityMechanism::CurveClient {
+            server_key: vec![1, 2, 3],
+            public_key: vec![4, 5, 6],
+            secret_key: vec![7, 8, 9],
+        };
+        security.apply(&socket)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(SocketOption::Mechanism)?,
+            zmq_sys_crate::ZMQ_CURVE as i32
+        );
+        assert_eq!(socket.get_sockopt_bool(SocketOption::CurveServer)?, false);
+        assert_eq!(
+            socket.get_sockopt_bytes(SocketOption::CurveServerKey)?,
+            vec![1, 2, 3]
+        );
+        assert_eq!(
+            socket.get_sockopt_bytes(SocketOption::CurvePublicKey)?,
+            vec![4, 5, 6]
+        );
+        assert_eq!(
+            socket.get_sockopt_bytes(SocketOption::CurveSecretKey)?,
+            vec![7, 8, 9]
+        );
+
+        Ok(())
+    }
+}
+
+#[cfg(all(feature = "curve", not(windows)))]
 #[doc(cfg(all(feature = "curve", not(windows))))]
 /// Z85 decoding error
 pub use z85::DecodeError as Z85DecodeError;
-#[cfg(feature = "curve")]
+#[cfg(all(feature = "curve", not(windows)))]
 #[doc(cfg(all(feature = "curve", not(windows))))]
 pub use z85::{decode as z85_decode, encode as z85_encode};
 
@@ -155,7 +263,7 @@ pub use z85::{decode as z85_decode, encode as z85_encode};
 ///
 /// [`curve_keypair()`]: curve_keypair
 /// [`z85_encode()`]: z85_encode
-#[cfg(feature = "curve")]
+#[cfg(all(feature = "curve", not(windows)))]
 #[doc(cfg(all(feature = "curve", not(windows))))]
 pub fn curve_keypair() -> ZmqResult<(Vec<c_char>, Vec<c_char>)> {
     let mut public_key: [c_char; 41] = [0; 41];
@@ -181,7 +289,7 @@ pub fn curve_keypair() -> ZmqResult<(Vec<c_char>, Vec<c_char>)> {
 ///
 /// [`curve_public()`]: curve_public
 /// [`z85_encode()`]: z85_encode
-#[cfg(feature = "curve")]
+#[cfg(all(feature = "curve", not(windows)))]
 #[doc(cfg(all(feature = "curve", not(windows))))]
 pub fn curve_public<T>(mut secret_key: T) -> ZmqResult<Vec<c_char>>
 where
@@ -231,5 +339,25 @@ impl TryFrom<i32> for GssApiNametype {
             }
             _ => Err(ZmqError::Unsupported),
         }
+    }
+}
+
+#[cfg(test)]
+mod gss_api_nametype_tests {
+    use rstest::*;
+
+    use super::GssApiNametype;
+    use crate::{
+        prelude::{ZmqError, ZmqResult},
+        zmq_sys_crate,
+    };
+
+    #[rstest]
+    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32, Ok(GssApiNametype::NtHostbased))]
+    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32, Ok(GssApiNametype::NtUsername))]
+    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32, Ok(GssApiNametype::NtKrb5Principal))]
+    #[case(666, Err(ZmqError::Unsupported))]
+    fn nametype_try_from(#[case] value: i32, #[case] expected: ZmqResult<GssApiNametype>) {
+        assert_eq!(expected, GssApiNametype::try_from(value));
     }
 }

@@ -33,7 +33,7 @@ async fn main() -> ZmqResult<()> {
     let request_endpoint = reply.last_endpoint()?;
 
     let request = RequestSocket::from_context(&context)?;
-    request.connect(request_endpoint.as_str())?;
+    request.connect(request_endpoint)?;
 
     let request_handle = task::spawn(run_requester(request, "Hello"));
     let reply_handle = task::spawn(run_replier(reply, "World"));

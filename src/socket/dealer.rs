@@ -252,7 +252,7 @@ mod dealer_tests {
         });
 
         let dealer_client = DealerSocket::from_context(&context)?;
-        dealer_client.connect(&client_endpoint)?;
+        dealer_client.connect(client_endpoint)?;
 
         let multipart: Vec<Message> = vec![vec![].into(), "Hello".into()];
         dealer_client.send_multipart(multipart, SendFlags::empty())?;
@@ -289,7 +289,7 @@ mod dealer_tests {
         });
 
         let dealer_client = DealerSocket::from_context(&context)?;
-        dealer_client.connect(&client_endpoint)?;
+        dealer_client.connect(client_endpoint)?;
 
         futures::executor::block_on(async {
             let multipart: Vec<Message> = vec![vec![].into(), "Hello".into()];

@@ -132,6 +132,57 @@ impl Socket<Publish> {
     }
 }
 
+#[cfg(test)]
+mod publish_tests {
+    use super::PublishSocket;
+    use crate::prelude::{Context, SocketOption, ZmqResult};
+
+    #[test]
+    fn set_conflate_sets_conflate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PublishSocket::from_context(&context)?;
+        socket.set_conflate(true)?;
+
+        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_invert_matching_sets_invert_matching() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PublishSocket::from_context(&context)?;
+        socket.set_invert_matching(true)?;
+
+        assert!(socket.invert_matching()?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_nodrop_sets_nodrop() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PublishSocket::from_context(&context)?;
+        socket.set_nodrop(true)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_returns_topic_count() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PublishSocket::from_context(&context)?;
+        assert_eq!(socket.topic_count()?, 0);
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -168,17 +219,17 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(conflate) = self.conflate {
-                socket.set_conflate(conflate)?;
-            }
+            self.conflate
+                .iter()
+                .try_for_each(|&conflate| socket.set_conflate(conflate))?;
 
-            if let Some(invert_matching) = self.invert_matching {
-                socket.set_invert_matching(invert_matching)?;
-            }
+            self.invert_matching
+                .iter()
+                .try_for_each(|&invert_matching| socket.set_invert_matching(invert_matching))?;
 
-            if let Some(nodrop) = self.nodrop {
-                socket.set_nodrop(nodrop)?;
-            }
+            self.nodrop
+                .iter()
+                .try_for_each(|&nodrop| socket.set_nodrop(nodrop))?;
 
             Ok(())
         }
@@ -189,6 +240,41 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod publish_builder_tests {
+        use super::PublishBuilder;
+        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+
+        #[test]
+        fn default_publish_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = PublishBuilder::default().build_from_context(&context)?;
+
+            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(!socket.invert_matching()?);
+
+            Ok(())
+        }
+
+        #[test]
+        fn publish_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = PublishBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .invert_matching(true)
+                .conflate(true)
+                .nodrop(true)
+                .build_from_context(&context)?;
+
+            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(socket.invert_matching()?);
+
+            Ok(())
         }
     }
 }

@@ -11,9 +11,9 @@ static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 fn run_radio_socket(radio: &RadioSocket, message: &str) -> ZmqResult<()> {
     let msg: Message = message.into();
-    msg.set_group(GROUP).unwrap();
+    msg.set_group(GROUP)?;
 
-    radio.send_msg(msg, SendFlags::empty()).unwrap();
+    radio.send_msg(msg, SendFlags::empty())?;
 
     Ok(())
 }
@@ -34,7 +34,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let dish = DishSocket::from_context(&context)?;
-    dish.connect(&dish_endpoint)?;
+    dish.connect(dish_endpoint)?;
     dish.join(GROUP)?;
 
     (0..iterations).try_for_each(|i| {

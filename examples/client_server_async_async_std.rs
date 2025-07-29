@@ -55,7 +55,7 @@ async fn main() -> ZmqResult<()> {
     let client_endpoint = server.last_endpoint()?;
 
     let client = ClientSocket::from_context(&context)?;
-    client.connect(&client_endpoint)?;
+    client.connect(client_endpoint)?;
 
     let client_handle = task::spawn(run_client(client, "Hello"));
     let server_handle = task::spawn(run_server(server, "World"));

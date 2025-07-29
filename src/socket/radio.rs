@@ -49,6 +49,24 @@ impl Socket<Radio> {
     }
 }
 
+#[cfg(test)]
+mod radio_tests {
+    use super::RadioSocket;
+    use crate::socket::{Context, ZmqResult};
+
+    #[test]
+    fn set_multicast_loop_sets_multicast_loop() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = RadioSocket::from_context(&context)?;
+        socket.set_multicast_loop(false)?;
+
+        assert!(!socket.multicast_loop()?);
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -81,9 +99,9 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(multicast_loop) = self.multicast_loop {
-                socket.set_multicast_loop(multicast_loop)?;
-            }
+            self.multicast_loop
+                .iter()
+                .try_for_each(|&multicast_loop| socket.set_multicast_loop(multicast_loop))?;
 
             Ok(())
         }
@@ -94,6 +112,37 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod radio_builder_tests {
+        use super::RadioBuilder;
+        use crate::socket::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_radio_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = RadioBuilder::default().build_from_context(&context)?;
+
+            assert!(socket.multicast_loop()?);
+
+            Ok(())
+        }
+
+        #[test]
+        fn radio_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = RadioBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .multicast_loop(false)
+                .build_from_context(&context)?;
+
+            assert!(!socket.multicast_loop()?);
+
+            Ok(())
         }
     }
 }

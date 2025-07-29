@@ -82,6 +82,32 @@ impl Socket<Server> {
     }
 }
 
+#[cfg(test)]
+mod server_tests {
+    use super::ServerSocket;
+    use crate::prelude::{Context, ZmqResult};
+
+    #[test]
+    fn set_hello_message_sets_hello_message() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = ServerSocket::from_context(&context)?;
+        socket.set_hello_message("hello")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_disconnect_message_sets_disconnect_message() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = ServerSocket::from_context(&context)?;
+        socket.set_disconnect_message("bye")?;
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -116,13 +142,15 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(hello_message) = self.hello_message {
-                socket.set_hello_message(hello_message)?;
-            }
+            self.hello_message
+                .iter()
+                .try_for_each(|hello_message| socket.set_hello_message(hello_message))?;
 
-            if let Some(disconnect_message) = self.disconnect_message {
-                socket.set_disconnect_message(disconnect_message)?;
-            }
+            self.disconnect_message
+                .iter()
+                .try_for_each(|disconnect_message| {
+                    socket.set_disconnect_message(disconnect_message)
+                })?;
 
             Ok(())
         }
@@ -133,6 +161,34 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod server_builder_tests {
+        use super::ServerBuilder;
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_server_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            ServerBuilder::default().build_from_context(&context)?;
+
+            Ok(())
+        }
+
+        #[test]
+        fn server_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            ServerBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .hello_message("hello")
+                .disconnect_message("byebye")
+                .build_from_context(&context)?;
+
+            Ok(())
         }
     }
 }

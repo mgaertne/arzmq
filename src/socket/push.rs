@@ -58,6 +58,24 @@ impl Socket<Push> {
     }
 }
 
+#[cfg(test)]
+mod pull_tests {
+    use super::PushSocket;
+    use crate::prelude::{Context, SocketOption, ZmqResult};
+
+    #[test]
+    fn set_conflate_sets_conflate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PushSocket::from_context(&context)?;
+        socket.set_conflate(true)?;
+
+        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -90,9 +108,9 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(conflate) = self.conflate {
-                socket.set_conflate(conflate)?;
-            }
+            self.conflate
+                .iter()
+                .try_for_each(|conflate| socket.set_conflate(*conflate))?;
 
             Ok(())
         }
@@ -103,6 +121,37 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod pull_builder_tests {
+        use super::PushBuilder;
+        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+
+        #[test]
+        fn default_pull_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = PushBuilder::default().build_from_context(&context)?;
+
+            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+            Ok(())
+        }
+
+        #[test]
+        fn pull_builder_with_custom_settings() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = PushBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .conflate(true)
+                .build_from_context(&context)?;
+
+            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+            Ok(())
         }
     }
 }

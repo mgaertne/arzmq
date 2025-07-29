@@ -20,7 +20,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let request = RequestSocket::from_context(&context)?;
-    request.connect(&request_endpoint)?;
+    request.connect(request_endpoint)?;
 
     (0..iterations).try_for_each(|_| common::run_send_recv(&request, "Hello"))
 }

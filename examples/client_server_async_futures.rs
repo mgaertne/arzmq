@@ -56,7 +56,7 @@ fn main() -> ZmqResult<()> {
         let client_endpoint = server.last_endpoint()?;
 
         let client = ClientSocket::from_context(&context)?;
-        client.connect(&client_endpoint)?;
+        client.connect(client_endpoint)?;
 
         let client_handle = executor
             .spawn_with_handle(run_client(client, "Hello"))

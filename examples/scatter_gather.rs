@@ -23,7 +23,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let gather = GatherSocket::from_context(&context)?;
-    gather.connect(&gather_endpoint)?;
+    gather.connect(gather_endpoint)?;
 
     (0..iterations).try_for_each(|i| {
         let msg = gather.recv_msg(RecvFlags::empty())?;

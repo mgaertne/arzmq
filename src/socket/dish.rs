@@ -42,6 +42,123 @@ impl Socket<Dish> {
     }
 }
 
+#[cfg(test)]
+mod dish_tests {
+    use super::DishSocket;
+    use crate::prelude::{
+        Context, Message, RadioSocket, Receiver, RecvFlags, SendFlags, Sender, ZmqError, ZmqResult,
+    };
+
+    #[test]
+    fn join_joins_group() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DishSocket::from_context(&context)?;
+        socket.join("asdf")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn join_when_already_joined() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DishSocket::from_context(&context)?;
+        socket.join("asdf")?;
+        let result = socket.join("asdf");
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[test]
+    fn leave_leaves_group() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DishSocket::from_context(&context)?;
+        socket.join("asdf")?;
+        socket.leave("asdf")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn leave_when_no_group_joined() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DishSocket::from_context(&context)?;
+        let result = socket.leave("asdf");
+
+        assert!(result.is_err_and(|err| err == ZmqError::InvalidArgument));
+
+        Ok(())
+    }
+
+    #[test]
+    fn radio_dish() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let radio = RadioSocket::from_context(&context)?;
+        radio.bind("tcp://127.0.0.1:*")?;
+        let dish_endpoint = radio.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            loop {
+                let message: Message = "radio-msg".into();
+                message.set_group("asdf").unwrap();
+                radio.send_msg(message, SendFlags::DONT_WAIT).unwrap();
+            }
+        });
+
+        let dish = DishSocket::from_context(&context)?;
+        dish.connect(dish_endpoint)?;
+        dish.join("asdf")?;
+
+        let msg = dish.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.group().unwrap(), "asdf");
+        assert_eq!(msg.to_string(), "radio-msg");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn radio_dish_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let radio = RadioSocket::from_context(&context)?;
+        radio.bind("tcp://127.0.0.1:*")?;
+        let dish_endpoint = radio.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            futures::executor::block_on(async {
+                loop {
+                    let message: Message = "radio-msg".into();
+                    message.set_group("asdf").unwrap();
+                    radio.send_msg_async(message, SendFlags::DONT_WAIT).await;
+                }
+            })
+        });
+
+        let dish = DishSocket::from_context(&context)?;
+        dish.connect(dish_endpoint)?;
+        dish.join("asdf")?;
+
+        futures::executor::block_on(async {
+            loop {
+                if let Some(msg) = dish.recv_msg_async().await {
+                    assert_eq!(msg.group().unwrap(), "asdf");
+                    assert_eq!(msg.to_string(), "radio-msg");
+                    break;
+                }
+            }
+        });
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use derive_builder::Builder;
@@ -72,9 +189,7 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(join) = self.join {
-                socket.join(&join)?;
-            }
+            self.join.iter().try_for_each(|join| socket.join(join))?;
 
             Ok(())
         }
@@ -85,6 +200,31 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+    #[cfg(test)]
+    mod dish_builder_tests {
+        use super::DishBuilder;
+        use crate::prelude::{Context, ZmqResult};
+
+        #[test]
+        fn default_dish_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            DishBuilder::default().build_from_context(&context)?;
+
+            Ok(())
+        }
+
+        #[test]
+        fn dish_builder_with_custom_settings() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            DishBuilder::default()
+                .join("asdf")
+                .build_from_context(&context)?;
+
+            Ok(())
         }
     }
 }

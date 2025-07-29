@@ -24,7 +24,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let xsubscribe = XSubscribeSocket::from_context(&context)?;
-    xsubscribe.connect(&xsubscribe_endpoint)?;
+    xsubscribe.connect(xsubscribe_endpoint)?;
     xsubscribe.subscribe(SUBSCRIBED_TOPIC)?;
 
     (0..iterations).try_for_each(|number| {

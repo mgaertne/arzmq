@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let subscribe = SubscribeSocket::from_context(&context)?;
-    subscribe.connect(&subscribe_endpoint)?;
+    subscribe.connect(subscribe_endpoint)?;
 
     subscribe.subscribe(SUBSCRIBED_TOPIC)?;
 

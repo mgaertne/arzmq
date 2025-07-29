@@ -85,7 +85,7 @@
 //!     });
 //!
 //!     let subscribe = SubscribeSocket::from_context(&context)?;
-//!     subscribe.connect(&subscribe_endpoint)?;
+//!     subscribe.connect(subscribe_endpoint)?;
 //!     subscribe.subscribe(SUBSCRIBED_TOPIC)?;
 //!
 //!     (0..iterations).try_for_each(|number| {
@@ -144,7 +144,7 @@
 //!     });
 //!
 //!     let xsubscribe = XSubscribeSocket::from_context(&context)?;
-//!     xsubscribe.connect(&xsubscribe_endpoint)?;
+//!     xsubscribe.connect(xsubscribe_endpoint)?;
 //!     xsubscribe.subscribe(SUBSCRIBED_TOPIC)?;
 //!
 //!     (0..iterations).try_for_each(|number| {
@@ -220,7 +220,7 @@
 //!     });
 //!
 //!     let client = ClientSocket::from_context(&context)?;
-//!     client.connect(&client_endpoint)?;
+//!     client.connect(client_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|number| {
 //!         run_send_recv(&client, "Hello")
@@ -292,7 +292,7 @@
 //!     });
 //!
 //!     let dish = DishSocket::from_context(&context)?;
-//!     dish.connect(&dish_endpoint)?;
+//!     dish.connect(dish_endpoint)?;
 //!     dish.join(GROUP)?;
 //!
 //!     (0..iterations).try_for_each(|_| {
@@ -343,7 +343,7 @@
 //!     });
 //!
 //!     let pull = PullSocket::from_context(&context)?;
-//!     pull.connect(&pull_endpoint)?;
+//!     pull.connect(pull_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| {
 //!         let msg = pull.recv_msg(RecvFlags::empty())?;
@@ -408,7 +408,7 @@
 //!     });
 //!
 //!     let gather = GatherSocket::from_context(&context)?;
-//!     gather.connect(&gather_endpoint)?;
+//!     gather.connect(gather_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| {
 //!         let msg = gather.recv_msg(RecvFlags::empty())?;
@@ -669,7 +669,7 @@
 //!     let zmq_stream = StreamSocket::from_context(&context)?;
 //!
 //!     let stream_endpoint = format!("tcp://127.0.0.1:{port}");
-//!     zmq_stream.connect(&stream_endpoint)?;
+//!     zmq_stream.connect(stream_endpoint)?;
 //!
 //!     let mut connect_msg = zmq_stream.recv_multipart(RecvFlags::empty())?;
 //!     let routing_id = connect_msg.pop_front().unwrap();
@@ -791,7 +791,7 @@
 //!     });
 //!
 //!     let request = RequestSocket::from_context(&context)?;
-//!     request.connect(&request_endpoint)?;
+//!     request.connect(request_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| run_send_recv(&request, "Hello"))
 //! }
@@ -846,7 +846,7 @@
 //!     });
 //!
 //!     let request = RequestSocket::from_context(&context)?;
-//!     request.connect(&request_endpoint)?;
+//!     request.connect(request_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| run_send_recv(&request, "Hello"))
 //! }
@@ -906,7 +906,7 @@
 //!     });
 //!
 //!     let dealer = DealerSocket::from_context(&context)?;
-//!     dealer.connect(&dealer_endpoint)?;
+//!     dealer.connect(dealer_endpoint)?;
 //!
 //!     (0..iterations).try_for_each(|_| run_multipart_send_recv(&dealer, "Hello"))
 //! }

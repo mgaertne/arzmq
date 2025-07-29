@@ -130,6 +130,116 @@ impl Socket<Request> {
     }
 }
 
+#[cfg(test)]
+mod request_tests {
+    use super::RequestSocket;
+    use crate::socket::{Context, Receiver, RecvFlags, ReplySocket, SendFlags, Sender, ZmqResult};
+
+    #[test]
+    fn set_correlate_sets_correlate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = RequestSocket::from_context(&context)?;
+        socket.set_correlate(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_relaxed_sets_relaxed() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = RequestSocket::from_context(&context)?;
+        socket.set_relaxed(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_routing_id_sets_routing_id() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = RequestSocket::from_context(&context)?;
+        socket.set_routing_id("asdf")?;
+
+        assert_eq!(socket.routing_id()?, "asdf");
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_probe_router_sets_probe_router() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = RequestSocket::from_context(&context)?;
+        socket.set_probe_router(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn request_reply() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let reply = ReplySocket::from_context(&context)?;
+        reply.bind("tcp://127.0.0.1:*")?;
+        let request_endpoint = reply.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            let msg = reply.recv_msg(RecvFlags::empty()).unwrap();
+            assert_eq!(msg.to_string(), "Hello");
+            reply.send_msg("World", SendFlags::empty()).unwrap();
+        });
+
+        let request = RequestSocket::from_context(&context)?;
+        request.connect(request_endpoint)?;
+
+        request.send_msg("Hello", SendFlags::empty())?;
+        let reply = request.recv_msg(RecvFlags::empty())?;
+
+        assert_eq!(reply.to_string(), "World");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn request_reply_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let reply = ReplySocket::from_context(&context)?;
+        reply.bind("tcp://127.0.0.1:*")?;
+        let request_endpoint = reply.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            futures::executor::block_on(async {
+                loop {
+                    if let Some(msg) = reply.recv_msg_async().await {
+                        assert_eq!(msg.to_string(), "Hello");
+                        reply.send_msg_async("World", SendFlags::empty()).await;
+                        break;
+                    }
+                }
+            })
+        });
+
+        let request = RequestSocket::from_context(&context)?;
+        request.connect(request_endpoint)?;
+
+        futures::executor::block_on(async {
+            request.send_msg_async("Hello", SendFlags::empty()).await;
+            loop {
+                if let Some(msg) = request.recv_msg_async().await {
+                    assert_eq!(msg.to_string(), "World");
+                    break;
+                }
+            }
+
+            Ok(())
+        })
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -166,17 +276,17 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(correlate) = self.correlate {
-                socket.set_correlate(correlate)?;
-            }
+            self.correlate
+                .iter()
+                .try_for_each(|&correlate| socket.set_correlate(correlate))?;
 
-            if let Some(relaxed) = self.relaxed {
-                socket.set_relaxed(relaxed)?;
-            }
+            self.relaxed
+                .iter()
+                .try_for_each(|&relaxed| socket.set_relaxed(relaxed))?;
 
-            if let Some(routing_id) = self.routing_id {
-                socket.set_routing_id(&routing_id)?;
-            }
+            self.routing_id
+                .iter()
+                .try_for_each(|routing_id| socket.set_routing_id(routing_id))?;
 
             Ok(())
         }
@@ -187,6 +297,39 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod request_builder_tests {
+        use super::RequestBuilder;
+        use crate::socket::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_request_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = RequestBuilder::default().build_from_context(&context)?;
+
+            assert_eq!(socket.routing_id()?, "");
+
+            Ok(())
+        }
+
+        #[test]
+        fn request_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = RequestBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .correlate(true)
+                .relaxed(true)
+                .routing_id("asdf")
+                .build_from_context(&context)?;
+
+            assert_eq!(socket.routing_id()?, "asdf");
+
+            Ok(())
         }
     }
 }

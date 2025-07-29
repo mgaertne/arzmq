@@ -1,4 +1,6 @@
-use super::{MultipartReceiver, MultipartSender, Socket, SocketOption, SocketType};
+#[cfg(feature = "draft-api")]
+use super::SocketOption;
+use super::{MultipartReceiver, MultipartSender, SendFlags, Sender, Socket, SocketType};
 use crate::{ZmqResult, sealed};
 
 /// # A XSubscribe socket `ZMQ_XSUB`
@@ -30,7 +32,7 @@ impl MultipartReceiver for Socket<XSubscribe> {}
 
 impl sealed::SocketType for XSubscribe {
     fn raw_socket_type() -> SocketType {
-        SocketType::Subscribe
+        SocketType::XSubscribe
     }
 }
 
@@ -66,7 +68,25 @@ impl Socket<XSubscribe> {
     where
         V: AsRef<[u8]>,
     {
-        self.set_sockopt_bytes(SocketOption::Subscribe, topic.as_ref())
+        let mut byte_string = vec![1];
+        byte_string.extend_from_slice(topic.as_ref());
+        self.send_msg(byte_string, SendFlags::empty())
+    }
+
+    #[cfg(feature = "futures")]
+    #[doc(cfg(feature = "futures"))]
+    /// # Establish message filter `ZMQ_SUBSCRIBE`
+    ///
+    /// This is the async variant of [`subscribe()`].
+    ///
+    /// [`subscribe()`]: #method.subscribe
+    pub async fn subscribe_async<V>(&self, topic: V)
+    where
+        V: AsRef<[u8]>,
+    {
+        let mut byte_string = vec![1];
+        byte_string.extend_from_slice(topic.as_ref());
+        self.send_msg_async(byte_string, SendFlags::empty()).await;
     }
 
     /// # Remove message filter `ZMQ_UNSUBSCRIBE`
@@ -84,7 +104,25 @@ impl Socket<XSubscribe> {
     where
         V: AsRef<[u8]>,
     {
-        self.set_sockopt_bytes(SocketOption::Unsubscribe, topic.as_ref())
+        let mut byte_string = vec![0];
+        byte_string.extend_from_slice(topic.as_ref());
+        self.send_msg(byte_string, SendFlags::empty())
+    }
+
+    /// # Remove message filter `ZMQ_UNSUBSCRIBE`
+    ///
+    /// This is the async variant of [`unsubscribe()`].
+    ///
+    /// [`unsubscribe()`]: #method.unsubscribe
+    #[cfg(feature = "futures")]
+    #[doc(cfg(feature = "futures"))]
+    pub async fn unsubscribe_async<V>(&self, topic: V)
+    where
+        V: AsRef<[u8]>,
+    {
+        let mut byte_string = vec![0];
+        byte_string.extend_from_slice(topic.as_ref());
+        self.send_msg_async(byte_string, SendFlags::empty()).await;
     }
 
     /// # Number of topic subscriptions received `ZMQ_TOPICS_COUNT`
@@ -117,6 +155,181 @@ impl Socket<XSubscribe> {
     #[doc(cfg(feature = "draft-api"))]
     pub fn set_verbose_unsubscribe(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::XsubVerboseUnsubscribe, value)
+    }
+}
+
+#[cfg(test)]
+mod xsubscribe_tests {
+    use super::XSubscribeSocket;
+    use crate::prelude::{
+        Context, PublishSocket, Receiver, RecvFlags, SendFlags, Sender, XPublishSocket, ZmqResult,
+    };
+
+    #[test]
+    fn subscribe_subscribes_to_topic() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let publish = PublishSocket::from_context(&context)?;
+        publish.bind("tcp://127.0.0.1:*")?;
+        let xsubscribe_endpoint = publish.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            loop {
+                publish.send_msg("topic asdf", SendFlags::empty()).unwrap();
+            }
+        });
+
+        let xsubscribe = XSubscribeSocket::from_context(&context)?;
+        xsubscribe.connect(xsubscribe_endpoint)?;
+        xsubscribe.subscribe("topic")?;
+
+        let msg = xsubscribe.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.to_string(), "topic asdf");
+
+        Ok(())
+    }
+
+    #[test]
+    fn unsubscribe_unsubscribes_from_topic() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = XSubscribeSocket::from_context(&context)?;
+        socket.unsubscribe("asdf")?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_only_first_subscribe_sets_only_first_subscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = XSubscribeSocket::from_context(&context)?;
+        socket.set_only_first_subscribe(true)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_returns_topic_count() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = XSubscribeSocket::from_context(&context)?;
+        assert_eq!(socket.topic_count()?, 0);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_returns_topic_count_after_subscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let publish = PublishSocket::from_context(&context)?;
+        publish.bind("tcp://127.0.0.1:*")?;
+        let xsubscribe_endpoint = publish.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            loop {
+                publish.send_msg("topic2 asdf", SendFlags::empty()).unwrap();
+            }
+        });
+
+        let xsubscribe = XSubscribeSocket::from_context(&context)?;
+        xsubscribe.connect(xsubscribe_endpoint)?;
+        xsubscribe.subscribe("topic1")?;
+        xsubscribe.subscribe("topic2")?;
+        xsubscribe.subscribe("topic3")?;
+
+        assert_eq!(xsubscribe.topic_count()?, 3);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_verbose_unsubscribe_sets_verbose_unsubscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = XSubscribeSocket::from_context(&context)?;
+        socket.set_verbose_unsubscribe(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn xpublish_xsubscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.bind("tcp://127.0.0.1:*")?;
+        let xsubscribe_endpoint = xpublish.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            let msg = xpublish.recv_msg(RecvFlags::empty()).unwrap();
+            assert_eq!(msg.bytes()[0], 1);
+            assert_eq!(&msg.to_string()[1..], "topic");
+
+            loop {
+                xpublish.send_msg("topic asdf", SendFlags::empty()).unwrap();
+            }
+        });
+
+        let xsubscribe = XSubscribeSocket::from_context(&context)?;
+        xsubscribe.connect(xsubscribe_endpoint)?;
+        xsubscribe.subscribe("topic")?;
+
+        let msg = xsubscribe.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.to_string(), "topic asdf");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn xpublish_xsubscribe_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.bind("tcp://127.0.0.1:*")?;
+        let xsubscribe_endpoint = xpublish.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            futures::executor::block_on(async {
+                loop {
+                    if let Some(msg) = xpublish.recv_msg_async().await {
+                        assert_eq!(msg.bytes()[0], 1);
+                        assert_eq!(&msg.to_string()[1..], "topic");
+                        break;
+                    }
+                }
+
+                loop {
+                    xpublish
+                        .send_msg_async("topic asdf", SendFlags::empty())
+                        .await;
+                }
+            })
+        });
+
+        let xsubscribe = XSubscribeSocket::from_context(&context)?;
+        xsubscribe.connect(xsubscribe_endpoint)?;
+
+        futures::executor::block_on(async {
+            xsubscribe.subscribe_async("topic").await;
+
+            loop {
+                if let Some(msg) = xsubscribe.recv_msg_async().await {
+                    assert_eq!(msg.to_string(), "topic asdf");
+                    break;
+                }
+            }
+
+            xsubscribe.unsubscribe_async("topic").await;
+
+            Ok(())
+        })
     }
 }
 
@@ -156,14 +369,16 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            #[cfg(feature = "draft-api")]
-            if let Some(only_first_subscribe) = self.only_first_subscribe {
-                socket.set_only_first_subscribe(only_first_subscribe)?;
-            }
+            self.subscribe
+                .iter()
+                .try_for_each(|topic| socket.subscribe(topic))?;
 
-            if let Some(subscribe) = self.subscribe {
-                socket.subscribe(&subscribe)?;
-            }
+            #[cfg(feature = "draft-api")]
+            self.only_first_subscribe
+                .iter()
+                .try_for_each(|only_first_subscribe| {
+                    socket.set_only_first_subscribe(*only_first_subscribe)
+                })?;
 
             Ok(())
         }
@@ -174,6 +389,37 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod xsubscribe_builder_tests {
+        use super::XSubscribeBuilder;
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_xsubscribe_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            XSubscribeBuilder::default().build_from_context(&context)?;
+
+            Ok(())
+        }
+
+        #[test]
+        fn xsubscribe_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let builder = XSubscribeBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .subscribe("asdf");
+
+            #[cfg(feature = "draft-api")]
+            let builder = builder.only_first_subscribe(true);
+
+            builder.build_from_context(&context)?;
+
+            Ok(())
         }
     }
 }

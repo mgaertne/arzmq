@@ -222,6 +222,178 @@ impl Socket<XPublish> {
     }
 }
 
+#[cfg(test)]
+mod xpublish_tests {
+    use super::XPublishSocket;
+    use crate::prelude::{
+        Context, Receiver, RecvFlags, SendFlags, Sender, SubscribeSocket, ZmqResult,
+    };
+
+    #[test]
+    fn subscribe_acknowledges_manual_subscriptions() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.bind("tcp://127.0.0.1:*")?;
+        let subscribe_endpoint = xpublish.last_endpoint()?;
+        xpublish.set_manual(true)?;
+
+        std::thread::spawn(move || {
+            let msg = xpublish.recv_msg(RecvFlags::empty()).unwrap();
+            assert_eq!(msg.bytes()[0], 1);
+            assert_eq!(&msg.to_string()[1..], "topic");
+
+            xpublish.subscribe("topic").unwrap();
+
+            xpublish.send_msg("topic asdf", SendFlags::empty()).unwrap();
+        });
+
+        let subscribe = SubscribeSocket::from_context(&context)?;
+        subscribe.connect(subscribe_endpoint)?;
+        subscribe.subscribe("topic")?;
+
+        let msg = subscribe.recv_msg(RecvFlags::empty())?;
+
+        assert_eq!(msg.to_string(), "topic asdf");
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_invert_matching_sets_invert_matching() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_invert_matching(true)?;
+
+        assert!(xpublish.invert_matching()?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_no_drop_sets_no_drop() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_nodrop(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_verbose_sets_verbose() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_verbose(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_verboser_sets_verboser() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_verboser(true)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_manual_sets_manual() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_manual(true)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_manual_last_value_sets_manual_last_value() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_manual_last_value(true)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_welcome_msg_sets_welcome_msg() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_welcome_msg("welcome")?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_only_first_subscribe_sets_only_first_subscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_only_first_subscribe(true)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_with_no_subscriber() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.set_manual(true)?;
+
+        assert_eq!(xpublish.topic_count()?, 0);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_returns_subscribed_topic_count() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let xpublish = XPublishSocket::from_context(&context)?;
+        xpublish.bind("tcp://127.0.0.1:*")?;
+        let subscribe_endpoint = xpublish.last_endpoint()?;
+        xpublish.set_manual(true)?;
+
+        let subscribe = SubscribeSocket::from_context(&context)?;
+        subscribe.connect(subscribe_endpoint)?;
+
+        subscribe.subscribe("topic1")?;
+        let msg = xpublish.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.bytes()[0], 1);
+        assert_eq!(&msg.to_string()[1..], "topic1");
+        xpublish.subscribe("topic")?;
+
+        subscribe.subscribe("topic2")?;
+        let msg = xpublish.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.bytes()[0], 1);
+        assert_eq!(&msg.to_string()[1..], "topic2");
+        xpublish.subscribe("topic2")?;
+
+        subscribe.subscribe("topic3")?;
+        let msg = xpublish.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.bytes()[0], 1);
+        assert_eq!(&msg.to_string()[1..], "topic3");
+        xpublish.subscribe("topic3")?;
+
+        assert_eq!(xpublish.topic_count()?, 3);
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -274,40 +446,44 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(invert_matching) = self.invert_matching {
-                socket.set_invert_matching(invert_matching)?;
-            }
+            self.invert_matching
+                .iter()
+                .try_for_each(|invert_matching| socket.set_invert_matching(*invert_matching))?;
 
-            if let Some(nodrop) = self.nodrop {
-                socket.set_nodrop(nodrop)?;
-            }
+            self.nodrop
+                .iter()
+                .try_for_each(|nodrop| socket.set_nodrop(*nodrop))?;
 
-            if let Some(verbose) = self.verbose {
-                socket.set_verbose(verbose)?;
-            }
+            self.verbose
+                .iter()
+                .try_for_each(|verbose| socket.set_verbose(*verbose))?;
 
-            if let Some(verboser) = self.verboser {
-                socket.set_verboser(verboser)?;
-            }
+            self.verboser
+                .iter()
+                .try_for_each(|verboser| socket.set_verboser(*verboser))?;
 
-            if let Some(manual) = self.manual {
-                socket.set_manual(manual)?;
-            }
-
-            #[cfg(feature = "draft-api")]
-            if let Some(manual_last_value) = self.manual_last_value {
-                socket.set_manual_last_value(manual_last_value)?;
-            }
+            self.manual
+                .iter()
+                .try_for_each(|manual| socket.set_manual(*manual))?;
 
             #[cfg(feature = "draft-api")]
-            if let Some(welcome_msg) = self.welcome_msg {
-                socket.set_welcome_msg(&welcome_msg)?;
-            }
+            self.manual_last_value
+                .iter()
+                .try_for_each(|manual_last_value| {
+                    socket.set_manual_last_value(*manual_last_value)
+                })?;
 
             #[cfg(feature = "draft-api")]
-            if let Some(only_first_subscribe) = self.only_first_subscribe {
-                socket.set_only_first_subscribe(only_first_subscribe)?;
-            }
+            self.welcome_msg
+                .iter()
+                .try_for_each(|welcome_msg| socket.set_welcome_msg(welcome_msg))?;
+
+            #[cfg(feature = "draft-api")]
+            self.only_first_subscribe
+                .iter()
+                .try_for_each(|only_first_subscribe| {
+                    socket.set_only_first_subscribe(*only_first_subscribe)
+                })?;
 
             Ok(())
         }
@@ -318,6 +494,48 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod xpublish_builder_tests {
+        use super::XPublishBuilder;
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_xpublish_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = XPublishBuilder::default().build_from_context(&context)?;
+
+            assert!(!socket.invert_matching()?);
+
+            Ok(())
+        }
+
+        #[test]
+        fn xpublish_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let builder = XPublishBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .invert_matching(true)
+                .nodrop(true)
+                .verbose(true)
+                .verboser(true)
+                .manual(true);
+
+            #[cfg(feature = "draft-api")]
+            let builder = builder
+                .manual_last_value(true)
+                .welcome_msg("test".to_string())
+                .only_first_subscribe(true);
+
+            let socket = builder.build_from_context(&context)?;
+
+            assert!(socket.invert_matching()?);
+
+            Ok(())
         }
     }
 }

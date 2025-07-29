@@ -34,7 +34,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let client = ClientSocket::from_context(&context)?;
-    client.connect(&client_endpoint)?;
+    client.connect(client_endpoint)?;
 
     (0..iterations).try_for_each(|_| common::run_send_recv(&client, "Hello"))?;
 

@@ -19,7 +19,7 @@ fn main() -> ZmqResult<()> {
     thread::spawn(move || common::run_publisher(&push, "important update").unwrap());
 
     let pull = PullSocket::from_context(&context)?;
-    pull.connect(&pull_endpoint)?;
+    pull.connect(pull_endpoint)?;
 
     (0..iterations).try_for_each(|i| {
         let msg = pull.recv_msg(RecvFlags::empty())?;

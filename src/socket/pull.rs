@@ -50,6 +50,81 @@ impl Socket<Pull> {
     }
 }
 
+#[cfg(test)]
+mod pull_tests {
+    use super::PullSocket;
+    use crate::prelude::{
+        Context, PushSocket, Receiver, RecvFlags, SendFlags, Sender, SocketOption, ZmqResult,
+    };
+
+    #[test]
+    fn set_conflate_sets_conflate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PullSocket::from_context(&context)?;
+        socket.set_conflate(true)?;
+
+        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn push_pull() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let push = PushSocket::from_context(&context)?;
+        push.bind("tcp://127.0.0.1:*")?;
+        let pull_endpoint = push.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            loop {
+                push.send_msg("Hello", SendFlags::empty()).unwrap();
+            }
+        });
+
+        let pull = PullSocket::from_context(&context)?;
+        pull.connect(pull_endpoint)?;
+
+        let msg = pull.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.to_string(), "Hello");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn push_pull_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let push = PushSocket::from_context(&context)?;
+        push.bind("tcp://127.0.0.1:*")?;
+        let pull_endpoint = push.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            futures::executor::block_on(async {
+                loop {
+                    push.send_msg_async("Hello", SendFlags::empty()).await;
+                }
+            })
+        });
+
+        let pull = PullSocket::from_context(&context)?;
+        pull.connect(pull_endpoint)?;
+
+        futures::executor::block_on(async {
+            loop {
+                if let Some(msg) = pull.recv_msg_async().await {
+                    assert_eq!(msg.to_string(), "Hello");
+                    break;
+                }
+            }
+
+            Ok(())
+        })
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -82,9 +157,9 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(conflate) = self.conflate {
-                socket.set_conflate(conflate)?;
-            }
+            self.conflate
+                .iter()
+                .try_for_each(|conflate| socket.set_conflate(*conflate))?;
 
             Ok(())
         }
@@ -95,6 +170,37 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod pull_builder_tests {
+        use super::PullBuilder;
+        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+
+        #[test]
+        fn default_pull_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = PullBuilder::default().build_from_context(&context)?;
+
+            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+            Ok(())
+        }
+
+        #[test]
+        fn pull_builder_with_custom_settings() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = PullBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .conflate(true)
+                .build_from_context(&context)?;
+
+            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+            Ok(())
         }
     }
 }

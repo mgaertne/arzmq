@@ -542,6 +542,7 @@ impl RawSocket {
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::ETERM
+                | zmq_sys_crate::errno::EINVAL
                 | zmq_sys_crate::errno::EINTR
                 | zmq_sys_crate::errno::ENOTSOCK
                 | zmq_sys_crate::errno::EMTHREAD) => return Err(ZmqError::from(errno)),
@@ -562,6 +563,7 @@ impl RawSocket {
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::ETERM
+                | zmq_sys_crate::errno::EINVAL
                 | zmq_sys_crate::errno::EINTR
                 | zmq_sys_crate::errno::ENOTSOCK
                 | zmq_sys_crate::errno::EMTHREAD) => return Err(ZmqError::from(errno)),

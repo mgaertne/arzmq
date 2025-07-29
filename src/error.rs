@@ -171,3 +171,87 @@ impl From<ParseIntError> for ZmqError {
 
 /// 0MQ specific result type
 pub type ZmqResult<T, E = ZmqError> = Result<T, E>;
+
+#[cfg(test)]
+mod error_tests {
+    use alloc::ffi::CString;
+    use core::ffi::CStr;
+
+    use rstest::*;
+
+    use super::ZmqError;
+    use crate::zmq_sys_crate;
+
+    #[rstest]
+    #[case(zmq_sys_crate::errno::EAGAIN, ZmqError::Again)]
+    #[case(zmq_sys_crate::errno::EFAULT, ZmqError::ContextInvalid)]
+    #[case(zmq_sys_crate::errno::EINVAL, ZmqError::InvalidArgument)]
+    #[case(zmq_sys_crate::errno::ENOTSUP, ZmqError::Unsupported)]
+    #[case(zmq_sys_crate::errno::EPROTONOSUPPORT, ZmqError::ProtocolNotSupported)]
+    #[case(zmq_sys_crate::errno::ENOBUFS, ZmqError::NoBufferSpaceAvailable)]
+    #[case(zmq_sys_crate::errno::ENETDOWN, ZmqError::NetworkDown)]
+    #[case(zmq_sys_crate::errno::EADDRINUSE, ZmqError::AddressInUse)]
+    #[case(zmq_sys_crate::errno::EADDRNOTAVAIL, ZmqError::AddressNotAvailable)]
+    #[case(zmq_sys_crate::errno::ECONNREFUSED, ZmqError::ConnectionRefused)]
+    #[case(zmq_sys_crate::errno::EINPROGRESS, ZmqError::OperationInProgress)]
+    #[case(zmq_sys_crate::errno::ENOTSOCK, ZmqError::SocketNull)]
+    #[case(zmq_sys_crate::errno::EMSGSIZE, ZmqError::MessageTooLong)]
+    #[case(
+        zmq_sys_crate::errno::EAFNOSUPPORT,
+        ZmqError::AddressFamilyNotSupported
+    )]
+    #[case(zmq_sys_crate::errno::ENETUNREACH, ZmqError::NetworkUnreachable)]
+    #[case(zmq_sys_crate::errno::ECONNABORTED, ZmqError::ConnectionAborted)]
+    #[case(zmq_sys_crate::errno::ECONNRESET, ZmqError::ConnectionReset)]
+    #[case(zmq_sys_crate::errno::ENOTCONN, ZmqError::NotConnected)]
+    #[case(zmq_sys_crate::errno::ETIMEDOUT, ZmqError::ConnectionTimeout)]
+    #[case(zmq_sys_crate::errno::EHOSTUNREACH, ZmqError::HostUnreachable)]
+    #[case(zmq_sys_crate::errno::ENETRESET, ZmqError::NetworkReset)]
+    #[case(zmq_sys_crate::errno::EFSM, ZmqError::OperationNotPossible)]
+    #[case(zmq_sys_crate::errno::ENOCOMPATPROTO, ZmqError::ProtocolIncompatible)]
+    #[case(zmq_sys_crate::errno::ETERM, ZmqError::ContextTerminated)]
+    #[case(zmq_sys_crate::errno::EMTHREAD, ZmqError::IoThreadUnavailable)]
+    #[case(zmq_sys_crate::errno::ENOENT, ZmqError::EndpointNotInUse)]
+    #[case(zmq_sys_crate::errno::EINTR, ZmqError::Interrupted)]
+    #[case(zmq_sys_crate::errno::EMFILE, ZmqError::TooManyOpenFiles)]
+    #[case(zmq_sys_crate::errno::EPROTO, ZmqError::TransportNotSupported)]
+    #[case(zmq_sys_crate::errno::ENODEV, ZmqError::NonExistentInterface)]
+    #[case(zmq_sys_crate::errno::ENOMEM, ZmqError::InsufficientMemory)]
+    fn test_zmq_error(#[case] errno: i32, #[case] expected: ZmqError) {
+        assert_eq!(ZmqError::from(errno), expected);
+    }
+
+    #[test]
+    fn from_bytes_until_nul_error() {
+        assert_eq!(
+            ZmqError::from(CStr::from_bytes_until_nul(&[]).unwrap_err()),
+            ZmqError::InvalidArgument
+        );
+    }
+
+    #[test]
+    fn from_into_string_error() {
+        let invalid_utf8 = vec![b'f', 0xff, b'o', b'o'];
+        let cstring = CString::new(invalid_utf8).expect("CString::new failed");
+        let err = cstring
+            .into_string()
+            .expect_err("into_string().err() failed");
+        assert_eq!(ZmqError::from(err), ZmqError::InvalidArgument);
+    }
+
+    #[test]
+    fn from_nul_error() {
+        assert_eq!(
+            ZmqError::from(CString::new(b"f\0oo".to_vec()).unwrap_err()),
+            ZmqError::InvalidArgument
+        );
+    }
+
+    #[test]
+    fn from_parse_int_error() {
+        assert_eq!(
+            ZmqError::from("".parse::<i32>().unwrap_err()),
+            ZmqError::InvalidArgument
+        );
+    }
+}

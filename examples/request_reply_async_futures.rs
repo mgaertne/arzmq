@@ -34,7 +34,7 @@ fn main() -> ZmqResult<()> {
         let request_endpoint = reply.last_endpoint()?;
 
         let request = RequestSocket::from_context(&context)?;
-        request.connect(request_endpoint.as_str())?;
+        request.connect(request_endpoint)?;
 
         let request_handle = executor
             .spawn_with_handle(run_requester(request, "Hello"))

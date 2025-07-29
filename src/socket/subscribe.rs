@@ -152,6 +152,155 @@ impl Socket<Subscribe> {
     }
 }
 
+#[cfg(test)]
+mod subscribe_tests {
+    use super::SubscribeSocket;
+    use crate::{
+        prelude::{Context, PublishSocket, Receiver, SendFlags, Sender, SocketOption, ZmqResult},
+        socket::RecvFlags,
+    };
+
+    #[test]
+    fn set_conflate_sets_conflate() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+        socket.set_conflate(true)?;
+
+        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_invert_matching_sets_invert_matching() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+        socket.set_invert_matching(true)?;
+
+        assert!(socket.invert_matching()?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn subscribe_sets_subscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+        socket.subscribe("topic")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn unsubscribe_sets_unsubscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+        socket.subscribe("topic")?;
+        socket.unsubscribe("topic")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn unsubscribe_when_not_subscribed() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+        socket.unsubscribe("topic")?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_with_no_subscriptions() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+
+        assert_eq!(socket.topic_count()?, 0);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn topic_count_when_subscribed() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = SubscribeSocket::from_context(&context)?;
+        socket.subscribe("topic")?;
+        socket.subscribe("topic2")?;
+
+        assert_eq!(socket.topic_count()?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn publish_subscribe() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let publish = PublishSocket::from_context(&context)?;
+        publish.bind("tcp://127.0.0.1:*")?;
+        let subscribe_endpoint = publish.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            loop {
+                publish.send_msg("topic asdf", SendFlags::empty()).unwrap();
+            }
+        });
+
+        let subscribe = SubscribeSocket::from_context(&context)?;
+        subscribe.connect(&subscribe_endpoint)?;
+        subscribe.subscribe("topic")?;
+
+        let msg = subscribe.recv_msg(RecvFlags::empty())?;
+
+        assert_eq!(msg.to_string().split_once(' ').unwrap(), ("topic", "asdf"));
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn publish_subscribe_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let publish = PublishSocket::from_context(&context)?;
+        publish.bind("tcp://127.0.0.1:*")?;
+        let subscribe_endpoint = publish.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            futures::executor::block_on(async {
+                loop {
+                    publish
+                        .send_msg_async("topic asdf", SendFlags::empty())
+                        .await;
+                }
+            })
+        });
+
+        let subscribe = SubscribeSocket::from_context(&context)?;
+        subscribe.connect(&subscribe_endpoint)?;
+        subscribe.subscribe("topic")?;
+
+        futures::executor::block_on(async {
+            loop {
+                if let Some(msg) = subscribe.recv_msg_async().await {
+                    assert_eq!(msg.to_string().split_once(' ').unwrap(), ("topic", "asdf"));
+                    break;
+                }
+            }
+            Ok(())
+        })
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -188,17 +337,17 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(conflate) = self.conflate {
-                socket.set_conflate(conflate)?;
-            }
+            self.conflate
+                .iter()
+                .try_for_each(|conflate| socket.set_conflate(*conflate))?;
 
-            if let Some(invert_matching) = self.invert_matching {
-                socket.set_invert_matching(invert_matching)?;
-            }
+            self.invert_matching
+                .iter()
+                .try_for_each(|invert_matching| socket.set_invert_matching(*invert_matching))?;
 
-            if let Some(subscribe) = self.subscribe {
-                socket.subscribe(subscribe)?;
-            }
+            self.subscribe
+                .iter()
+                .try_for_each(|subscribe| socket.subscribe(subscribe.as_bytes()))?;
 
             Ok(())
         }
@@ -209,6 +358,41 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod subscribe_builder_tests {
+        use super::SubscribeBuilder;
+        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+
+        #[test]
+        fn default_subscribe_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = SubscribeBuilder::default().build_from_context(&context)?;
+
+            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(!socket.invert_matching()?);
+
+            Ok(())
+        }
+
+        #[test]
+        fn subscribe_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = SubscribeBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .conflate(true)
+                .invert_matching(true)
+                .subscribe("topic")
+                .build_from_context(&context)?;
+
+            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(socket.invert_matching()?);
+
+            Ok(())
         }
     }
 }

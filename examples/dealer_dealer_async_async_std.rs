@@ -32,7 +32,7 @@ async fn main() -> ZmqResult<()> {
     let client_endpoint = dealer_server.last_endpoint()?;
 
     let dealer_client = DealerSocket::from_context(&context)?;
-    dealer_client.connect(&client_endpoint)?;
+    dealer_client.connect(client_endpoint)?;
 
     let dealer_handle = task::spawn(run_dealer_client(dealer_client, "Hello"));
     let reply_handle = task::spawn(run_dealer_server(dealer_server, "World"));

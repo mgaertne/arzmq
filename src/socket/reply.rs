@@ -74,6 +74,24 @@ impl Socket<Reply> {
     }
 }
 
+#[cfg(test)]
+mod reply_tests {
+    use super::*;
+    use crate::socket::{Context, ZmqResult};
+
+    #[test]
+    fn set_routing_id_sets_routing_id() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = ReplySocket::from_context(&context)?;
+        socket.set_routing_id("asdf")?;
+
+        assert_eq!(socket.routing_id()?, "asdf");
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use core::default::Default;
@@ -106,9 +124,9 @@ pub(crate) mod builder {
                 socket_builder.apply(socket)?;
             }
 
-            if let Some(routing_id) = self.routing_id {
-                socket.set_routing_id(routing_id)?;
-            }
+            self.routing_id
+                .iter()
+                .try_for_each(|routing_id| socket.set_routing_id(routing_id))?;
 
             Ok(())
         }
@@ -119,6 +137,37 @@ pub(crate) mod builder {
             self.apply(&socket)?;
 
             Ok(socket)
+        }
+    }
+
+    #[cfg(test)]
+    mod reply_builder_tests {
+        use super::ReplyBuilder;
+        use crate::socket::{Context, SocketBuilder, ZmqResult};
+
+        #[test]
+        fn default_reply_builder() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = ReplyBuilder::default().build_from_context(&context)?;
+
+            assert_eq!(socket.routing_id()?, "");
+
+            Ok(())
+        }
+
+        #[test]
+        fn reply_builder_with_custom_values() -> ZmqResult<()> {
+            let context = Context::new()?;
+
+            let socket = ReplyBuilder::default()
+                .socket_builder(SocketBuilder::default())
+                .routing_id("asdf")
+                .build_from_context(&context)?;
+
+            assert_eq!(socket.routing_id()?, "asdf");
+
+            Ok(())
         }
     }
 }

@@ -25,6 +25,69 @@ unsafe impl Send for Socket<Gather> {}
 
 impl Socket<Gather> {}
 
+#[cfg(test)]
+mod gather_tests {
+    use super::GatherSocket;
+    use crate::prelude::{
+        Context, Receiver, RecvFlags, ScatterSocket, SendFlags, Sender, ZmqResult,
+    };
+
+    #[test]
+    fn scatter_gather() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let scatter = ScatterSocket::from_context(&context)?;
+        scatter.bind("tcp://127.0.0.1:*")?;
+        let gather_endpoint = scatter.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            loop {
+                scatter.send_msg("asdf", SendFlags::empty()).unwrap();
+            }
+        });
+
+        let gather = GatherSocket::from_context(&context)?;
+        gather.connect(gather_endpoint)?;
+
+        let msg = gather.recv_msg(RecvFlags::empty())?;
+        assert_eq!(msg.to_string(), "asdf");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn scatter_gather_async() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let scatter = ScatterSocket::from_context(&context)?;
+        scatter.bind("tcp://127.0.0.1:*")?;
+        let gather_endpoint = scatter.last_endpoint()?;
+
+        std::thread::spawn(move || {
+            futures::executor::block_on(async {
+                loop {
+                    scatter.send_msg_async("asdf", SendFlags::empty()).await;
+                }
+            })
+        });
+
+        let gather = GatherSocket::from_context(&context)?;
+        gather.connect(gather_endpoint)?;
+
+        futures::executor::block_on(async {
+            loop {
+                if let Some(msg) = gather.recv_msg_async().await {
+                    assert_eq!(msg.to_string(), "asdf");
+                    break;
+                }
+            }
+
+            Ok(())
+        })
+    }
+}
+
 #[cfg(feature = "builder")]
 pub(crate) mod builder {
     use crate::socket::SocketBuilder;

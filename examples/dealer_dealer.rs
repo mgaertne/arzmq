@@ -20,7 +20,7 @@ fn main() -> ZmqResult<()> {
     });
 
     let dealer_client = DealerSocket::from_context(&context)?;
-    dealer_client.connect(&client_endpoint)?;
+    dealer_client.connect(client_endpoint)?;
 
     (0..iterations).try_for_each(|_| common::run_multipart_send_recv(&dealer_client, "Hello"))
 }
