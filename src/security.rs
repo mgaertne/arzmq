@@ -109,16 +109,15 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
             }
             #[cfg(all(feature = "curve", not(windows)))]
             value if value == zmq_sys_crate::ZMQ_CURVE as i32 => {
-                let secret_key = socket.get_sockopt_bytes(SocketOption::CurveSecretKey)?;
                 if socket.get_sockopt_bool(SocketOption::CurveServer)? {
-                    Ok(Self::CurveServer { secret_key })
+                    Ok(Self::CurveServer {
+                        secret_key: Default::default(),
+                    })
                 } else {
-                    let server_key = socket.get_sockopt_bytes(SocketOption::CurveServerKey)?;
-                    let public_key = socket.get_sockopt_bytes(SocketOption::CurvePublicKey)?;
                     Ok(Self::CurveClient {
-                        server_key,
-                        public_key,
-                        secret_key,
+                        server_key: Default::default(),
+                        public_key: Default::default(),
+                        secret_key: Default::default(),
                     })
                 }
             }
@@ -196,7 +195,10 @@ mod security_mechanism_tests {
 
         let socket = DealerSocket::from_context(&context)?;
         let security = SecurityMechanism::CurveServer {
-            secret_key: vec![1, 2, 3],
+            secret_key: vec![
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                24, 25, 26, 27, 28, 29, 30, 31, 0,
+            ],
         };
         security.apply(&socket)?;
 
@@ -204,6 +206,7 @@ mod security_mechanism_tests {
             socket.get_sockopt_int::<i32>(SocketOption::Mechanism)?,
             zmq_sys_crate::ZMQ_CURVE as i32
         );
+        assert!(socket.get_sockopt_bool(SocketOption::CurveServer)?);
 
         Ok(())
     }
@@ -215,9 +218,18 @@ mod security_mechanism_tests {
 
         let socket = DealerSocket::from_context(&context)?;
         let security = SecurityMechanism::CurveClient {
-            server_key: vec![1, 2, 3],
-            public_key: vec![4, 5, 6],
-            secret_key: vec![7, 8, 9],
+            server_key: vec![
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                24, 25, 26, 27, 28, 29, 30, 31, 0,
+            ],
+            public_key: vec![
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                24, 25, 26, 27, 28, 29, 30, 31, 0,
+            ],
+            secret_key: vec![
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                24, 25, 26, 27, 28, 29, 30, 31, 0,
+            ],
         };
         security.apply(&socket)?;
 
@@ -225,6 +237,7 @@ mod security_mechanism_tests {
             socket.get_sockopt_int::<i32>(SocketOption::Mechanism)?,
             zmq_sys_crate::ZMQ_CURVE as i32
         );
+        assert!(!socket.get_sockopt_bool(SocketOption::CurveServer)?);
 
         Ok(())
     }
