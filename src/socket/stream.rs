@@ -192,6 +192,7 @@ mod stream_tests {
         let tcp_endpoint = socket.last_endpoint()?;
 
         std::thread::spawn(move || {
+            let _routing_id = socket.recv_multipart(RecvFlags::empty()).unwrap();
             let mut multipart = socket.recv_multipart(RecvFlags::empty()).unwrap();
             let msg = multipart.pop_back().unwrap();
             assert_eq!(msg.to_string(), "Hello");
@@ -227,6 +228,7 @@ mod stream_tests {
 
         std::thread::spawn(move || {
             futures::executor::block_on(async {
+                let _routing_id = socket.recv_multipart_async().await;
                 let mut multipart = socket.recv_multipart_async().await;
                 let msg = multipart.pop_back().unwrap();
                 assert_eq!(msg.to_string(), "Hello");
