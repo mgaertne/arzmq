@@ -2,12 +2,10 @@
 //!
 //! Currently only support [`Null`] and [`Plain`] across different platforms. Curve is
 //! available with the <span class="stab portability"><code>curve</code></span> feature on Linux
-//! and MacOS, but not on Windows. [`GSSAPI`] values are available across the crate, but are not
-//! compiled in.
+//! and MacOS, but not on Windows.
 //!
 //! [`Null`]: SecurityMechanism::Null
 //! [`Plain`]: SecurityMechanism::Plain
-//! [`GSSAPI`]: SecurityMechanism::GssApiServer
 
 #[cfg(all(feature = "curve", not(windows)))]
 use core::{ffi::c_char, hint::cold_path};
@@ -48,14 +46,6 @@ pub enum SecurityMechanism {
     #[display("CurveServer {{ ... }}")]
     /// Elliptic curve server authentication and encryption
     CurveServer { secret_key: Vec<u8> },
-    #[doc(cfg(zmq_have_gssapi))]
-    #[display("GssApiClient {{ ... }}")]
-    /// GSSAPI client authentication and encryption
-    GssApiClient { service_principal: String },
-    #[doc(cfg(zmq_have_gssapi))]
-    #[display("GssApiServer {{ ... }}")]
-    /// GSSAPI server authentication and encryption
-    GssApiServer,
 }
 
 impl SecurityMechanism {
@@ -83,14 +73,6 @@ impl SecurityMechanism {
                 socket.set_sockopt_bytes(SocketOption::CurvePublicKey, public_key)?;
                 socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key)?;
             }
-            SecurityMechanism::GssApiClient { service_principal } if cfg!(zmq_have_gssapi) => {
-                socket
-                    .set_sockopt_string(SocketOption::GssApiServicePrincipal, service_principal)?;
-            }
-            SecurityMechanism::GssApiServer if cfg!(zmq_have_gssapi) => {
-                socket.set_sockopt_bool(SocketOption::GssApiServer, true)?;
-            }
-            _ => (),
         }
         Ok(())
     }
@@ -120,16 +102,6 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
                         public_key,
                         secret_key,
                     })
-                }
-            }
-            #[cfg(zmq_have_gssapi)]
-            value if value == zmq_sys_crate::ZMQ_GSSAPI as i32 => {
-                if socket.get_sockopt_bool(SocketOption::GssApiServer)? {
-                    Ok(Self::GssApiServer)
-                } else {
-                    let service_principal =
-                        socket.get_sockopt_string(SocketOption::GssApiServicePrincipal)?;
-                    Ok(Self::GssApiClient { service_principal })
                 }
             }
             _ => Err(ZmqError::Unsupported),
@@ -220,9 +192,10 @@ mod security_mechanism_tests {
     #[cfg(all(feature = "curve", not(windows)))]
     #[test]
     fn apply_curve_client_security() -> ZmqResult<()> {
-        let context = Context::new()?;
         let (_, server_key) = curve_keypair()?;
         let (public_key, secret_key) = curve_keypair()?;
+
+        let context = Context::new()?;
 
         let socket = DealerSocket::from_context(&context)?;
         let security = SecurityMechanism::CurveClient {
@@ -248,6 +221,85 @@ mod security_mechanism_tests {
         assert_eq!(
             socket.get_sockopt_curve(SocketOption::CurveSecretKey)?,
             secret_key
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn try_from_socket_with_no_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+
+        assert_eq!(
+            SecurityMechanism::try_from(&socket)?,
+            SecurityMechanism::Null
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn try_from_socket_with_plain_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_sockopt_string(SocketOption::PlainUsername, "username")?;
+        socket.set_sockopt_string(SocketOption::PlainPassword, "password")?;
+
+        assert_eq!(
+            SecurityMechanism::try_from(&socket)?,
+            SecurityMechanism::Plain {
+                username: "username".to_string(),
+                password: "password".to_string(),
+            }
+        );
+
+        Ok(())
+    }
+
+    #[cfg(all(feature = "curve", not(windows)))]
+    #[test]
+    fn try_from_socket_with_curve_security() -> ZmqResult<()> {
+        let (_, secret_key) = curve_keypair()?;
+
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+
+        socket.set_sockopt_curve(SocketOption::CurveSecretKey, secret_key.clone())?;
+        socket.set_sockopt_bool(SocketOption::CurveServer, true)?;
+        assert_eq!(
+            SecurityMechanism::try_from(&socket)?,
+            SecurityMechanism::CurveServer {
+                secret_key: secret_key.clone(),
+            }
+        );
+
+        Ok(())
+    }
+
+    #[cfg(all(feature = "curve", not(windows)))]
+    #[test]
+    fn try_from_socket_with_curve_client_security() -> ZmqResult<()> {
+        let (_, server_key) = curve_keypair()?;
+        let (public_key, secret_key) = curve_keypair()?;
+
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_sockopt_curve(SocketOption::CurveServerKey, server_key.clone())?;
+        socket.set_sockopt_curve(SocketOption::CurvePublicKey, public_key.clone())?;
+        socket.set_sockopt_curve(SocketOption::CurveSecretKey, secret_key.clone())?;
+        socket.set_sockopt_bool(SocketOption::CurveServer, false)?;
+        assert_eq!(
+            SecurityMechanism::try_from(&socket)?,
+            SecurityMechanism::CurveClient {
+                server_key: server_key.clone(),
+                public_key: public_key.clone(),
+                secret_key: secret_key.clone(),
+            }
         );
 
         Ok(())
@@ -340,55 +392,5 @@ mod curve_keypair_tests {
         assert_eq!(public_key, pub_key);
 
         Ok(())
-    }
-}
-
-#[doc(cfg(zmq_have_gssapi))]
-#[derive(Debug, Display, PartialEq, Eq, Clone, Hash)]
-#[repr(i32)]
-/// # name types for GSSAPI
-pub enum GssApiNametype {
-    /// the name is interpreted as a host based name
-    NtHostbased,
-    /// the name is interpreted as a local user name
-    NtUsername,
-    /// the name is interpreted as an unparsed principal name string (valid only with the krb5
-    /// GSSAPI mechanism).
-    NtKrb5Principal,
-}
-
-#[doc(cfg(zmq_have_gssapi))]
-impl TryFrom<i32> for GssApiNametype {
-    type Error = ZmqError;
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32 => Ok(Self::NtHostbased),
-            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32 => Ok(Self::NtUsername),
-            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32 => {
-                Ok(Self::NtKrb5Principal)
-            }
-            _ => Err(ZmqError::Unsupported),
-        }
-    }
-}
-
-#[cfg(test)]
-mod gss_api_nametype_tests {
-    use rstest::*;
-
-    use super::GssApiNametype;
-    use crate::{
-        prelude::{ZmqError, ZmqResult},
-        zmq_sys_crate,
-    };
-
-    #[rstest]
-    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32, Ok(GssApiNametype::NtHostbased))]
-    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32, Ok(GssApiNametype::NtUsername))]
-    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32, Ok(GssApiNametype::NtKrb5Principal))]
-    #[case(666, Err(ZmqError::Unsupported))]
-    fn nametype_try_from(#[case] value: i32, #[case] expected: ZmqResult<GssApiNametype>) {
-        assert_eq!(expected, GssApiNametype::try_from(value));
     }
 }

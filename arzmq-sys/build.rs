@@ -7,18 +7,22 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=PROFILE");
 
-    let maybe_libsodium = if cfg!(all(not(windows), feature = "libsodium")) {
-        let lib_dir = env::var("DEP_SODIUM_LIB").expect("build metadata `DEP_SODIUM_LIB` required");
-        let include_dir =
-            env::var("DEP_SODIUM_INCLUDE").expect("build metadata `DEP_SODIUM_INCLUDE` required");
-
-        Some(zeromq_src::LibLocation::new(lib_dir, include_dir))
-    } else {
-        None
-    };
-
     let mut zmq_builder = zeromq_src::Build::new();
-    zmq_builder.with_libsodium(maybe_libsodium);
+
+    #[cfg(all(feature = "curve", not(windows)))]
+    {
+        let mut libsodium_dir =
+            PathBuf::from(env::var("DEP_SODIUM_INCLUDE").expect("DEP_SODIUM_INCLUDE not set"));
+        libsodium_dir.pop();
+        libsodium_dir.push("libsodium");
+
+        let lib_dir = libsodium_dir.join("x64\\Debug\\v143\\static");
+        let include_dir = libsodium_dir.join("include");
+
+        zmq_builder.with_libsodium(Some(zeromq_src::LibLocation::new(lib_dir, include_dir)));
+    }
+    #[cfg(any(not(feature = "curve"), windows))]
+    zmq_builder.with_libsodium(None);
 
     #[cfg(feature = "draft-api")]
     zmq_builder.enable_draft(true);

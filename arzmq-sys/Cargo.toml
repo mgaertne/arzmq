@@ -24,7 +24,7 @@ bench = false
 [features]
 default = []
 draft-api = []
-libsodium = ["libsodium-sys-stable"]
+curve = ["dep:libsodium-sys-stable"]
 
 [target."cfg(not(windows))".dependencies]
 libsodium-sys-stable = { version = ">=1.22", optional = true }
