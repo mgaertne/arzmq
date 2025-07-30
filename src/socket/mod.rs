@@ -1843,6 +1843,11 @@ impl<T: sealed::SocketType> Socket<T> {
         self.socket.set_sockopt_bool(option.into(), value)
     }
 
+    #[cfg(all(feature = "curve", not(windows)))]
+    pub(crate) fn get_sockopt_curve(&self, option: SocketOption) -> ZmqResult<Vec<u8>> {
+        self.socket.get_sockopt_curve(option.into())
+    }
+
     /// # get 0MQ socket options
     ///
     /// Gets a [`SocketOption`] option on the socket. The bytes version is mostly suitable for
@@ -2148,7 +2153,8 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`gssapi_principal()`]: #method.gssapi_principal
     #[doc(cfg(zmq_have_gssapi))]
     pub fn gssapi_principal(&self) -> ZmqResult<String> {
-        self.get_sockopt_string(SocketOption::GssApiPrincipal)
+        self.socket
+            .get_sockopt_gssapi(SocketOption::GssApiPrincipal.into())
     }
 
     /// # Set name type of principal `ZMQ_GSSAPI_PRINCIPAL_NAMETYPE`

@@ -322,16 +322,39 @@ impl RawSocket {
         Ok(())
     }
 
+    #[cfg(all(feature = "curve", not(windows)))]
+    pub(crate) fn get_sockopt_curve(&self, option: i32) -> ZmqResult<Vec<u8>> {
+        let mut buffer = vec![0; 41];
+        let mut buffer_len = buffer.len();
+
+        self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
+
+        buffer.truncate(buffer_len);
+        Ok(buffer)
+    }
+
+    pub(crate) fn get_sockopt_gssapi(&self, option: i32) -> ZmqResult<String> {
+        let mut buffer = vec![0; 260];
+        let mut buffer_len = buffer.len();
+
+        self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
+
+        buffer.truncate(buffer_len);
+
+        CStr::from_bytes_until_nul(&buffer)?
+            .to_owned()
+            .into_string()
+            .map_err(ZmqError::from)
+    }
+
     pub(crate) fn get_sockopt_bytes(&self, option: i32) -> ZmqResult<Vec<u8>> {
         let mut buffer = vec![0; MAX_OPTION_STR_LEN];
+        let mut buffer_len = buffer.len();
 
-        self.get_sockopt(
-            option,
-            buffer.as_mut_ptr() as *mut c_void,
-            &mut buffer.len(),
-        )?;
+        self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
 
-        buffer.truncate(buffer.len());
+        buffer.truncate(buffer_len + 1);
+
         Ok(buffer)
     }
 

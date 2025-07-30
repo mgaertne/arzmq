@@ -109,15 +109,16 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
             }
             #[cfg(all(feature = "curve", not(windows)))]
             value if value == zmq_sys_crate::ZMQ_CURVE as i32 => {
+                let secret_key = socket.get_sockopt_curve(SocketOption::CurveSecretKey)?;
                 if socket.get_sockopt_bool(SocketOption::CurveServer)? {
-                    Ok(Self::CurveServer {
-                        secret_key: Default::default(),
-                    })
+                    Ok(Self::CurveServer { secret_key })
                 } else {
+                    let server_key = socket.get_sockopt_bytes(SocketOption::CurveServerKey)?;
+                    let public_key = socket.get_sockopt_bytes(SocketOption::CurvePublicKey)?;
                     Ok(Self::CurveClient {
-                        server_key: Default::default(),
-                        public_key: Default::default(),
-                        secret_key: Default::default(),
+                        server_key,
+                        public_key,
+                        secret_key,
                     })
                 }
             }
@@ -139,6 +140,8 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
 #[cfg(test)]
 mod security_mechanism_tests {
     use super::SecurityMechanism;
+    #[cfg(all(feature = "curve", not(windows)))]
+    use super::curve_keypair;
     use crate::{
         prelude::{Context, DealerSocket, SocketOption, ZmqResult},
         zmq_sys_crate,
@@ -191,14 +194,13 @@ mod security_mechanism_tests {
     #[cfg(all(feature = "curve", not(windows)))]
     #[test]
     fn apply_curve_server_security() -> ZmqResult<()> {
+        let (_, secret_key) = curve_keypair()?;
+
         let context = Context::new()?;
 
         let socket = DealerSocket::from_context(&context)?;
         let security = SecurityMechanism::CurveServer {
-            secret_key: vec![
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-                24, 25, 26, 27, 28, 29, 30, 31, 0,
-            ],
+            secret_key: secret_key.clone(),
         };
         security.apply(&socket)?;
 
@@ -207,6 +209,10 @@ mod security_mechanism_tests {
             zmq_sys_crate::ZMQ_CURVE as i32
         );
         assert!(socket.get_sockopt_bool(SocketOption::CurveServer)?);
+        assert_eq!(
+            socket.get_sockopt_curve(SocketOption::CurveSecretKey)?,
+            secret_key
+        );
 
         Ok(())
     }
@@ -215,21 +221,14 @@ mod security_mechanism_tests {
     #[test]
     fn apply_curve_client_security() -> ZmqResult<()> {
         let context = Context::new()?;
+        let (_, server_key) = curve_keypair()?;
+        let (public_key, secret_key) = curve_keypair()?;
 
         let socket = DealerSocket::from_context(&context)?;
         let security = SecurityMechanism::CurveClient {
-            server_key: vec![
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-                24, 25, 26, 27, 28, 29, 30, 31, 0,
-            ],
-            public_key: vec![
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-                24, 25, 26, 27, 28, 29, 30, 31, 0,
-            ],
-            secret_key: vec![
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-                24, 25, 26, 27, 28, 29, 30, 31, 0,
-            ],
+            server_key: server_key.clone(),
+            public_key: public_key.clone(),
+            secret_key: secret_key.clone(),
         };
         security.apply(&socket)?;
 
@@ -238,6 +237,18 @@ mod security_mechanism_tests {
             zmq_sys_crate::ZMQ_CURVE as i32
         );
         assert!(!socket.get_sockopt_bool(SocketOption::CurveServer)?);
+        assert_eq!(
+            socket.get_sockopt_curve(SocketOption::CurveServerKey)?,
+            server_key
+        );
+        assert_eq!(
+            socket.get_sockopt_curve(SocketOption::CurvePublicKey)?,
+            public_key
+        );
+        assert_eq!(
+            socket.get_sockopt_curve(SocketOption::CurveSecretKey)?,
+            secret_key
+        );
 
         Ok(())
     }
@@ -260,12 +271,16 @@ pub use z85::{decode as z85_decode, encode as z85_encode};
 /// [`z85_encode()`]: z85_encode
 #[cfg(all(feature = "curve", not(windows)))]
 #[doc(cfg(all(feature = "curve", not(windows))))]
-pub fn curve_keypair() -> ZmqResult<(Vec<c_char>, Vec<c_char>)> {
-    let mut public_key: [c_char; 41] = [0; 41];
-    let mut secret_key: [c_char; 41] = [0; 41];
+pub fn curve_keypair() -> ZmqResult<(Vec<u8>, Vec<u8>)> {
+    let mut public_key: [u8; 41] = [0; 41];
+    let mut secret_key: [u8; 41] = [0; 41];
 
-    if unsafe { zmq_sys_crate::zmq_curve_keypair(public_key.as_mut_ptr(), secret_key.as_mut_ptr()) }
-        == -1
+    if unsafe {
+        zmq_sys_crate::zmq_curve_keypair(
+            public_key.as_mut_ptr() as *mut c_char,
+            secret_key.as_mut_ptr() as *mut c_char,
+        )
+    } == -1
     {
         cold_path();
         match unsafe { zmq_sys_crate::zmq_errno() } {
@@ -286,15 +301,18 @@ pub fn curve_keypair() -> ZmqResult<(Vec<c_char>, Vec<c_char>)> {
 /// [`z85_encode()`]: z85_encode
 #[cfg(all(feature = "curve", not(windows)))]
 #[doc(cfg(all(feature = "curve", not(windows))))]
-pub fn curve_public<T>(mut secret_key: T) -> ZmqResult<Vec<c_char>>
+pub fn curve_public<T>(mut secret_key: T) -> ZmqResult<Vec<u8>>
 where
-    T: AsMut<[c_char]>,
+    T: AsMut<[u8]>,
 {
-    let mut public_key: [c_char; 41] = [0; 41];
+    let mut public_key: [u8; 41] = [0; 41];
     let secret_key_array = secret_key.as_mut();
 
     if unsafe {
-        zmq_sys_crate::zmq_curve_public(public_key.as_mut_ptr(), secret_key_array.as_mut_ptr())
+        zmq_sys_crate::zmq_curve_public(
+            public_key.as_mut_ptr() as *mut c_char,
+            secret_key_array.as_ptr() as *const c_char,
+        )
     } == -1
     {
         cold_path();
@@ -305,6 +323,24 @@ where
     }
 
     Ok(public_key.to_vec())
+}
+
+#[cfg(all(feature = "curve", not(windows)))]
+#[cfg(test)]
+mod curve_keypair_tests {
+    use super::{curve_keypair, curve_public};
+    use crate::prelude::ZmqResult;
+
+    #[test]
+    fn curve_keypair_generate_curve_keypair() -> ZmqResult<()> {
+        let (public_key, secret_key) = curve_keypair()?;
+
+        let pub_key = curve_public(secret_key)?;
+
+        assert_eq!(public_key, pub_key);
+
+        Ok(())
+    }
 }
 
 #[doc(cfg(zmq_have_gssapi))]
