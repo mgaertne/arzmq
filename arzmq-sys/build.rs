@@ -11,13 +11,9 @@ fn main() {
 
     #[cfg(all(feature = "curve", not(windows)))]
     {
-        let mut libsodium_dir =
-            PathBuf::from(env::var("DEP_SODIUM_INCLUDE").expect("DEP_SODIUM_INCLUDE not set"));
-        libsodium_dir.pop();
-        libsodium_dir.push("libsodium");
-
-        let lib_dir = libsodium_dir.join("x64\\Debug\\v143\\static");
-        let include_dir = libsodium_dir.join("include");
+        let lib_dir = env::var("DEP_SODIUM_LIB").expect("build metadata `DEP_SODIUM_LIB` required");
+        let include_dir =
+            env::var("DEP_SODIUM_INCLUDE").expect("build metadata `DEP_SODIUM_INCLUDE` required");
 
         zmq_builder.with_libsodium(Some(zeromq_src::LibLocation::new(lib_dir, include_dir)));
     }

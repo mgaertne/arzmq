@@ -95,8 +95,8 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
                 if socket.get_sockopt_bool(SocketOption::CurveServer)? {
                     Ok(Self::CurveServer { secret_key })
                 } else {
-                    let server_key = socket.get_sockopt_bytes(SocketOption::CurveServerKey)?;
-                    let public_key = socket.get_sockopt_bytes(SocketOption::CurvePublicKey)?;
+                    let server_key = socket.get_sockopt_curve(SocketOption::CurveServerKey)?;
+                    let public_key = socket.get_sockopt_curve(SocketOption::CurvePublicKey)?;
                     Ok(Self::CurveClient {
                         server_key,
                         public_key,
@@ -268,7 +268,7 @@ mod security_mechanism_tests {
 
         let socket = DealerSocket::from_context(&context)?;
 
-        socket.set_sockopt_curve(SocketOption::CurveSecretKey, secret_key.clone())?;
+        socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key.clone())?;
         socket.set_sockopt_bool(SocketOption::CurveServer, true)?;
         assert_eq!(
             SecurityMechanism::try_from(&socket)?,
@@ -289,10 +289,10 @@ mod security_mechanism_tests {
         let context = Context::new()?;
 
         let socket = DealerSocket::from_context(&context)?;
-        socket.set_sockopt_curve(SocketOption::CurveServerKey, server_key.clone())?;
-        socket.set_sockopt_curve(SocketOption::CurvePublicKey, public_key.clone())?;
-        socket.set_sockopt_curve(SocketOption::CurveSecretKey, secret_key.clone())?;
         socket.set_sockopt_bool(SocketOption::CurveServer, false)?;
+        socket.set_sockopt_bytes(SocketOption::CurveServerKey, server_key.clone())?;
+        socket.set_sockopt_bytes(SocketOption::CurvePublicKey, public_key.clone())?;
+        socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key.clone())?;
         assert_eq!(
             SecurityMechanism::try_from(&socket)?,
             SecurityMechanism::CurveClient {
