@@ -51,6 +51,28 @@ impl Socket<Publish> {
         self.set_sockopt_bool(SocketOption::Conflate, value)
     }
 
+    /// # Keep only last message `ZMQ_CONFLATE`
+    ///
+    /// If set, a socket shall keep only one message in its inbound/outbound queue, this message
+    /// being the last message received/the last message to be sent. Ignores
+    /// [`receive_highwater_mark()`] and [`send_highwater_mark()`] options. Does not support
+    /// multi-part messages, in particular, only one part of it is kept in the socket internal
+    /// queue.
+    ///
+    /// # Note
+    ///
+    /// If [`receive_highwater_mark()`] is not called on the inbound socket, the queue and memory
+    /// will grow with each message received. Use [`events()`] to trigger the conflation of the
+    /// messages.
+    ///
+    /// [`receive_highwater_mark()`]: #method.receive_highwater_mark
+    /// [`send_highwater_mark()`]: #method.send_highwater_mark
+    /// [`recv_msg()`]: #method.recv_msg
+    /// [`events()`]: #method.events
+    pub fn conflate(&self) -> ZmqResult<bool> {
+        self.get_sockopt_bool(SocketOption::Conflate)
+    }
+
     /// Invert message filtering `ZMQ_INVERT_MATCHING`
     /// Reverses the filtering behavior of [`Publish`]-[`Subscribe`] sockets, when set to `true`.
     ///
@@ -135,7 +157,7 @@ impl Socket<Publish> {
 #[cfg(test)]
 mod publish_tests {
     use super::PublishSocket;
-    use crate::prelude::{Context, SocketOption, ZmqResult};
+    use crate::prelude::{Context, ZmqResult};
 
     #[test]
     fn set_conflate_sets_conflate() -> ZmqResult<()> {
@@ -144,7 +166,7 @@ mod publish_tests {
         let socket = PublishSocket::from_context(&context)?;
         socket.set_conflate(true)?;
 
-        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+        assert!(socket.conflate()?);
 
         Ok(())
     }
@@ -246,7 +268,7 @@ pub(crate) mod builder {
     #[cfg(test)]
     mod publish_builder_tests {
         use super::PublishBuilder;
-        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
 
         #[test]
         fn default_publish_builder() -> ZmqResult<()> {
@@ -254,7 +276,7 @@ pub(crate) mod builder {
 
             let socket = PublishBuilder::default().build_from_context(&context)?;
 
-            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(!socket.conflate()?);
             assert!(!socket.invert_matching()?);
 
             Ok(())
@@ -271,7 +293,7 @@ pub(crate) mod builder {
                 .nodrop(true)
                 .build_from_context(&context)?;
 
-            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(socket.conflate()?);
             assert!(socket.invert_matching()?);
 
             Ok(())

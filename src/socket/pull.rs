@@ -48,14 +48,34 @@ impl Socket<Pull> {
     pub fn set_conflate(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::Conflate, value)
     }
+
+    /// # Keep only last message `ZMQ_CONFLATE`
+    ///
+    /// If set, a socket shall keep only one message in its inbound/outbound queue, this message
+    /// being the last message received/the last message to be sent. Ignores
+    /// [`receive_highwater_mark()`] and [`send_highwater_mark()`] options. Does not support
+    /// multi-part messages, in particular, only one part of it is kept in the socket internal
+    /// queue.
+    ///
+    /// # Note
+    ///
+    /// If [`receive_highwater_mark()`] is not called on the inbound socket, the queue and memory
+    /// will grow with each message received. Use [`events()`] to trigger the conflation of the
+    /// messages.
+    ///
+    /// [`receive_highwater_mark()`]: #method.receive_highwater_mark
+    /// [`send_highwater_mark()`]: #method.send_highwater_mark
+    /// [`recv_msg()`]: #method.recv_msg
+    /// [`events()`]: #method.events
+    pub fn conflate(&self) -> ZmqResult<bool> {
+        self.get_sockopt_bool(SocketOption::Conflate)
+    }
 }
 
 #[cfg(test)]
 mod pull_tests {
     use super::PullSocket;
-    use crate::prelude::{
-        Context, PushSocket, Receiver, RecvFlags, SendFlags, Sender, SocketOption, ZmqResult,
-    };
+    use crate::prelude::{Context, PushSocket, Receiver, RecvFlags, SendFlags, Sender, ZmqResult};
 
     #[test]
     fn set_conflate_sets_conflate() -> ZmqResult<()> {
@@ -64,7 +84,7 @@ mod pull_tests {
         let socket = PullSocket::from_context(&context)?;
         socket.set_conflate(true)?;
 
-        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+        assert!(socket.conflate()?);
 
         Ok(())
     }
@@ -176,7 +196,7 @@ pub(crate) mod builder {
     #[cfg(test)]
     mod pull_builder_tests {
         use super::PullBuilder;
-        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
 
         #[test]
         fn default_pull_builder() -> ZmqResult<()> {
@@ -184,7 +204,7 @@ pub(crate) mod builder {
 
             let socket = PullBuilder::default().build_from_context(&context)?;
 
-            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(!socket.conflate()?);
 
             Ok(())
         }
@@ -198,7 +218,7 @@ pub(crate) mod builder {
                 .conflate(true)
                 .build_from_context(&context)?;
 
-            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(socket.conflate()?);
 
             Ok(())
         }

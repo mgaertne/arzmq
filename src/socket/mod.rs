@@ -2247,6 +2247,22 @@ impl<T: sealed::SocketType> Socket<T> {
         self.set_sockopt_int(SocketOption::HeartbeatInterval, value)
     }
 
+    /// # Retrieve interval between sending ZMTP heartbeats `ZMQ_HEARTBEAT_IVL`
+    ///
+    /// The [`HeartbeatInterval`] option returns the interval between sending ZMTP heartbeats for
+    /// the `Socket`. If this option is set and is greater than `0`, then a `PING` ZMTP command
+    /// will be sent every [`heartbeat_interval()`] milliseconds.
+    ///
+    /// | Default value | Applicable socket types                        |
+    /// | :-----------: | :--------------------------------------------: |
+    /// | ß ms          | all, when using connection-oriented transports |
+    ///
+    /// [`HeartbeatInterval`]: SocketOption::HeartbeatInterval
+    /// [`heartbeat_interval()`]: #method.heartbeat_interval
+    pub fn heartbeat_interval(&self) -> ZmqResult<i32> {
+        self.get_sockopt_int(SocketOption::HeartbeatInterval)
+    }
+
     /// # Set timeout for ZMTP heartbeats `ZMQ_HEARTBEAT_TIMEOUT`
     ///
     /// The [`HeartbeatTimeout`] option shall set how long to wait before timing-out a connection
@@ -2265,6 +2281,23 @@ impl<T: sealed::SocketType> Socket<T> {
         self.set_sockopt_int(SocketOption::HeartbeatTimeout, value)
     }
 
+    /// # Retrieve timeout for ZMTP heartbeats `ZMQ_HEARTBEAT_TIMEOUT`
+    ///
+    /// The [`HeartbeatTimeout`] option returns how long to wait before timing-out a connection
+    /// after sending a `PING` ZMTP command and not receiving any traffic. The connection will time
+    /// out if there is no traffic received after sending the `PING` command, but the received
+    /// traffic does not have to be a `PONG` command - any received traffic will cancel the timeout.
+    ///
+    /// | Default value                                     | Applicable socket types                        |
+    /// | :-----------------------------------------------: | :--------------------------------------------: |
+    /// | 0 ms normally, [`HeartbeatInterval`] if it is set | all, when using connection-oriented transports |
+    ///
+    /// [`HeartbeatTimeout`]: SocketOption::HeartbeatTimeout
+    /// [`HeartbeatInterval`]: SocketOption::HeartbeatInterval
+    pub fn heartbeat_timeout(&self) -> ZmqResult<i32> {
+        self.get_sockopt_int(SocketOption::HeartbeatTimeout)
+    }
+
     /// # Set the TTL value for ZMTP heartbeats `ZMQ_HEARTBEAT_TTL`
     ///
     /// The [`HeartbeatTimeToLive`] option shall set the timeout on the remote peer for ZMTP
@@ -2281,6 +2314,24 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`HeartbeatInterval`]: SocketOption::HeartbeatInterval
     pub fn set_heartbeat_timetolive(&self, value: i32) -> ZmqResult<()> {
         self.set_sockopt_int(SocketOption::HeartbeatTimeToLive, value)
+    }
+
+    /// # Retrieve the TTL value for ZMTP heartbeats `ZMQ_HEARTBEAT_TTL`
+    ///
+    /// The [`HeartbeatTimeToLive`] option returns the timeout on the remote peer for ZMTP
+    /// heartbeats. If this option is greater than 0, the remote side shall time out the connection
+    /// if it does not receive any more traffic within the TTL period. This option does not have
+    /// any effect if [`HeartbeatInterval`] is not set or is `0`. Internally, this value is rounded
+    /// down to the nearest decisecond, any value less than `100` will have no effect.
+    ///
+    /// | Default value                           | Applicable socket types                        |
+    /// | :-------------------------------------: | :--------------------------------------------: |
+    /// | 6_553_599 (which is 2^16-1 deciseconds) | all, when using connection-oriented transports |
+    ///
+    /// [`HeartbeatTimeToLive`]: SocketOption::HeartbeatTimeToLive
+    /// [`HeartbeatInterval`]: SocketOption::HeartbeatInterval
+    pub fn heartbeat_timetolive(&self) -> ZmqResult<i32> {
+        self.get_sockopt_int(SocketOption::HeartbeatTimeToLive)
     }
 
     /// # Queue messages only to completed connections `ZMQ_IMMEDIATE`
@@ -2920,6 +2971,22 @@ impl<T: sealed::SocketType> Socket<T> {
         self.set_sockopt_string(SocketOption::SocksUsername, value.as_ref())
     }
 
+    /// # Retrieve SOCKS username and select basic authentication `ZMQ_SOCKS_USERNAME`
+    ///
+    /// Returns the username for authenticated connection to the SOCKS5 proxy. If set to a non-null
+    /// and non-empty value, the authentication method used for the SOCKS5 connection shall be
+    /// basic authentication. If set to a null value or empty value, the authentication method
+    /// shall be no authentication, the default.
+    ///
+    /// | Default value | Applicable socket types       |
+    /// | :-----------: | :---------------------------: |
+    /// | not set       | all, when using TCP transport |
+    #[cfg(feature = "draft-api")]
+    #[doc(cfg(feature = "draft-api"))]
+    pub fn socks_username(&self) -> ZmqResult<String> {
+        self.get_sockopt_string(SocketOption::SocksUsername)
+    }
+
     /// # Set SOCKS basic authentication password `ZMQ_SOCKS_PASSWORD`
     ///
     /// Sets the password for authenticating to the SOCKS5 proxy server. This is used only when the
@@ -2939,6 +3006,24 @@ impl<T: sealed::SocketType> Socket<T> {
         V: AsRef<str>,
     {
         self.set_sockopt_string(SocketOption::SocksPassword, value.as_ref())
+    }
+
+    /// # Retrieve SOCKS basic authentication password `ZMQ_SOCKS_PASSWORD`
+    ///
+    /// Returns the password for authenticating to the SOCKS5 proxy server. This is used only when
+    /// the SOCK5 authentication method has been set to basic authentication through the
+    /// [`set_socks_username()`] option. A null value (the default) is equivalent to an empty
+    /// password string.
+    ///
+    /// | Default value | Applicable socket types       |
+    /// | :-----------: | :---------------------------: |
+    /// | not set       | all, when using TCP transport |
+    ///
+    /// [`set_socks_username()`]: #method.set_socks_username
+    #[cfg(feature = "draft-api")]
+    #[doc(cfg(feature = "draft-api"))]
+    pub fn socks_password(&self) -> ZmqResult<String> {
+        self.get_sockopt_string(SocketOption::SocksPassword)
     }
 
     /// # Override `SO_KEEPALIVE` socket option `ZMQ_TCP_KEEPALIVE`
@@ -3718,7 +3803,6 @@ mod socket_tests {
     use super::ReconnectStop;
     use super::{
         DealerSocket, MonitorFlags, MonitorSocketEvent, PairSocket, PollEvents, SendFlags,
-        SocketOption,
     };
     use crate::{
         ZmqError,
@@ -3971,10 +4055,7 @@ mod socket_tests {
         let socket = PairSocket::from_context(&context)?;
         socket.set_heartbeat_interval(42)?;
 
-        assert_eq!(
-            socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
-            42
-        );
+        assert_eq!(socket.heartbeat_interval()?, 42);
 
         Ok(())
     }
@@ -3986,10 +4067,7 @@ mod socket_tests {
         let socket = PairSocket::from_context(&context)?;
         socket.set_heartbeat_timeout(42)?;
 
-        assert_eq!(
-            socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
-            42
-        );
+        assert_eq!(socket.heartbeat_timeout()?, 42);
 
         Ok(())
     }
@@ -4001,10 +4079,7 @@ mod socket_tests {
         let socket = PairSocket::from_context(&context)?;
         socket.set_heartbeat_timetolive(42_000)?;
 
-        assert_eq!(
-            socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
-            42_000
-        );
+        assert_eq!(socket.heartbeat_timetolive()?, 42_000);
 
         Ok(())
     }
@@ -4274,10 +4349,7 @@ mod socket_tests {
         let socket = PairSocket::from_context(&context)?;
         socket.set_socks_username("username")?;
 
-        assert_eq!(
-            socket.get_sockopt_string(SocketOption::SocksUsername)?,
-            "username"
-        );
+        assert_eq!(socket.socks_username()?, "username");
 
         Ok(())
     }
@@ -4290,10 +4362,7 @@ mod socket_tests {
         let socket = PairSocket::from_context(&context)?;
         socket.set_socks_password("password")?;
 
-        assert_eq!(
-            socket.get_sockopt_string(SocketOption::SocksPassword)?,
-            "password"
-        );
+        assert_eq!(socket.socks_password()?, "password");
 
         Ok(())
     }
@@ -4715,7 +4784,7 @@ pub(crate) mod builder {
         use super::SocketBuilder;
         use crate::{
             auth::ZapDomain,
-            prelude::{Context, PairSocket, SocketOption, ZmqResult},
+            prelude::{Context, PairSocket, ZmqResult},
             security::SecurityMechanism,
         };
 
@@ -4730,18 +4799,9 @@ pub(crate) mod builder {
 
             assert_eq!(socket.connect_timeout()?, 0);
             assert_eq!(socket.handshake_interval()?, 30_000);
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
-                0
-            );
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
-                -1
-            );
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
-                0
-            );
+            assert_eq!(socket.heartbeat_interval()?, 0);
+            assert_eq!(socket.heartbeat_timeout()?, -1);
+            assert_eq!(socket.heartbeat_timetolive()?, 0);
             assert!(!socket.immediate()?);
             assert!(!socket.ipv6()?);
             assert_eq!(socket.linger()?, -1);
@@ -4793,18 +4853,9 @@ pub(crate) mod builder {
 
             assert_eq!(socket.connect_timeout()?, 42);
             assert_eq!(socket.handshake_interval()?, 21);
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
-                666
-            );
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
-                1337
-            );
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
-                400
-            );
+            assert_eq!(socket.heartbeat_interval()?, 666);
+            assert_eq!(socket.heartbeat_timeout()?, 1337);
+            assert_eq!(socket.heartbeat_timetolive()?, 400);
             assert!(socket.immediate()?);
             assert!(socket.ipv6()?);
             assert_eq!(socket.linger()?, 1337);

@@ -62,6 +62,28 @@ impl Socket<Dealer> {
         self.set_sockopt_bool(SocketOption::Conflate, value)
     }
 
+    /// # Keep only last message `ZMQ_CONFLATE`
+    ///
+    /// If set, a socket shall keep only one message in its inbound/outbound queue, this message
+    /// being the last message received/the last message to be sent. Ignores
+    /// [`receive_highwater_mark()`] and [`send_highwater_mark()`] options. Does not support
+    /// multi-part messages, in particular, only one part of it is kept in the socket internal
+    /// queue.
+    ///
+    /// # Note
+    ///
+    /// If [`receive_highwater_mark()`] is not called on the inbound socket, the queue and memory
+    /// will grow with each message received. Use [`events()`] to trigger the conflation of the
+    /// messages.
+    ///
+    /// [`receive_highwater_mark()`]: #method.receive_highwater_mark
+    /// [`send_highwater_mark()`]: #method.send_highwater_mark
+    /// [`recv_msg()`]: #method.recv_msg
+    /// [`events()`]: #method.events
+    pub fn conflate(&self) -> ZmqResult<bool> {
+        self.get_sockopt_bool(SocketOption::Conflate)
+    }
+
     /// # Set socket routing id `ZMQ_ROUTING_ID`
     ///
     /// The [`set_routing_id()`] option shall set the routing id of the specified 'socket' when
@@ -170,8 +192,7 @@ impl Socket<Dealer> {
 mod dealer_tests {
     use super::DealerSocket;
     use crate::prelude::{
-        Context, Message, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, SocketOption,
-        ZmqResult,
+        Context, Message, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, ZmqResult,
     };
 
     #[test]
@@ -181,7 +202,7 @@ mod dealer_tests {
         let socket = DealerSocket::from_context(&context)?;
         socket.set_conflate(true)?;
 
-        assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+        assert!(socket.conflate()?);
 
         Ok(())
     }
@@ -383,16 +404,15 @@ pub(crate) mod builder {
     #[cfg(test)]
     mod dealer_builder_tests {
         use super::DealerBuilder;
-        use crate::prelude::{Context, SocketBuilder, SocketOption, ZmqResult};
+        use crate::prelude::{Context, SocketBuilder, ZmqResult};
 
         #[test]
         fn default_dealer_builder() -> ZmqResult<()> {
             let context = Context::new()?;
 
             let socket = DealerBuilder::default().build_from_context(&context)?;
-
-            assert!(!socket.get_sockopt_bool(SocketOption::Conflate)?);
-            assert_eq!(socket.get_sockopt_string(SocketOption::RoutingId)?, "");
+            assert!(!socket.conflate()?);
+            assert_eq!(socket.routing_id()?, "");
 
             Ok(())
         }
@@ -415,7 +435,7 @@ pub(crate) mod builder {
 
             let socket = dealer_builder.build_from_context(&context)?;
 
-            assert!(socket.get_sockopt_bool(SocketOption::Conflate)?);
+            assert!(socket.conflate()?);
             assert_eq!(socket.routing_id()?, "test123");
 
             Ok(())

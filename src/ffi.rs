@@ -14,7 +14,7 @@ use parking_lot::FairMutex;
 
 use crate::{ZmqError, ZmqResult, socket::PollEvents, zmq_sys_crate};
 
-const MAX_OPTION_STR_LEN: usize = i32::MAX as usize;
+const MAX_OPTION_STR_LEN: usize = u8::MAX as usize;
 
 #[derive(DisplayDeriveMore, DebugDeriveMore)]
 #[debug("RawContext {{ ... }}")]

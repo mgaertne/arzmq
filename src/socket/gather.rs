@@ -100,7 +100,7 @@ pub(crate) mod builder {
         use super::GatherBuilder;
         use crate::{
             auth::ZapDomain,
-            prelude::{Context, GatherSocket, SocketOption, ZmqResult},
+            prelude::{Context, GatherSocket, ZmqResult},
             security::SecurityMechanism,
         };
 
@@ -112,18 +112,9 @@ pub(crate) mod builder {
 
             assert_eq!(socket.connect_timeout()?, 0);
             assert_eq!(socket.handshake_interval()?, 30_000);
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatInterval)?,
-                0
-            );
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeout)?,
-                -1
-            );
-            assert_eq!(
-                socket.get_sockopt_int::<i32>(SocketOption::HeartbeatTimeToLive)?,
-                0
-            );
+            assert_eq!(socket.heartbeat_interval()?, 0);
+            assert_eq!(socket.heartbeat_timeout()?, -1);
+            assert_eq!(socket.heartbeat_timetolive()?, 0);
             assert!(!socket.immediate()?);
             assert!(!socket.ipv6()?);
             assert_eq!(socket.linger()?, -1);
