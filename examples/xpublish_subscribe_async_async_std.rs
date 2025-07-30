@@ -18,7 +18,7 @@ async fn run_subscriber(subscribe: SubscribeSocket, subscribed_topic: &str) {
 
 async fn run_publisher(publisher: XPublishSocket, msg: &str) {
     while KEEP_RUNNING.load(Ordering::Acquire) {
-        publisher.send_msg_async(msg, SendFlags::empty()).await;
+        publisher.send_msg_async(msg, SendFlags::DONT_WAIT).await;
     }
 }
 

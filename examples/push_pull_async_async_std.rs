@@ -24,7 +24,7 @@ async fn run_subscriber(pull: PullSocket) {
 
 async fn run_publisher(push: PushSocket, msg: &str) {
     while KEEP_RUNNING.load(Ordering::Acquire) {
-        push.send_msg_async(msg, SendFlags::empty()).await;
+        push.send_msg_async(msg, SendFlags::DONT_WAIT).await;
     }
 }
 

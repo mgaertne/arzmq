@@ -26,7 +26,7 @@ async fn run_radio(radio: RadioSocket, msg: &str) -> ZmqResult<()> {
     while KEEP_RUNNING.load(Ordering::Acquire) {
         let message: Message = msg.into();
         message.set_group(GROUP)?;
-        radio.send_msg_async(message, SendFlags::empty()).await;
+        radio.send_msg_async(message, SendFlags::DONT_WAIT).await;
     }
 
     Ok(())

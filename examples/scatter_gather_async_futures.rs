@@ -23,7 +23,7 @@ async fn run_gather(gather: GatherSocket) {
 
 async fn run_scatter(scatter: ScatterSocket, msg: &str) {
     while KEEP_RUNNING.load(Ordering::Acquire) {
-        scatter.send_msg_async(msg, SendFlags::empty()).await;
+        scatter.send_msg_async(msg, SendFlags::DONT_WAIT).await;
     }
 }
 
