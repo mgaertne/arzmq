@@ -38,7 +38,7 @@ system-deps = { version = "7.0.5" }
 [target."cfg(unix)".dependencies]
 libc = { version = "1.0.0-alpha.1", default-features = false }
 
-[target."cfg(windows)".dependencies]
+[target."cfg(windows)".build-dependencies]
 walkdir = { version = "2.5" }
 
 [package.metadata.system-deps]
