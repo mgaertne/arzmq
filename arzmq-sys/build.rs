@@ -1,32 +1,483 @@
-use std::{env, path::PathBuf};
+use core::error::Error;
+#[cfg(target_env = "msvc")]
+use std::fs;
+use std::{
+    env,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
-fn main() {
-    #[cfg(windows)]
-    println!("cargo::rustc-link-lib=Advapi32");
+static DEFAULT_SOURCES: &[&str] = &[
+    "address",
+    "channel",
+    "client",
+    "clock",
+    "ctx",
+    "curve_client",
+    "curve_mechanism_base",
+    "curve_server",
+    "dealer",
+    "decoder_allocators",
+    "devpoll",
+    "dgram",
+    "dish",
+    "dist",
+    "endpoint",
+    "epoll",
+    "err",
+    "fq",
+    "gather",
+    "gssapi_client",
+    "gssapi_mechanism_base",
+    "gssapi_server",
+    "io_object",
+    "io_thread",
+    "ip_resolver",
+    "ip",
+    "ipc_address",
+    "ipc_connecter",
+    "ipc_listener",
+    "kqueue",
+    "lb",
+    "mailbox_safe",
+    "mailbox",
+    "mechanism_base",
+    "mechanism",
+    "metadata",
+    "msg",
+    "mtrie",
+    "norm_engine",
+    "null_mechanism",
+    "object",
+    "options",
+    "own",
+    "pair",
+    "peer",
+    "pgm_receiver",
+    "pgm_sender",
+    "pgm_socket",
+    "pipe",
+    "plain_client",
+    "plain_server",
+    "poll",
+    "poller_base",
+    "polling_util",
+    "pollset",
+    "precompiled",
+    "proxy",
+    "pub",
+    "pull",
+    "push",
+    "radio",
+    "radix_tree",
+    "random",
+    "raw_decoder",
+    "raw_encoder",
+    "raw_engine",
+    "reaper",
+    "rep",
+    "req",
+    "router",
+    "scatter",
+    "select",
+    "server",
+    "session_base",
+    "signaler",
+    "socket_base",
+    "socket_poller",
+    "socks_connecter",
+    "socks",
+    "stream_connecter_base",
+    "stream_engine_base",
+    "stream_listener_base",
+    "stream",
+    "sub",
+    "tcp_address",
+    "tcp_connecter",
+    "tcp_listener",
+    "tcp",
+    "thread",
+    "timers",
+    "tipc_address",
+    "tipc_connecter",
+    "tipc_listener",
+    "trie",
+    "udp_address",
+    "udp_engine",
+    "v1_decoder",
+    "v1_encoder",
+    "v2_decoder",
+    "v2_encoder",
+    "v3_1_encoder",
+    "vmci_address",
+    "vmci_connecter",
+    "vmci_listener",
+    "vmci",
+    "ws_address",
+    "ws_connecter",
+    "ws_decoder",
+    "ws_encoder",
+    "ws_engine",
+    "ws_listener",
+    "xpub",
+    "xsub",
+    "zap_client",
+    "zmq_utils",
+    "zmq",
+    "zmtp_engine",
+];
 
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-env-changed=PROFILE");
+fn add_cpp_sources(build: &mut cc::Build, root: impl AsRef<Path>, files: &[&str]) {
+    build.cpp(true);
+    let root = root.as_ref();
+    build.files(files.iter().map(|src| {
+        let mut p = root.join(src);
+        p.set_extension("cpp");
+        p
+    }));
 
-    let mut zmq_builder = zeromq_src::Build::new();
+    build.include(root);
+}
 
-    #[cfg(all(feature = "curve", not(windows)))]
-    {
-        let lib_dir = env::var("DEP_SODIUM_LIB").expect("build metadata `DEP_SODIUM_LIB` required");
-        let include_dir =
-            env::var("DEP_SODIUM_INCLUDE").expect("build metadata `DEP_SODIUM_INCLUDE` required");
+fn add_c_sources(build: &mut cc::Build, root: impl AsRef<Path>, files: &[&str]) {
+    let root = root.as_ref();
+    // Temporarily use c instead of c++.
+    build.cpp(false);
+    build.files(files.iter().map(|src| {
+        let mut p = root.join(src);
+        p.set_extension("c");
+        p
+    }));
 
-        zmq_builder.with_libsodium(Some(zeromq_src::LibLocation::new(lib_dir, include_dir)));
+    build.include(root);
+}
+
+#[cfg(target_env = "msvc")]
+fn rename_libzmq_in_dir<D, N>(dir: D, new_name: N) -> Result<(), ()>
+where
+    D: AsRef<Path>,
+    N: AsRef<Path>,
+{
+    let dir = dir.as_ref();
+    let new_name = new_name.as_ref();
+
+    let artifacts = walkdir::WalkDir::new(dir)
+        .into_iter()
+        .filter_map(|entry| {
+            entry.ok().filter(|dir_entry| {
+                let path = dir_entry.path();
+                path.is_file()
+                    && path.extension().is_some_and(|ext| ext == "lib")
+                    && path
+                        .file_name()
+                        .is_some_and(|file_name| file_name.to_string_lossy().contains("rust_zmq"))
+            })
+        })
+        .map(|e| e.path().to_owned())
+        .collect::<Vec<_>>();
+
+    for artifact in artifacts {
+        fs::copy(artifact, dir.join(new_name)).map_err(|_| ())?;
     }
-    #[cfg(any(not(feature = "curve"), windows))]
-    zmq_builder.with_libsodium(None);
+
+    Ok(())
+}
+
+fn check_low_level_compilation<S, F>(c_src: S, configure_build: F) -> Result<bool, Box<dyn Error>>
+where
+    S: AsRef<str>,
+    F: FnOnce(&mut cc::Build) -> &mut cc::Build,
+{
+    let out_dir = env::var("OUT_DIR")?;
+    let out_dir = Path::new(&out_dir);
+    let check_compile = tempfile::Builder::new()
+        .prefix("check_compile")
+        .tempdir_in(out_dir)?;
+
+    let src_path = check_compile.path().join("check_compile.c");
+    {
+        let mut src_file = File::create(&src_path)?;
+        src_file.write_all(c_src.as_ref().as_bytes())?;
+        src_file.flush()?;
+    }
+
+    let mut builder = cc::Build::new();
+    let mut compile_command = configure_build(&mut builder).get_compiler().to_command();
+
+    compile_command.arg(src_path);
+
+    #[cfg(not(target_env = "msvc"))]
+    compile_command.arg("-o").arg(check_compile.path().join("check_compile"));
+
+    #[cfg(target_env = "msvc")]
+    compile_command.arg("/c").arg(format!(
+        "/Fo{}",
+        check_compile.path().join("check_compile").display()
+    ));
+
+    Ok(compile_command
+        .status()
+        .map(|status| status.success())?)
+}
+
+#[cfg(target_env = "gnu")]
+fn check_strlcpy() -> Result<bool, Box<dyn Error>> {
+    check_low_level_compilation(
+        r#"
+#include <string.h>
+
+int main() {
+    char buf[1];
+    (void)strlcpy(buf, "a", 1);
+    return 0;
+}
+"#,
+        |build| build.warnings(false),
+    )
+}
+
+#[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
+fn check_ipc_headers() -> Result<bool, Box<dyn Error>> {
+    check_low_level_compilation(
+        r#"
+#include <winsock2.h>
+#include <afunix.h>
+
+int main() {
+    SOCKET sock = INVALID_SOCKET;
+    int family = AF_UNIX;
+    return 0;
+}
+"#,
+        |build| build.warnings(false),
+    )
+}
+
+#[cfg(not(target_env = "msvc"))]
+fn check_cxx11() -> Result<bool, Box<dyn Error>> {
+    check_low_level_compilation(
+        r#"
+int main(void) {
+    return 0;
+}
+"#,
+        |build| {
+            build
+                .cpp(true)
+                .warnings(true)
+                .warnings_into_errors(true)
+                .std("c++11")
+        },
+    )
+}
+
+fn configure(build: &mut cc::Build) {
+    let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
+
+    #[cfg(target_env = "gnu")]
+    build.flags(&[
+        "-Wno-unused-function",
+        "-Wno-deprecated",
+        "-Wno-unused-parameter",
+        "-Wno-ignored-qualifiers",
+        "-Wno-implicit-fallthrough",
+    ]);
+
+    build
+        .define("ZMQ_BUILD_TESTS", "OFF")
+        .include(vendor.join("include"))
+        .include(vendor.join("src"));
+
+    add_cpp_sources(build, vendor.join("src"), DEFAULT_SOURCES);
+
+    if env::var("SYSTEM_DEPS_GNUTLS_LIB").is_ok() {
+        add_cpp_sources(build, vendor.join("src"), &["wss_address", "wss_engine"]);
+    }
+
+    add_c_sources(build, vendor.join("external/sha1"), &["sha1.c"]);
 
     #[cfg(feature = "draft-api")]
-    zmq_builder.enable_draft(true);
+    build.define("ZMQ_BUILD_DRAFT_API", "1");
 
-    zmq_builder.build();
+    build.define("ZMQ_USE_CV_IMPL_STL11", "1");
+    build.define("ZMQ_STATIC", "1");
+    build.define("ZMQ_USE_BUILTIN_SHA1", "1");
+
+    build.define("ZMQ_HAVE_WS", "1");
+
+    #[cfg(not(windows))]
+    let create_platform_hpp_shim = |build: &mut cc::Build| {
+        let out_includes = PathBuf::from(env::var("OUT_DIR").unwrap());
+
+        let mut f = File::create(out_includes.join("platform.hpp")).unwrap();
+        f.write_all(b"").unwrap();
+        f.sync_all().unwrap();
+
+        build.include(out_includes);
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        #[cfg(not(target_env = "gnu"))]
+        add_c_sources(build, vendor.join("external/wepoll"), &["wepoll.c"]);
+
+        build.define("ZMQ_HAVE_WINDOWS", "1");
+        build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
+        build.define("ZMQ_POLL_BASED_ON_POLL", "1");
+        build.define("_WIN32_WINNT", "0x0600"); // vista
+        build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
+
+        println!("cargo:rustc-link-lib=iphlpapi");
+
+        #[cfg(target_env = "msvc")]
+        {
+            build.include(vendor.join("builds/deprecated-msvc"));
+            build.flag("/GL-");
+
+            build.flag("/EHsc");
+        }
+        #[cfg(not(target_env = "msvc"))]
+        {
+            create_platform_hpp_shim(build);
+            build.define("HAVE_STRNLEN", "1");
+        }
+
+        #[cfg(not(target_vendor = "uwp"))]
+        if check_ipc_headers().unwrap_or(false) {
+            build.define("ZMQ_HAVE_IPC", "1");
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        create_platform_hpp_shim(build);
+        build.define("ZMQ_HAVE_LINUX", "1");
+        build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
+        build.define("ZMQ_POLL_BASED_ON_POLL", "1");
+        build.define("ZMQ_HAVE_IPC", "1");
+
+        build.define("HAVE_STRNLEN", "1");
+        build.define("ZMQ_HAVE_UIO", "1");
+        build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
+
+        #[cfg(any(target_os = "android", target_env = "musl"))]
+        build.define("ZMQ_HAVE_STRLCPY", "1");
+    }
+    #[cfg(any(target_os = "macos", target_os = "freebsd"))]
+    {
+        create_platform_hpp_shim(build);
+        build.define("ZMQ_IOTHREAD_POLLER_USE_KQUEUE", "1");
+        build.define("ZMQ_POLL_BASED_ON_POLL", "1");
+        build.define("HAVE_STRNLEN", "1");
+        build.define("ZMQ_HAVE_UIO", "1");
+        build.define("ZMQ_HAVE_IPC", "1");
+        build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
+        build.define("ZMQ_HAVE_STRLCPY", "1");
+    }
+
+    #[cfg(target_env = "gnu")]
+    if check_strlcpy().unwrap_or(false) {
+        build.define("ZMQ_HAVE_STRLCPY", "1");
+    }
+
+    #[cfg(not(target_env = "msvc"))]
+    if check_cxx11().unwrap_or(false) {
+        build.std("c++11");
+    }
+
+    #[cfg_attr(
+        all(not(feature = "gssapi"), not(feature = "pgm")),
+        allow(unused_variables)
+    )]
+    let libraries = system_deps::Config::new().probe().unwrap();
+
+    #[cfg(feature = "draft-api")]
+    build.define("ZMQ_BUILD_DRAFT_API", "1");
+
+    #[cfg(feature = "curve")]
+    {
+        build.define("ZMQ_USE_LIBSODIUM", "1");
+        build.define("ZMQ_HAVE_CURVE", "1");
+    }
+
+    #[cfg(feature = "gssapi")]
+    {
+        build.define("HAVE_LIBGSSAPI_KRB5", "1");
+        libraries
+            .iter()
+            .iter()
+            .filter(|(name, _lib)| name.contains("gssapi"))
+            .for_each(|(_name, lib)| {
+                build.includes(&lib.include_paths);
+            });
+    }
+
+    #[cfg(feature = "pgm")]
+    {
+        build.define("ZMQ_HAVE_OPENPGM", "1");
+        libraries
+            .iter()
+            .iter()
+            .filter(|(name, _lib)| name.starts_with("openpgm"))
+            .for_each(|(_name, lib)| {
+                build.includes(&lib.include_paths);
+            });
+        #[cfg(target_os = "macos")]
+        build.define("restrict", "__restrict__");
+    }
+
+    #[cfg(feature = "norm")]
+    build.define("ZMQ_HAVE_NORM", "1");
+
+    #[cfg(feature = "vmci")]
+    build.define("ZMQ_HAVE_VMCI", "1");
+}
+
+fn build_zmq() {
+    let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
+
+    let mut build = cc::Build::new();
+    configure(&mut build);
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let include_dir = out_dir.join("source/include");
+    let lib_dir = out_dir.join("lib");
+
+    build.out_dir(&lib_dir).cpp(true);
+
+    build.compile("zmq");
+
+    #[cfg(target_env = "msvc")]
+    if rename_libzmq_in_dir(&lib_dir, "zmq.lib").is_err() {
+        panic!("unable to find compiled `libzmq` lib");
+    }
+
+    let source_dir = out_dir.join("source");
+    let include_dir = source_dir.join("include");
+
+    dircpy::copy_dir(vendor.join("include"), &include_dir).expect("unable to copy include dir");
+    dircpy::copy_dir(vendor.join("src"), source_dir.join("src")).expect("unable to copy src dir");
+    dircpy::copy_dir(vendor.join("external"), source_dir.join("external"))
+        .expect("unable to copy external dir");
+
+    println!("cargo:rustc-link-search=native={}", lib_dir.display());
+    println!("cargo:rustc-link-lib=static=zmq");
+    println!("cargo:include={}", include_dir.display());
+    println!("cargo:lib={}", lib_dir.display());
+    println!("cargo:out={}", out_dir.display());
+
+    #[cfg(windows)]
+    {
+        println!("cargo::rustc-link-lib=Advapi32");
+        println!("cargo::rustc-link-lib=wsock32");
+        println!("cargo::rustc-link-lib=ws2_32");
+        println!("cargo::rustc-link-lib=Iphlpapi");
+    }
+}
+
+fn generate_bindings() {
+    let vendor_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("vendor");
+    let include_dir = vendor_dir.join("include");
 
     let builder = bindgen::Builder::default()
         .header(include_dir.join("zmq.h").to_string_lossy())
@@ -46,7 +497,18 @@ fn main() {
 
     let bindings = builder.generate().expect("Unable to generate bindings");
 
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_dir.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+}
+
+fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=PROFILE");
+    println!("cargo:rerun-if-env-changed=CARGO_CFG_FEATURE");
+
+    build_zmq();
+
+    generate_bindings();
 }

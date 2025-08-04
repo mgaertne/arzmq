@@ -24,14 +24,28 @@ bench = false
 [features]
 default = []
 draft-api = []
-curve = ["dep:libsodium-sys-stable"]
-
-[target."cfg(not(windows))".dependencies]
-libsodium-sys-stable = { version = ">=1.22", optional = true }
+curve = []
+gssapi = []
+pgm = []
+norm = []
+vmci = []
 
 [build-dependencies]
-zeromq-src = { version = "0.3.6" }
+cc = { version = "1.2.31", features = ["parallel"] }
+dircpy = { version = "0.3.19" }
+tempfile = { version = "3.20" }
 bindgen = { version = "0.72" }
+system-deps = { version = "7.0.5" }
 
 [target."cfg(unix)".dependencies]
 libc = { version = "1.0.0-alpha.1", default-features = false }
+
+[target.'cfg(target_env = "msvc")'.build-dependencies]
+walkdir = { version = "2.5" }
+
+[package.metadata.system-deps]
+gnutls = { version = ">=3", optional = true }
+libsodium = { version = ">=1.0", feature = "curve" }
+mit-krb5-gssapi = { version = ">=0.1", feature = "gssapi", fallback-names = ["gssapi_krb5", "krb5-gssapi", "GSS"] }
+openpgm = { name = "openpgm-5.1", version = ">=5.1", feature = "pgm", fallback-names = ["openpgm-5.2", "openpgm-5.3"] }
+norm = { version = ">=1.0", feature = "norm" }
