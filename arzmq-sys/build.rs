@@ -390,11 +390,7 @@ fn configure(build: &mut cc::Build) {
     }
 
     #[cfg(target_env = "gnu")]
-    #[cfg_attr(
-        all(not(feature = "gssapi"), not(feature = "pgm")),
-        allow(unused_variables)
-    )]
-    let libraries = system_deps::Config::new().probe().unwrap();
+    let _libraries = system_deps::Config::new().probe().unwrap();
 
     #[cfg(feature = "draft-api")]
     build.define("ZMQ_BUILD_DRAFT_API", "1");
