@@ -275,13 +275,15 @@ int main(void) {
 fn configure(build: &mut cc::Build) {
     let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
-    #[cfg(target_env = "gnu")]
+    #[cfg(not(target_env = "msvc"))]
     build.flags(&[
         "-Wno-unused-function",
         "-Wno-deprecated",
         "-Wno-unused-parameter",
         "-Wno-ignored-qualifiers",
         "-Wno-implicit-fallthrough",
+        "-Wno-missing-field-initializers",
+        "-Wno-missing-braces",
     ]);
 
     build
