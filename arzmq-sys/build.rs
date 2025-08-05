@@ -208,7 +208,9 @@ where
     compile_command.arg(src_path);
 
     #[cfg(not(target_env = "msvc"))]
-    compile_command.arg("-o").arg(check_compile.path().join("check_compile"));
+    compile_command
+        .arg("-o")
+        .arg(check_compile.path().join("check_compile"));
 
     #[cfg(target_env = "msvc")]
     compile_command.arg("/c").arg(format!(
@@ -216,9 +218,7 @@ where
         check_compile.path().join("check_compile").display()
     ));
 
-    Ok(compile_command
-        .status()
-        .map(|status| status.success())?)
+    Ok(compile_command.status().map(|status| status.success())?)
 }
 
 #[cfg(target_env = "gnu")]
@@ -328,7 +328,10 @@ fn configure(build: &mut cc::Build) {
         build.define("_WIN32_WINNT", "0x0600"); // vista
         build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
 
-        println!("cargo:rustc-link-lib=iphlpapi");
+        println!("cargo::rustc-link-lib=Advapi32");
+        println!("cargo::rustc-link-lib=wsock32");
+        println!("cargo::rustc-link-lib=ws2_32");
+        println!("cargo::rustc-link-lib=Iphlpapi");
 
         #[cfg(target_env = "msvc")]
         {
@@ -386,6 +389,7 @@ fn configure(build: &mut cc::Build) {
         build.std("c++11");
     }
 
+    #[cfg(target_env = "gnu")]
     #[cfg_attr(
         all(not(feature = "gssapi"), not(feature = "pgm")),
         allow(unused_variables)
@@ -395,15 +399,14 @@ fn configure(build: &mut cc::Build) {
     #[cfg(feature = "draft-api")]
     build.define("ZMQ_BUILD_DRAFT_API", "1");
 
-    #[cfg(feature = "curve")]
-    {
+    if env::var("SYSTEM_DEPS_LIBSODIUM_LIB").is_ok() {
         build.define("ZMQ_USE_LIBSODIUM", "1");
         build.define("ZMQ_HAVE_CURVE", "1");
     }
 
-    #[cfg(feature = "gssapi")]
-    {
+    if env::var("SYSTEM_DEPS_MIT_KRB5_GSSAPI_LIB").is_ok() {
         build.define("HAVE_LIBGSSAPI_KRB5", "1");
+        #[cfg(target_env = "gnu")]
         libraries
             .iter()
             .iter()
@@ -413,9 +416,9 @@ fn configure(build: &mut cc::Build) {
             });
     }
 
-    #[cfg(feature = "pgm")]
-    {
+    if env::var("SYSTEM_DEPS_OPENPGM_LIB").is_ok() {
         build.define("ZMQ_HAVE_OPENPGM", "1");
+        #[cfg(target_env = "gnu")]
         libraries
             .iter()
             .iter()
@@ -427,11 +430,13 @@ fn configure(build: &mut cc::Build) {
         build.define("restrict", "__restrict__");
     }
 
-    #[cfg(feature = "norm")]
-    build.define("ZMQ_HAVE_NORM", "1");
+    if env::var("SYSTEM_DEPS_NORM_LIB").is_ok() {
+        build.define("ZMQ_HAVE_NORM", "1");
+    }
 
-    #[cfg(feature = "vmci")]
-    build.define("ZMQ_HAVE_VMCI", "1");
+    if env::var("SYSTEM_DEPS_VMCI_LIB").is_ok() {
+        build.define("ZMQ_HAVE_VMCI", "1");
+    }
 }
 
 fn build_zmq() {
@@ -465,14 +470,6 @@ fn build_zmq() {
     println!("cargo:include={}", include_dir.display());
     println!("cargo:lib={}", lib_dir.display());
     println!("cargo:out={}", out_dir.display());
-
-    #[cfg(windows)]
-    {
-        println!("cargo::rustc-link-lib=Advapi32");
-        println!("cargo::rustc-link-lib=wsock32");
-        println!("cargo::rustc-link-lib=ws2_32");
-        println!("cargo::rustc-link-lib=Iphlpapi");
-    }
 }
 
 fn generate_bindings() {
@@ -508,6 +505,8 @@ fn main() {
     println!("cargo:rerun-if-env-changed=PROFILE");
     println!("cargo:rerun-if-env-changed=CARGO_CFG_FEATURE");
 
+    println!("VARS: {:?}", env::vars());
+    #[cfg(not(doc))]
     build_zmq();
 
     generate_bindings();

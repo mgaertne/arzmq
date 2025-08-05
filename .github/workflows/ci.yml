@@ -18,7 +18,7 @@ jobs:
           toolchain: nightly
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack check --each-feature --clean-per-run --exclude-all-features --exclude-features curve,gssapi,norm,pgm
+      - run: cargo hack check --each-feature --clean-per-run
 
   check-tests:
     name: Check (tests)
@@ -34,7 +34,7 @@ jobs:
           toolchain: nightly
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack check --each-feature --clean-per-run --exclude-all-features --exclude-features curve,gssapi,norm,pgm --tests
+      - run: cargo hack check --each-feature --clean-per-run --tests
 
   check-examples:
     name: Check (examples)
@@ -50,7 +50,7 @@ jobs:
           toolchain: nightly
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack check --each-feature --clean-per-run --exclude-all-features --exclude-features curve,gssapi,norm,pgm --examples
+      - run: cargo hack check --each-feature --clean-per-run --examples
 
   clippy:
     name: Clippy
@@ -67,7 +67,7 @@ jobs:
           components: clippy
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack clippy --each-feature --clean-per-run --exclude-all-features --exclude-features curve,gssapi,norm,pgm -- -D warnings
+      - run: cargo hack clippy --each-feature --clean-per-run -- -D warnings
 
   clippy-tests:
     name: Clippy (tests)
@@ -84,7 +84,7 @@ jobs:
           components: clippy
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack clippy --each-feature --clean-per-run  --exclude-all-features --exclude-features curve,gssapi,norm,pgm --tests -- -D warnings
+      - run: cargo hack clippy --each-feature --clean-per-run --tests -- -D warnings
 
   clippy-examples:
     name: Clippy (examples)
@@ -101,7 +101,7 @@ jobs:
           components: clippy
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack clippy --each-feature --clean-per-run  --exclude-all-features --exclude-features curve,gssapi,norm,pgm --examples -- -D warnings
+      - run: cargo hack clippy --each-feature --clean-per-run --examples -- -D warnings
 
   rust-doc:
     name: rust-documentation
@@ -135,7 +135,7 @@ jobs:
           toolchain: nightly
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - run: cargo hack test --each-feature --clean-per-run --exclude-all-features --exclude-features curve,gssapi,norm,pgm --verbose
+      - run: cargo hack test --each-feature --clean-per-run --verbose
 
   examples:
     name: examples

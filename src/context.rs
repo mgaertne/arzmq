@@ -31,7 +31,6 @@
 use alloc::sync::Arc;
 
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use builder::ContextBuilder;
 use derive_more::{Debug as DebugDeriveMore, Display as DisplayDeriveMore};
 use num_traits::PrimInt;
@@ -59,7 +58,6 @@ pub enum ContextOption {
     /// Name prefix for I/O threads
     ThreadNamePrefix,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Specify message decoding strategy
     ZeroCopyReceiving,
     /// Enable IPv6 support
@@ -185,7 +183,6 @@ impl Context {
     ///
     /// [`ContextOption`]: ContextOption
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_option_string<V>(&self, option: ContextOption, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -229,7 +226,6 @@ impl Context {
     ///
     /// [`ContextOption`]: ContextOption
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn get_option_string(&self, option: ContextOption) -> ZmqResult<String> {
         self.inner.get_ctxopt_string(option.into())
     }
@@ -385,7 +381,6 @@ impl Context {
     /// [`ZeroCopyReceiving`]: ContextOption::ZeroCopyReceiving
     /// [`zero_copy_receiving()`]: #method.zero_copy_receiving
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_zero_copy_receiving(&self, value: bool) -> ZmqResult<()> {
         self.set_option_bool(ContextOption::ZeroCopyReceiving, value)
     }
@@ -399,7 +394,6 @@ impl Context {
     ///
     /// [`ZeroCopyReceiving`]: ContextOption::ZeroCopyReceiving
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn zero_copy_receiving(&self) -> ZmqResult<bool> {
         self.get_option_bool(ContextOption::ZeroCopyReceiving)
     }
@@ -463,7 +457,6 @@ mod builder {
         /// [`set_max_message_size()`]: Context::set_max_message_size
         max_message_size: i32,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = true)]
         /// Specify message decoding strategy, see [`set_zero_copy_receiving()`].
         ///

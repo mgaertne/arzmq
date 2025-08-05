@@ -46,7 +46,6 @@ impl Socket<XSubscribe> {
     /// It not set (default), subscribe/unsubscribe messages in a multipart message are processed
     /// as such regardless of their number and order.
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_only_first_subscribe(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::OnlyFirstSubscribe, value)
     }
@@ -73,13 +72,12 @@ impl Socket<XSubscribe> {
         self.send_msg(byte_string, SendFlags::empty())
     }
 
-    #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     /// # Establish message filter `ZMQ_SUBSCRIBE`
     ///
     /// This is the async variant of [`subscribe()`].
     ///
     /// [`subscribe()`]: #method.subscribe
+    #[cfg(feature = "futures")]
     pub async fn subscribe_async<V>(&self, topic: V)
     where
         V: AsRef<[u8]>,
@@ -115,7 +113,6 @@ impl Socket<XSubscribe> {
     ///
     /// [`unsubscribe()`]: #method.unsubscribe
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     pub async fn unsubscribe_async<V>(&self, topic: V)
     where
         V: AsRef<[u8]>,
@@ -139,7 +136,6 @@ impl Socket<XSubscribe> {
     /// [`XPublish`]: super::XPublishSocket
     /// [`XSubscribe`]: XSubscribeSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn topic_count(&self) -> ZmqResult<i32> {
         self.get_sockopt_int(SocketOption::TopicsCount)
     }
@@ -152,7 +148,6 @@ impl Socket<XSubscribe> {
     ///
     /// [`XSubscribe`]: XSubscribeSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_verbose_unsubscribe(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::XsubVerboseUnsubscribe, value)
     }
@@ -358,7 +353,6 @@ pub(crate) mod builder {
         #[builder(setter(into), default = "Default::default()")]
         subscribe: String,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = false)]
         only_first_subscribe: bool,
     }

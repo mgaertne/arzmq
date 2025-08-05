@@ -164,7 +164,6 @@ impl Socket<XPublish> {
     /// [`set_manual()`]: #method.set_manual
     /// [`subscribe()`]: #method.subscribe
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_manual_last_value(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::XpubManualLastValue, value)
     }
@@ -180,7 +179,6 @@ impl Socket<XPublish> {
     ///
     /// [`XPublish`]: XPublishSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_welcome_msg<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -197,7 +195,6 @@ impl Socket<XPublish> {
     /// It not set (default), subscribe/unsubscribe messages in a multipart message are processed
     /// as such regardless of their number and order.
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_only_first_subscribe(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::OnlyFirstSubscribe, value)
     }
@@ -216,7 +213,6 @@ impl Socket<XPublish> {
     /// [`XPublish`]: XPublishSocket
     /// [`XSubscribe`]: super::XSubscribeSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn topic_count(&self) -> ZmqResult<i32> {
         self.get_sockopt_int(SocketOption::TopicsCount)
     }
@@ -427,15 +423,12 @@ pub(crate) mod builder {
         #[builder(default = false)]
         manual: bool,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = false)]
         manual_last_value: bool,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = "Default::default()")]
         welcome_msg: String,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = false)]
         only_first_subscribe: bool,
     }

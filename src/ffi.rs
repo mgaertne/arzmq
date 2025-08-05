@@ -55,7 +55,6 @@ impl RawContext {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     fn set_ext(&self, option: i32, value: &str) -> ZmqResult<()> {
         let c_value = CString::from_str(value)?;
         let bytes = c_value.as_bytes_with_nul();
@@ -83,7 +82,6 @@ impl RawContext {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn set_ctxopt_string(&self, option: i32, value: &str) -> ZmqResult<()> {
         self.set_ext(option, value)
     }
@@ -117,7 +115,6 @@ impl RawContext {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn get_ext(&self, option: i32) -> ZmqResult<String> {
         let mut length: usize = 1024usize;
         let mut buffer: [u8; 1024usize] = [0; 1024usize];
@@ -147,7 +144,6 @@ impl RawContext {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn get_ctxopt_string(&self, option: i32) -> ZmqResult<String> {
         self.get_ext(option)
     }
@@ -322,7 +318,7 @@ impl RawSocket {
         Ok(())
     }
 
-    #[cfg(all(feature = "curve", not(windows)))]
+    #[cfg(zmq_has_curve)]
     pub(crate) fn get_sockopt_curve(&self, option: i32) -> ZmqResult<Vec<u8>> {
         let mut buffer = vec![0; 41];
         let mut buffer_len = buffer.len();
@@ -514,7 +510,6 @@ impl RawSocket {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn connect_peer(&self, endpoint: &str) -> ZmqResult<u32> {
         let c_endpoint = CString::from_str(endpoint)?;
 
@@ -542,7 +537,6 @@ impl RawSocket {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn join(&self, group: &str) -> ZmqResult<()> {
         let c_group = CString::from_str(group)?;
 
@@ -563,7 +557,6 @@ impl RawSocket {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn leave(&self, group: &str) -> ZmqResult<()> {
         let c_group = CString::from_str(group)?;
 
@@ -642,7 +635,6 @@ impl RawMessage {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn set_routing_id(&mut self, value: u32) -> ZmqResult<()> {
         if unsafe { zmq_sys_crate::zmq_msg_set_routing_id(&mut self.message, value) } == -1 {
             cold_path();
@@ -655,7 +647,6 @@ impl RawMessage {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn routing_id(&self) -> Option<u32> {
         match unsafe { zmq_sys_crate::zmq_msg_routing_id(&self.message as *const _ as *mut _) } {
             0 => None,
@@ -664,7 +655,6 @@ impl RawMessage {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn set_group(&mut self, value: &str) -> ZmqResult<()> {
         let c_value = CString::from_str(value)?;
 
@@ -677,7 +667,6 @@ impl RawMessage {
     }
 
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub(crate) fn group(&self) -> Option<String> {
         let msg_group =
             unsafe { zmq_sys_crate::zmq_msg_group(&self.message as *const _ as *mut _) };

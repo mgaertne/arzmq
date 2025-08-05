@@ -131,7 +131,6 @@ impl Socket<Stream> {
     ///
     /// [`Stream`]: StreamSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_stream_notify(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::StreamNotify, value)
     }
@@ -282,7 +281,6 @@ pub(crate) mod builder {
         #[builder(setter(into), default = "Default::default()")]
         connect_routing_id: String,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = false)]
         stream_notify: bool,
     }

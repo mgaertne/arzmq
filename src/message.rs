@@ -66,44 +66,40 @@ impl Message {
         msg_guard.get_more()
     }
 
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Set the routing id of the message. Used for interactions on [`Server`] and [`Peer`] sockets.
     ///
     /// [`Server`]: crate::socket::ServerSocket
     /// [`Peer`]: crate::socket::PeerSocket
+    #[cfg(feature = "draft-api")]
     pub fn set_routing_id(&self, value: u32) -> ZmqResult<()> {
         let mut msg_guard = self.inner.lock();
         msg_guard.set_routing_id(value)
     }
 
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Retrieve the routing id of the message. Used for interactions on [`Server`] and [`Peer`]
     /// sockets.
     ///
     /// [`Server`]: crate::socket::ServerSocket
     /// [`Peer`]: crate::socket::PeerSocket
+    #[cfg(feature = "draft-api")]
     pub fn routing_id(&self) -> Option<u32> {
         let msg_guard = self.inner.lock();
         msg_guard.routing_id()
     }
 
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Sets the group for the message. Used by [`Radio`] sockets.
     ///
     /// [`Radio`]: crate::socket::RadioSocket
+    #[cfg(feature = "draft-api")]
     pub fn set_group<V: AsRef<str>>(&self, value: V) -> ZmqResult<()> {
         let mut msg_guard = self.inner.lock();
         msg_guard.set_group(value.as_ref())
     }
 
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Retrieves the group for the message. Used by [`Dish`] sockets.
     ///
     /// [`Dish`]: crate::socket::DishSocket
+    #[cfg(feature = "draft-api")]
     pub fn group(&self) -> Option<String> {
         let msg_guard = self.inner.lock();
         msg_guard.group()
