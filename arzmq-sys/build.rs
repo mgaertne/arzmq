@@ -273,6 +273,8 @@ int main(void) {
 }
 
 fn configure(build: &mut cc::Build) {
+    let libraries = system_deps::Config::new().probe().unwrap();
+
     let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
     #[cfg(not(target_env = "msvc"))]
@@ -293,7 +295,11 @@ fn configure(build: &mut cc::Build) {
 
     add_cpp_sources(build, vendor.join("src"), DEFAULT_SOURCES);
 
-    if env::var("SYSTEM_DEPS_GNUTLS_LIB").is_ok() {
+    if libraries
+        .iter()
+        .iter()
+        .any(|(name, _lib)| *name == "openpgm")
+    {
         add_cpp_sources(build, vendor.join("src"), &["wss_address", "wss_engine"]);
     }
 
@@ -391,50 +397,65 @@ fn configure(build: &mut cc::Build) {
         build.std("c++11");
     }
 
-    #[cfg(target_env = "gnu")]
-    let _libraries = system_deps::Config::new().probe().unwrap();
-
     #[cfg(feature = "draft-api")]
     build.define("ZMQ_BUILD_DRAFT_API", "1");
 
-    if env::var("SYSTEM_DEPS_LIBSODIUM_LIB").is_ok() {
+    libraries
+        .iter()
+        .iter()
+        .filter(|(name, _lib)| *name == "libsodium")
+        .for_each(|(_name, lib)| {
+            build.define("ZMQ_USE_LIBSODIUM", "1");
+            build.define("ZMQ_HAVE_CURVE", "1");
+
+            build.includes(&lib.include_paths);
+        });
+
+    #[cfg(target_env = "msvc")]
+    vcpkg::find_package("libsodium").iter().for_each(|lib| {
         build.define("ZMQ_USE_LIBSODIUM", "1");
         build.define("ZMQ_HAVE_CURVE", "1");
-    }
+        build.includes(&lib.include_paths);
+    });
 
-    if env::var("SYSTEM_DEPS_MIT_KRB5_GSSAPI_LIB").is_ok() {
-        build.define("HAVE_LIBGSSAPI_KRB5", "1");
-        #[cfg(target_env = "gnu")]
-        _libraries
-            .iter()
-            .iter()
-            .filter(|(name, _lib)| name.contains("gssapi"))
-            .for_each(|(_name, lib)| {
-                build.includes(&lib.include_paths);
-            });
-    }
+    libraries
+        .iter()
+        .iter()
+        .filter(|(name, _lib)| *name == "gssapi")
+        .for_each(|(_name, lib)| {
+            build.define("HAVE_LIBGSSAPI_KRB5", "1");
+            build.includes(&lib.include_paths);
+        });
 
-    if env::var("SYSTEM_DEPS_OPENPGM_LIB").is_ok() {
-        build.define("ZMQ_HAVE_OPENPGM", "1");
-        #[cfg(target_env = "gnu")]
-        _libraries
-            .iter()
-            .iter()
-            .filter(|(name, _lib)| name.starts_with("openpgm"))
-            .for_each(|(_name, lib)| {
-                build.includes(&lib.include_paths);
-            });
-        #[cfg(target_os = "macos")]
-        build.define("restrict", "__restrict__");
-    }
+    libraries
+        .iter()
+        .iter()
+        .filter(|(name, _lib)| *name == "openpgm")
+        .for_each(|(_name, lib)| {
+            build.define("ZMQ_HAVE_OPENPGM", "1");
+            build.includes(&lib.include_paths);
 
-    if env::var("SYSTEM_DEPS_NORM_LIB").is_ok() {
-        build.define("ZMQ_HAVE_NORM", "1");
-    }
+            #[cfg(target_os = "macos")]
+            build.define("restrict", "__restrict__");
+        });
 
-    if env::var("SYSTEM_DEPS_VMCI_LIB").is_ok() {
-        build.define("ZMQ_HAVE_VMCI", "1");
-    }
+    libraries
+        .iter()
+        .iter()
+        .filter(|(name, _lib)| *name == "norm")
+        .for_each(|(_name, lib)| {
+            build.define("ZMQ_HAVE_NORM", "1");
+            build.includes(&lib.include_paths);
+        });
+
+    libraries
+        .iter()
+        .iter()
+        .filter(|(name, _lib)| *name == "vmci")
+        .for_each(|(_name, lib)| {
+            build.define("ZMQ_HAVE_VMCI", "1");
+            build.includes(&lib.include_paths);
+        });
 }
 
 fn build_zmq() {
@@ -503,8 +524,6 @@ fn main() {
     println!("cargo:rerun-if-env-changed=PROFILE");
     println!("cargo:rerun-if-env-changed=CARGO_CFG_FEATURE");
 
-    println!("VARS: {:?}", env::vars());
-    #[cfg(not(doc))]
     build_zmq();
 
     generate_bindings();

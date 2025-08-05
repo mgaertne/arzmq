@@ -304,8 +304,8 @@ mod security_mechanism_tests {
     }
 }
 
-#[cfg(zmq_has_curve)]
 /// Z85 decoding error
+#[cfg(zmq_has_curve)]
 pub use z85::DecodeError as Z85DecodeError;
 #[cfg(zmq_has_curve)]
 pub use z85::{decode as z85_decode, encode as z85_encode};
