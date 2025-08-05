@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -28,6 +30,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -44,6 +48,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -60,6 +66,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -77,6 +85,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -94,6 +104,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -110,6 +122,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -129,6 +143,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -150,6 +166,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -196,6 +214,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -252,6 +272,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -306,6 +328,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -360,6 +384,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
