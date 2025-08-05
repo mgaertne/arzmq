@@ -965,108 +965,79 @@ mod xpublish;
 mod xsubscribe;
 
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use builder::SocketBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use channel::ChannelSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use channel::builder::ChannelBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use client::ClientSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use client::builder::ClientBuilder;
 pub use dealer::DealerSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use dealer::builder::DealerBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use dish::DishSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use dish::builder::DishBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use gather::GatherSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use gather::builder::GatherBuilder;
 use monitor::Monitor;
 pub use monitor::{HandshakeProtocolError, MonitorReceiver, MonitorSocket, MonitorSocketEvent};
 pub use pair::PairSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use pair::builder::PairBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use peer::PeerSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use peer::builder::PeerBuilder;
 pub use publish::PublishSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use publish::builder::PublishBuilder;
 pub use pull::PullSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use pull::builder::PullBuilder;
 pub use push::PushSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use push::builder::PushBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use radio::RadioSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use radio::builder::RadioBuilder;
 pub use reply::ReplySocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use reply::builder::ReplyBuilder;
 pub use request::RequestSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use request::builder::RequestBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use router::RouterNotify;
 pub use router::RouterSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use router::builder::RouterBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use scatter::ScatterSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use scatter::builder::ScatterBuilder;
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 pub use server::ServerSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
-#[doc(cfg(all(feature = "draft-api", feature = "builder")))]
 pub use server::builder::ServerBuilder;
 pub use stream::StreamSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use stream::builder::StreamBuilder;
 pub use subscribe::SubscribeSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use subscribe::builder::SubscribeBuilder;
 pub use xpublish::XPublishSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use xpublish::builder::XPublishBuilder;
+#[doc(hidden)]
 pub use xsubscribe::XSubscribeSocket;
 #[cfg(feature = "builder")]
-#[doc(cfg(feature = "builder"))]
 pub use xsubscribe::builder::XSubscribeBuilder;
 
 use crate::{auth::ZapDomain, security::SecurityMechanism};
@@ -1099,39 +1070,30 @@ pub enum SocketType {
     /// [`StreamSocket`]
     Stream,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`ServerSocket`]
     Server,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`ClientSocket`]
     Client,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`RadioSocket`]
     Radio,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`DishSocket`]
     Dish,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`GatherSocket`]
     Gather,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`ScatterSocket`]
     Scatter,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// DGRAM sockets
     Datagram,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`PeerSocket`]
     Peer,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// [`ChannelSocket`]
     Channel,
 }
@@ -1257,7 +1219,7 @@ pub enum SocketOption {
     SendTimeout,
     /// Last endpoint set
     LastEndpoint,
-    /// Accept only routable messages on [`Rocker`](RouterSocket) sockets
+    /// Accept only routable messages on [`Router`](RouterSocket) sockets
     RouterMandatory,
     /// Overrides SO_KEEPALIVE socket option
     TcpKeepalive,
@@ -1283,20 +1245,16 @@ pub enum SocketOption {
     PlainUsername,
     /// Current PLAIN password
     PlainPassword,
-    #[cfg(feature = "curve")]
-    #[doc(cfg(all(feature = "curve", not(windows))))]
+    #[cfg(zmq_has_curve)]
     /// Current CURVE public key
     CurvePublicKey,
-    #[cfg(feature = "curve")]
-    #[doc(cfg(all(feature = "curve", not(windows))))]
+    #[cfg(zmq_has_curve)]
     /// Current CURVE secret key
     CurveSecretKey,
-    #[cfg(feature = "curve")]
-    #[doc(cfg(all(feature = "curve", not(windows))))]
+    #[cfg(zmq_has_curve)]
     /// Current CURVE server role
     CurveServer,
-    #[cfg(feature = "curve")]
-    #[doc(cfg(all(feature = "curve", not(windows))))]
+    #[cfg(zmq_has_curve)]
     /// Current CURVE server key
     CurveServerKey,
     /// Bootstrap connections to [`Router`](RouterSocket) sockets
@@ -1313,13 +1271,13 @@ pub enum SocketOption {
     RouterHandover,
     /// Type-of-service on the underlying socket
     TypeOfService,
-    #[doc(cfg(zmq_have_ipc))]
+    #[cfg(zmq_has_ipc)]
     /// Process ID filters to allow new IPC connections
     IpcFilterProcessId,
-    #[doc(cfg(zmq_have_ipc))]
+    #[cfg(zmq_has_ipc)]
     /// User ID filters to allow new IPC connections
     IpcFilterUserId,
-    #[doc(cfg(zmq_have_ipc))]
+    #[cfg(zmq_has_ipc)]
     /// Group ID filters to allow new IPC connections
     IpcFilterGroupId,
     /// Next outbound routing id
@@ -1356,16 +1314,16 @@ pub enum SocketOption {
     ThreadSafe,
     /// Maximum transport data unit size for multicast packets
     MulticastMaxTransportDataUnitSize,
-    #[doc(cfg(zmq_have_vmci))]
+    #[cfg(zmq_has_vmci)]
     /// Buffer size of the VMCI socket
     VmciBufferSize,
-    #[doc(cfg(zmq_have_vmci))]
+    #[cfg(zmq_has_vmci)]
     /// Minimum buffer size of the VMCI socket
     VmciBufferMinSize,
-    #[doc(cfg(zmq_have_vmci))]
+    #[cfg(zmq_has_vmci)]
     /// Maximum buffer size of the VMCI socket
     VmciBufferMaxSize,
-    #[doc(cfg(zmq_have_vmci))]
+    #[cfg(zmq_has_vmci)]
     /// Connection timeout of the VMCI socket
     VmciConntectTimeout,
     /// Retrive the pre-allocated socket file descriptor
@@ -1373,108 +1331,82 @@ pub enum SocketOption {
     /// Name of the devive to bind the socket to
     BindToDevice,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Strict ZAP domain handling
     ZapEnforceDomain,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Application metadata properties on the socket
     Metadata,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Control multicast local loopback
     MulticastLoop,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Send connect and disconnect notifications
     RouterNotify,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Change the subscription handling to manual
     XpubManualLastValue,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// SOCKS username and select basic authentification
     SocksUsername,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// SOCKS basic authentification password
     SocksPassword,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Maximum receive batch size
     InBatchSize,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Maximum send batch size
     OutBatchSize,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Process only first subscribe/unsubscribe in a multipart message
     OnlyFirstSubscribe,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Set condition when reconnection will stop
     ReconnectStop,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Set a hello message that will be sent when a new peer connects
     HelloMessage,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Set a disconnect message that the socket will generate when accepted peer disconnect
     DisconnectMessage,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Set the priority on the socket
     Priority,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// This removes delays caused by the interrupt and the resultant context switch
     BusyPoll,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Set a hiccup message that the socket will generate when connected peer temprarily
     /// disconnects
     HiccupMessage,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Pass duplicate unsubscribe messages on [`XSubscribe`](XSubscribeSocket) sockets
     XsubVerboseUnsubscribe,
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     /// Number of topic subscriptions received
     TopicsCount,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM sender mode
     NormMode,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM unicast NACK mode
     NormUnicastNack,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM buffer size
     NormBufferSize,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM segment size
     NormSegmentSize,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM block size
     NormBlockSize,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM parity segment setting
     NormNumnParity,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// Proactive NORM parity segment setting
     NormNumnAutoParity,
-    #[cfg(feature = "draft-api")]
-    #[doc(cfg(all(feature = "draft-api", zmq_have_norm)))]
+    #[cfg(all(feature = "draft-api", zmq_has_norm))]
     /// NORM push mode
     NormPush,
 }
@@ -1518,13 +1450,13 @@ impl From<SocketOption> for i32 {
             SocketOption::PlainServer => zmq_sys_crate::ZMQ_PLAIN_SERVER as i32,
             SocketOption::PlainUsername => zmq_sys_crate::ZMQ_PLAIN_USERNAME as i32,
             SocketOption::PlainPassword => zmq_sys_crate::ZMQ_PLAIN_PASSWORD as i32,
-            #[cfg(feature = "curve")]
+            #[cfg(zmq_has_curve)]
             SocketOption::CurvePublicKey => zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32,
-            #[cfg(feature = "curve")]
+            #[cfg(zmq_has_curve)]
             SocketOption::CurveSecretKey => zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32,
-            #[cfg(feature = "curve")]
+            #[cfg(zmq_has_curve)]
             SocketOption::CurveServer => zmq_sys_crate::ZMQ_CURVE_SERVER as i32,
-            #[cfg(feature = "curve")]
+            #[cfg(zmq_has_curve)]
             SocketOption::CurveServerKey => zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32,
             SocketOption::ProbeRouter => zmq_sys_crate::ZMQ_PROBE_ROUTER as i32,
             SocketOption::RequestCorrelate => zmq_sys_crate::ZMQ_REQ_CORRELATE as i32,
@@ -1554,9 +1486,13 @@ impl From<SocketOption> for i32 {
                 zmq_sys_crate::ZMQ_MULTICAST_MAXTPDU as i32
             }
             SocketOption::ThreadSafe => zmq_sys_crate::ZMQ_THREAD_SAFE as i32,
+            #[cfg(zmq_has_vmci)]
             SocketOption::VmciBufferSize => zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32,
+            #[cfg(zmq_has_vmci)]
             SocketOption::VmciBufferMinSize => zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32,
+            #[cfg(zmq_has_vmci)]
             SocketOption::VmciBufferMaxSize => zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32,
+            #[cfg(zmq_has_vmci)]
             SocketOption::VmciConntectTimeout => zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32,
             SocketOption::UseFd => zmq_sys_crate::ZMQ_USE_FD as i32,
             SocketOption::BindToDevice => zmq_sys_crate::ZMQ_BINDTODEVICE as i32,
@@ -1598,21 +1534,21 @@ impl From<SocketOption> for i32 {
             }
             #[cfg(feature = "draft-api")]
             SocketOption::TopicsCount => zmq_sys_crate::ZMQ_TOPICS_COUNT as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormMode => zmq_sys_crate::ZMQ_NORM_MODE as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormUnicastNack => zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormBufferSize => zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormSegmentSize => zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormBlockSize => zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormNumnParity => zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormNumnAutoParity => zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32,
-            #[cfg(feature = "draft-api")]
+            #[cfg(all(feature = "draft-api", zmq_has_norm))]
             SocketOption::NormPush => zmq_sys_crate::ZMQ_NORM_PUSH as i32,
         }
     }
@@ -1662,10 +1598,10 @@ mod socket_option_tests {
     #[case(SocketOption::PlainServer, zmq_sys_crate::ZMQ_PLAIN_SERVER as i32)]
     #[case(SocketOption::PlainUsername, zmq_sys_crate::ZMQ_PLAIN_USERNAME as i32)]
     #[case(SocketOption::PlainPassword, zmq_sys_crate::ZMQ_PLAIN_PASSWORD as i32)]
-    #[cfg_attr(feature = "curve", case(SocketOption::CurvePublicKey, zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32))]
-    #[cfg_attr(feature = "curve", case(SocketOption::CurveSecretKey, zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32))]
-    #[cfg_attr(feature = "curve", case(SocketOption::CurveServer, zmq_sys_crate::ZMQ_CURVE_SERVER as i32))]
-    #[cfg_attr(feature = "curve", case(SocketOption::CurveServerKey, zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32))]
+    #[cfg_attr(zmq_has_curve, case(SocketOption::CurvePublicKey, zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32))]
+    #[cfg_attr(zmq_has_curve, case(SocketOption::CurveSecretKey, zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32))]
+    #[cfg_attr(zmq_has_curve, case(SocketOption::CurveServer, zmq_sys_crate::ZMQ_CURVE_SERVER as i32))]
+    #[cfg_attr(zmq_has_curve, case(SocketOption::CurveServerKey, zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32))]
     #[case(SocketOption::ProbeRouter, zmq_sys_crate::ZMQ_PROBE_ROUTER as i32)]
     #[case(SocketOption::RequestCorrelate, zmq_sys_crate::ZMQ_REQ_CORRELATE as i32)]
     #[case(SocketOption::RequestRelaxed, zmq_sys_crate::ZMQ_REQ_RELAXED as i32)]
@@ -1692,10 +1628,10 @@ mod socket_option_tests {
     #[case(SocketOption::MaxTcpRetransmitTimeout, zmq_sys_crate::ZMQ_TCP_MAXRT as i32)]
     #[case(SocketOption::MulticastMaxTransportDataUnitSize, zmq_sys_crate::ZMQ_MULTICAST_MAXTPDU as i32)]
     #[case(SocketOption::ThreadSafe, zmq_sys_crate::ZMQ_THREAD_SAFE as i32)]
-    #[case(SocketOption::VmciBufferSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32)]
-    #[case(SocketOption::VmciBufferMinSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32)]
-    #[case(SocketOption::VmciBufferMaxSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32)]
-    #[case(SocketOption::VmciConntectTimeout, zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32)]
+    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32))]
+    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferMinSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32))]
+    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferMaxSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32))]
+    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciConntectTimeout, zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32))]
     #[case(SocketOption::UseFd, zmq_sys_crate::ZMQ_USE_FD as i32)]
     #[case(SocketOption::BindToDevice, zmq_sys_crate::ZMQ_BINDTODEVICE as i32)]
     #[cfg_attr(feature = "draft-api", case(SocketOption::ZapEnforceDomain, zmq_sys_crate::ZMQ_ZAP_ENFORCE_DOMAIN as i32))]
@@ -1716,14 +1652,14 @@ mod socket_option_tests {
     #[cfg_attr(feature = "draft-api", case(SocketOption::HiccupMessage, zmq_sys_crate::ZMQ_HICCUP_MSG as i32))]
     #[cfg_attr(feature = "draft-api", case(SocketOption::XsubVerboseUnsubscribe, zmq_sys_crate::ZMQ_XSUB_VERBOSE_UNSUBSCRIBE as i32))]
     #[cfg_attr(feature = "draft-api", case(SocketOption::TopicsCount, zmq_sys_crate::ZMQ_TOPICS_COUNT as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormMode, zmq_sys_crate::ZMQ_NORM_MODE as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormUnicastNack, zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormBufferSize, zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormSegmentSize, zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormBlockSize, zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormNumnParity, zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormNumnAutoParity, zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32))]
-    #[cfg_attr(feature = "draft-api", case(SocketOption::NormPush, zmq_sys_crate::ZMQ_NORM_PUSH as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormMode, zmq_sys_crate::ZMQ_NORM_MODE as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormUnicastNack, zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormBufferSize, zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormSegmentSize, zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormBlockSize, zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormNumnParity, zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormNumnAutoParity, zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32))]
+    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormPush, zmq_sys_crate::ZMQ_NORM_PUSH as i32))]
     fn converts_to_raw(#[case] option: SocketOption, #[case] expected: i32) {
         assert_eq!(<SocketOption as Into<i32>>::into(option), expected);
     }
@@ -1805,7 +1741,7 @@ impl<T: sealed::SocketType> Socket<T> {
         self.socket.set_sockopt_bool(option.into(), value)
     }
 
-    #[cfg(all(feature = "curve", not(windows)))]
+    #[cfg(zmq_has_curve)]
     pub(crate) fn get_sockopt_curve(&self, option: SocketOption) -> ZmqResult<Vec<u8>> {
         self.socket.get_sockopt_curve(option.into())
     }
@@ -1947,7 +1883,6 @@ impl<T: sealed::SocketType> Socket<T> {
     /// increases CPU utilization. Busy polling also prevents the CPU from sleeping, which can
     /// incur additional power consumption.
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_busy_poll(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::BusyPoll, value)
     }
@@ -2566,7 +2501,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`ReconnectStop`]: SocketOption::ReconnectStop
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_reconnect_stop(&self, value: ReconnectStop) -> ZmqResult<()> {
         self.set_sockopt_int(SocketOption::ReconnectStop, value.bits())
     }
@@ -2582,7 +2516,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`ReconnectStop`]: SocketOption::ReconnectStop
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn reconnect_stop(&self) -> ZmqResult<ReconnectStop> {
         self.get_sockopt_int(SocketOption::ReconnectStop)
             .map(ReconnectStop::from_bits_truncate)
@@ -2740,7 +2673,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`SocksUsername`]: SocketOption::SocksUsername
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_socks_proxy<V>(&self, value: Option<V>) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -2762,7 +2694,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`SocksProxy`]: SocketOption::SocksProxy
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn socks_proxy(&self) -> ZmqResult<String> {
         self.get_sockopt_string(SocketOption::SocksProxy)
     }
@@ -2781,7 +2712,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`set_socks_password()`]: #method.set_socks_password
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_socks_username<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -2800,7 +2730,6 @@ impl<T: sealed::SocketType> Socket<T> {
     /// | :-----------: | :---------------------------: |
     /// | not set       | all, when using TCP transport |
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn socks_username(&self) -> ZmqResult<String> {
         self.get_sockopt_string(SocketOption::SocksUsername)
     }
@@ -2818,7 +2747,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`set_socks_username()`]: #method.set_socks_username
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_socks_password<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -2839,7 +2767,6 @@ impl<T: sealed::SocketType> Socket<T> {
     ///
     /// [`set_socks_username()`]: #method.set_socks_username
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn socks_password(&self) -> ZmqResult<String> {
         self.get_sockopt_string(SocketOption::SocksPassword)
     }
@@ -3305,7 +3232,6 @@ pub trait Receiver {
         F: Into<RecvFlags> + Copy;
 
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     async fn recv_msg_async(&self) -> Option<Message>;
 }
 
@@ -3358,7 +3284,6 @@ pub trait MultipartReceiver: Receiver {
     }
 
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     async fn recv_multipart_async(&self) -> MultipartMessage {
         ::futures::stream::repeat_with(|| Ok(self.recv_msg_async()))
             .try_fold(MultipartMessage::new(), |mut parts, zmq_msg| async move {
@@ -3406,7 +3331,6 @@ pub trait Sender {
         F: Into<SendFlags> + Copy;
 
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     async fn send_msg_async<M, F>(&self, msg: M, flags: F) -> Option<()>
     where
         M: Into<Message> + Clone + Send,
@@ -3428,7 +3352,6 @@ where
     }
 
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     async fn send_msg_async<M, F>(&self, msg: M, flags: F) -> Option<()>
     where
         M: Into<Message> + Clone + Send,
@@ -3467,7 +3390,6 @@ pub trait MultipartSender: Sender {
     }
 
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     async fn send_multipart_async<M, F>(&self, multipart: M, flags: F) -> Option<()>
     where
         M: Into<MultipartMessage> + Send,
@@ -3576,7 +3498,6 @@ bitflags! {
 }
 
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord)]
 /// Flags for the [`ReconnectStop`] socket option
@@ -4271,7 +4192,6 @@ pub(crate) mod builder {
     #[allow(dead_code)]
     struct SocketConfig {
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(default = false)]
         busy_poll: bool,
         #[builder(setter(into), default = 0)]

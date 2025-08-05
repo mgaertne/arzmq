@@ -64,7 +64,6 @@ impl MultipartSender for Socket<Router> {}
 impl MultipartReceiver for Socket<Router> {}
 
 #[cfg(feature = "draft-api")]
-#[doc(cfg(feature = "draft-api"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(feature = "builder", derive(serde::Serialize, serde::Deserialize))]
 /// Connect and disconnect router notifications
@@ -223,7 +222,6 @@ impl Socket<Router> {
     /// [`Peer`]: super::PeerSocket
     /// [`set_heartbeat_interval()`]: #method.set_heartbeat_interval
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_disconnect_message<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -246,7 +244,6 @@ impl Socket<Router> {
     /// [`Peer`]: super::PeerSocket
     /// [`set_heartbeat_interval()`]: #method.set_heartbeat_interval
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_hello_message<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -263,7 +260,6 @@ impl Socket<Router> {
     ///
     /// [`Router`]: RouterSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_router_notify(&self, value: RouterNotify) -> ZmqResult<()> {
         self.set_sockopt_int(SocketOption::RouterNotify, value.bits())
     }
@@ -279,7 +275,6 @@ impl Socket<Router> {
     /// [`NotifyConnect`]: RouterNotify::NotifyConnect
     /// [`NotifyDisconnect`]: RouterNotify::NotifyDisconnect
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn router_notify(&self) -> ZmqResult<RouterNotify> {
         self.get_sockopt_int(SocketOption::RouterNotify)
             .map(RouterNotify::from_bits_truncate)
@@ -478,15 +473,12 @@ pub(crate) mod builder {
     struct RouterConfig {
         socket_builder: SocketBuilder,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(setter(into), default = "Default::default()")]
         hello_message: String,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(setter(into), default = "Default::default()")]
         disconnect_message: String,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(setter(into), default = "RouterNotify::empty()")]
         router_notify: RouterNotify,
         #[builder(setter(into), default = "Default::default()")]

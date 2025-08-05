@@ -168,7 +168,6 @@ impl Socket<Subscribe> {
     /// [`XPublish`]: super::XPublishSocket
     /// [`XSubscribe`]: super::XSubscribeSocket
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn topic_count(&self) -> ZmqResult<i32> {
         self.get_sockopt_int(SocketOption::TopicsCount)
     }

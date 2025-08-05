@@ -464,7 +464,6 @@ pub trait MonitorReceiver {
     fn recv_monitor_event(&self) -> ZmqResult<MonitorSocketEvent>;
 
     #[cfg(feature = "futures")]
-    #[doc(cfg(feature = "futures"))]
     async fn recv_monitor_event_async(&self) -> Option<MonitorSocketEvent>;
 }
 

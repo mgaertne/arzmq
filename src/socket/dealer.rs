@@ -156,7 +156,6 @@ impl Socket<Dealer> {
     /// [`Peer`]: super::PeerSocket
     /// [`set_heartbeat_interval()`]: #method.set_heartbeat_interval
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_hiccup_message<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -179,7 +178,6 @@ impl Socket<Dealer> {
     /// [`Peer`]: super::PeerSocket
     /// [`set_heartbeat_interval()`]: #method.set_heartbeat_interval
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub fn set_hello_message<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -354,11 +352,9 @@ pub(crate) mod builder {
         #[builder(default = false)]
         conflate: bool,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(setter(into), default = "Default::default()")]
         hiccup_msg: String,
         #[cfg(feature = "draft-api")]
-        #[doc(cfg(feature = "draft-api"))]
         #[builder(setter(into), default = "Default::default()")]
         hello_message: String,
         #[builder(setter(into), default = "Default::default()")]

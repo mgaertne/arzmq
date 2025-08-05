@@ -83,12 +83,12 @@ futures = { version = ">=0.3.31", features = ["executor"] }
 
 [features]
 default = ["builder"]
+# enable Builder API for the various socket types and the ZMQ context.
 builder = ["dep:serde", "dep:derive_builder"]
+# enable async futures for send and receive operations
 futures = ["dep:async-trait", "dep:futures"]
+# enables Draft API features in the underlying libzmq.
 draft-api = ["arzmq-sys/draft-api"]
-curve = ["arzmq-sys/curve", "dep:z85"]
-pgm = ["arzmq-sys/pgm"]
-norm = ["arzmq-sys/norm"]
 
 examples-tokio = ["futures", "dep:tokio"]
 examples-async-std = ["futures", "dep:async-std"]

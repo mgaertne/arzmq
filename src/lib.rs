@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![feature(cold_path, doc_cfg, stmt_expr_attributes)]
+#![feature(cold_path, doc_cfg, stmt_expr_attributes, doc_auto_cfg)]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
 #![deny(
@@ -36,22 +36,18 @@ pub use error::{ZmqError, ZmqResult};
 
 pub mod prelude {
     #[cfg(feature = "builder")]
-    #[doc(cfg(feature = "builder"))]
     pub use crate::context::ContextBuilder;
     #[cfg(all(feature = "draft-api", feature = "builder"))]
-    #[doc(cfg(all(feature = "draft-api", feature = "builder")))]
     pub use crate::socket::{
         ChannelBuilder, ClientBuilder, DishBuilder, GatherBuilder, PeerBuilder, RadioBuilder,
         ScatterBuilder, ServerBuilder,
     };
     #[cfg(feature = "draft-api")]
-    #[doc(cfg(feature = "draft-api"))]
     pub use crate::socket::{
         ChannelSocket, ClientSocket, DishSocket, GatherSocket, PeerSocket, RadioSocket,
         ScatterSocket, ServerSocket,
     };
     #[cfg(feature = "builder")]
-    #[doc(cfg(feature = "builder"))]
     pub use crate::socket::{
         DealerBuilder, PairBuilder, PublishBuilder, PullBuilder, PushBuilder, ReplyBuilder,
         RequestBuilder, RouterBuilder, SocketBuilder, StreamBuilder, SubscribeBuilder,
@@ -149,10 +145,7 @@ mod has_capability_tests {
 
     #[test]
     fn has_curve_capability() {
-        assert_eq!(
-            has_capability(Capability::Curve),
-            cfg!(all(feature = "curve", not(windows)))
-        );
+        assert_eq!(has_capability(Capability::Curve), cfg!(zmq_has_curve));
     }
 
     #[test]
