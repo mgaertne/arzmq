@@ -403,7 +403,7 @@ fn configure(build: &mut cc::Build) {
     if env::var("SYSTEM_DEPS_MIT_KRB5_GSSAPI_LIB").is_ok() {
         build.define("HAVE_LIBGSSAPI_KRB5", "1");
         #[cfg(target_env = "gnu")]
-        libraries
+        _libraries
             .iter()
             .iter()
             .filter(|(name, _lib)| name.contains("gssapi"))
@@ -415,7 +415,7 @@ fn configure(build: &mut cc::Build) {
     if env::var("SYSTEM_DEPS_OPENPGM_LIB").is_ok() {
         build.define("ZMQ_HAVE_OPENPGM", "1");
         #[cfg(target_env = "gnu")]
-        libraries
+        _libraries
             .iter()
             .iter()
             .filter(|(name, _lib)| name.starts_with("openpgm"))
