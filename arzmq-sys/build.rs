@@ -483,17 +483,21 @@ fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
     {
         let out_dir = env::var("OUT_DIR")?;
         let vmci_includes = PathBuf::from(&out_dir).join("vmci");
-        fs::create_dir(&vmci_includes)?;
+        if !vmci_includes.exists() {
+            fs::create_dir(&vmci_includes)?;
+        }
 
         let vmci_sockets_header = vmci_includes.join("vmci_sockets.h");
-        let mut vmci_file = File::create(vmci_sockets_header)?;
-        vmci_file.write_all(
-            reqwest::blocking::get(
-                "https://raw.githubusercontent.com/vmware/open-vm-tools/462c995f2deeaa578792b65c22eb082b9f487305/open-vm-tools/lib/include/vmci_sockets.h")?
-                .bytes()?
-                .as_ref()
-        )?;
-        vmci_file.flush()?;
+        if !vmci_sockets_header.exists() {
+            let mut vmci_file = File::create(vmci_sockets_header)?;
+            vmci_file.write_all(
+                reqwest::blocking::get(
+                    "https://raw.githubusercontent.com/vmware/open-vm-tools/462c995f2deeaa578792b65c22eb082b9f487305/open-vm-tools/lib/include/vmci_sockets.h")?
+                    .bytes()?
+                    .as_ref()
+            )?;
+            vmci_file.flush()?;
+        }
 
         build.define("ZMQ_HAVE_VMCI", "1");
 
