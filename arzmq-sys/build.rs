@@ -8,6 +8,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use cc::Build;
+use system_deps::{Config, Dependencies};
+use tap::{TapFallible, TapOptional};
+
 static DEFAULT_SOURCES: &[&str] = &[
     "address",
     "channel",
@@ -128,7 +132,7 @@ static DEFAULT_SOURCES: &[&str] = &[
     "zmtp_engine",
 ];
 
-fn add_cpp_sources(build: &mut cc::Build, root: impl AsRef<Path>, files: &[&str]) {
+fn add_cpp_sources(build: &mut Build, root: impl AsRef<Path>, files: &[&str]) {
     build.cpp(true);
     let root = root.as_ref();
     build.files(files.iter().map(|src| {
@@ -140,7 +144,7 @@ fn add_cpp_sources(build: &mut cc::Build, root: impl AsRef<Path>, files: &[&str]
     build.include(root);
 }
 
-fn add_c_sources(build: &mut cc::Build, root: impl AsRef<Path>, files: &[&str]) {
+fn add_c_sources(build: &mut Build, root: impl AsRef<Path>, files: &[&str]) {
     let root = root.as_ref();
     // Temporarily use c instead of c++.
     build.cpp(false);
@@ -187,7 +191,7 @@ where
 fn check_low_level_compilation<S, F>(c_src: S, configure_build: F) -> Result<bool, Box<dyn Error>>
 where
     S: AsRef<str>,
-    F: FnOnce(&mut cc::Build) -> &mut cc::Build,
+    F: FnOnce(&mut Build) -> &mut Build,
 {
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
@@ -202,7 +206,7 @@ where
         src_file.flush()?;
     }
 
-    let mut builder = cc::Build::new();
+    let mut builder = Build::new();
     let mut compile_command = configure_build(&mut builder).get_compiler().to_command();
 
     compile_command.arg(src_path);
@@ -272,8 +276,8 @@ int main(void) {
     )
 }
 
-fn configure(build: &mut cc::Build) {
-    let libraries = system_deps::Config::new().probe().unwrap();
+fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
+    let libraries = Config::new().probe()?;
 
     let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
@@ -317,11 +321,11 @@ fn configure(build: &mut cc::Build) {
 
     #[cfg(not(windows))]
     let create_platform_hpp_shim = |build: &mut cc::Build| {
-        let out_includes = PathBuf::from(env::var("OUT_DIR").unwrap());
+        let out_includes = PathBuf::from(env::var("OUT_DIR")?);
 
-        let mut f = File::create(out_includes.join("platform.hpp")).unwrap();
-        f.write_all(b"").unwrap();
-        f.sync_all().unwrap();
+        let mut f = File::create(out_includes.join("platform.hpp"))?;
+        f.write_all(b"")?;
+        f.sync_all()?;
 
         build.include(out_includes);
     };
@@ -402,76 +406,110 @@ fn configure(build: &mut cc::Build) {
     #[cfg(feature = "draft-api")]
     build.define("ZMQ_BUILD_DRAFT_API", "1");
 
-    libraries
-        .iter()
-        .iter()
-        .filter(|(name, _lib)| *name == "libsodium")
-        .for_each(|(_name, lib)| {
-            build.define("ZMQ_USE_LIBSODIUM", "1");
-            build.define("ZMQ_HAVE_CURVE", "1");
+    check_curve_config(build, &libraries);
+    check_gssapi_config(build, &libraries);
+    check_pgm_config(build, &libraries);
+    check_norm_config(build, &libraries);
+    check_vmci_config(build)
+}
 
-            build.includes(&lib.include_paths);
-        });
-
-    #[cfg(target_env = "msvc")]
-    vcpkg::find_package("libsodium").iter().for_each(|lib| {
+fn check_curve_config(build: &mut Build, libraries: &Dependencies) {
+    libraries.get_by_name("libsodium").tap_some(|lib| {
         build.define("ZMQ_USE_LIBSODIUM", "1");
         build.define("ZMQ_HAVE_CURVE", "1");
+
         build.includes(&lib.include_paths);
     });
 
-    libraries
-        .iter()
-        .iter()
-        .filter(|(name, _lib)| *name == "gssapi")
-        .for_each(|(_name, lib)| {
-            build.define("HAVE_LIBGSSAPI_KRB5", "1");
-            build.includes(&lib.include_paths);
-        });
+    #[cfg(target_env = "msvc")]
+    let _ = vcpkg::find_package("libsodium").tap_ok(|lib| {
+        build.define("ZMQ_USE_LIBSODIUM", "1");
+        build.define("ZMQ_HAVE_CURVE", "1");
 
-    libraries
-        .iter()
-        .iter()
-        .filter(|(name, _lib)| *name == "openpgm")
-        .for_each(|(_name, lib)| {
-            build.define("ZMQ_HAVE_OPENPGM", "1");
-            build.includes(&lib.include_paths);
-
-            #[cfg(target_os = "macos")]
-            build.define("restrict", "__restrict__");
-        });
-
-    libraries
-        .iter()
-        .iter()
-        .filter(|(name, _lib)| *name == "norm")
-        .for_each(|(_name, lib)| {
-            build.define("ZMQ_HAVE_NORM", "1");
-            build.includes(&lib.include_paths);
-
-            println!("cargo:rustc-link-lib=static=protokit");
-
-            #[cfg(target_os = "windows")]
-            println!("cargo:rustc-link-lib=user32");
-        });
-
-    libraries
-        .iter()
-        .iter()
-        .filter(|(name, _lib)| *name == "vmci")
-        .for_each(|(_name, lib)| {
-            build.define("ZMQ_HAVE_VMCI", "1");
-            build.includes(&lib.include_paths);
-        });
+        build.includes(&lib.include_paths);
+    });
 }
 
-fn build_zmq() {
+fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
+    libraries.get_by_name("gssapi").tap_some(|lib| {
+        build.define("HAVE_LIBGSSAPI_KRB5", "1");
+        build.includes(&lib.include_paths);
+    });
+
+    #[cfg(target_env = "msvc")]
+    {
+        unsafe {
+            env::set_var("VCPKGRS_DYNAMIC", "1");
+        }
+        let _ = vcpkg::Config::new()
+            .target_triplet("x64-windows")
+            .find_package("krb5")
+            .tap_ok(|lib| {
+                build.define("HAVE_LIBGSSAPI_KRB5", "1");
+                build.includes(&lib.include_paths);
+            });
+        unsafe {
+            env::remove_var("VCPKGRS_DYNAMIC");
+        }
+    }
+}
+
+fn check_pgm_config(build: &mut Build, libraries: &Dependencies) {
+    libraries.get_by_name("openpgm").tap_some(|lib| {
+        build.define("ZMQ_HAVE_OPENPGM", "1");
+        build.includes(&lib.include_paths);
+
+        #[cfg(target_os = "macos")]
+        build.define("restrict", "__restrict__");
+    });
+}
+
+fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
+    libraries.get_by_name("norm").tap_some(|lib| {
+        build.define("ZMQ_HAVE_NORM", "1");
+        build.includes(&lib.include_paths);
+
+        println!("cargo:rustc-link-lib=static=protokit");
+
+        #[cfg(target_os = "windows")]
+        println!("cargo:rustc-link-lib=user32");
+    });
+}
+
+#[cfg_attr(target_env = "msvc", allow(unused))]
+fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
+    #[cfg(not(target_env = "msvc"))]
+    {
+        let out_dir = env::var("OUT_DIR")?;
+        let vmci_includes = PathBuf::from(&out_dir).join("vmci");
+        fs::create_dir(&vmci_includes)?;
+
+        let vmci_sockets_header = vmci_includes.join("vmci_sockets.h");
+        let mut vmci_file = File::create(vmci_sockets_header)?;
+        vmci_file.write_all(
+            reqwest::blocking::get(
+                "https://raw.githubusercontent.com/vmware/open-vm-tools/462c995f2deeaa578792b65c22eb082b9f487305/open-vm-tools/lib/include/vmci_sockets.h")?
+                .bytes()?
+                .as_ref()
+        )?;
+        vmci_file.flush()?;
+
+        build.define("ZMQ_HAVE_VMCI", "1");
+
+        build.cpp(false);
+        build.include(vmci_includes);
+    }
+
+    Ok(())
+}
+
+fn build_zmq() -> Result<(), Box<dyn Error>> {
     let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
-    let mut build = cc::Build::new();
-    configure(&mut build);
+    let mut build = Build::new();
+    configure(&mut build)?;
 
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
     let lib_dir = out_dir.join("lib");
 
     build.out_dir(&lib_dir).cpp(true);
@@ -496,10 +534,12 @@ fn build_zmq() {
     println!("cargo:include={}", include_dir.display());
     println!("cargo:lib={}", lib_dir.display());
     println!("cargo:out={}", out_dir.display());
+
+    Ok(())
 }
 
-fn generate_bindings() {
-    let vendor_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("vendor");
+fn generate_bindings() -> Result<(), Box<dyn Error>> {
+    let vendor_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?).join("vendor");
     let include_dir = vendor_dir.join("include");
 
     let builder = bindgen::Builder::default()
@@ -520,18 +560,20 @@ fn generate_bindings() {
 
     let bindings = builder.generate().expect("Unable to generate bindings");
 
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
     bindings
         .write_to_file(out_dir.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    Ok(())
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=PROFILE");
     println!("cargo:rerun-if-env-changed=CARGO_CFG_FEATURE");
 
-    build_zmq();
+    build_zmq()?;
 
-    generate_bindings();
+    generate_bindings()
 }
