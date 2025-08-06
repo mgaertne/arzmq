@@ -43,6 +43,6 @@ vcpkg = { version = "0.2.15" }
 [package.metadata.system-deps]
 gnutls = { version = ">=3", optional = true }
 libsodium = { version = ">=1.0", optional = true }
-gssapi = { name = "mit-krb5-gssapi", version = ">=0.1", fallback-names = ["gssapi_krb5", "krb5-gssapi", "GSS"], optional = true }
+gssapi = { name = "mit-krb5-gssapi", version = ">=0.1", fallback-names = ["gssapi_krb5", "krb5-gssapi", "Kerberos"], optional = true }
 openpgm = { name = "openpgm-5.1", version = ">=5.1", fallback-names = ["openpgm-5.2", "openpgm-5.3"], optional = true }
 norm = { version = ">=1.0", optional = true }
