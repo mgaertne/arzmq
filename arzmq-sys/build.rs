@@ -295,13 +295,14 @@ fn configure(build: &mut cc::Build) {
 
     add_cpp_sources(build, vendor.join("src"), DEFAULT_SOURCES);
 
-    if libraries
+    libraries
         .iter()
         .iter()
-        .any(|(name, _lib)| *name == "gnutls")
-    {
-        add_cpp_sources(build, vendor.join("src"), &["wss_address", "wss_engine"]);
-    }
+        .filter(|(name, _lib)| *name == "gnutls")
+        .for_each(|(_name, lib)| {
+            add_cpp_sources(build, vendor.join("src"), &["wss_address", "wss_engine"]);
+            build.includes(&lib.include_paths);
+        });
 
     add_c_sources(build, vendor.join("external/sha1"), &["sha1.c"]);
 
