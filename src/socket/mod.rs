@@ -1040,6 +1040,8 @@ pub use xsubscribe::XSubscribeSocket;
 #[cfg(feature = "builder")]
 pub use xsubscribe::builder::XSubscribeBuilder;
 
+#[cfg(zmq_has_gssapi)]
+use crate::security::GssApiNametype;
 use crate::{auth::ZapDomain, security::SecurityMechanism};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -1282,6 +1284,18 @@ pub enum SocketOption {
     IpcFilterGroupId,
     /// Next outbound routing id
     ConnectRoutingId,
+    #[cfg(zmq_has_gssapi)]
+    /// GSSAPI server role
+    GssApiServer,
+    #[cfg(zmq_has_gssapi)]
+    /// Name of GSSAPI principal
+    GssApiPrincipal,
+    #[cfg(zmq_has_gssapi)]
+    /// Name of GSSAPI service principal
+    GssApiServicePrincipal,
+    #[cfg(zmq_has_gssapi)]
+    /// Enable/disable GSSAPI encryption
+    GssApiPlainText,
     /// Maximum handshake interval
     HandshakeInterval,
     /// SOCKS5 proxy address
@@ -1328,6 +1342,12 @@ pub enum SocketOption {
     VmciConntectTimeout,
     /// Retrive the pre-allocated socket file descriptor
     UseFd,
+    #[cfg(zmq_has_gssapi)]
+    /// Nametype for GSSAPI principal
+    GssApiPrincipalNametype,
+    #[cfg(zmq_has_gssapi)]
+    /// Nametype for GSSAPI service principal
+    GssApiServicePrincipalNametype,
     /// Name of the devive to bind the socket to
     BindToDevice,
     #[cfg(feature = "draft-api")]
@@ -1469,6 +1489,16 @@ impl From<SocketOption> for i32 {
             SocketOption::IpcFilterUserId => zmq_sys_crate::ZMQ_IPC_FILTER_UID as i32,
             SocketOption::IpcFilterGroupId => zmq_sys_crate::ZMQ_IPC_FILTER_GID as i32,
             SocketOption::ConnectRoutingId => zmq_sys_crate::ZMQ_CONNECT_ROUTING_ID as i32,
+            #[cfg(zmq_has_gssapi)]
+            SocketOption::GssApiServer => zmq_sys_crate::ZMQ_GSSAPI_SERVER as i32,
+            #[cfg(zmq_has_gssapi)]
+            SocketOption::GssApiPrincipal => zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL as i32,
+            #[cfg(zmq_has_gssapi)]
+            SocketOption::GssApiServicePrincipal => {
+                zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL as i32
+            }
+            #[cfg(zmq_has_gssapi)]
+            SocketOption::GssApiPlainText => zmq_sys_crate::ZMQ_GSSAPI_PLAINTEXT as i32,
             SocketOption::HandshakeInterval => zmq_sys_crate::ZMQ_HANDSHAKE_IVL as i32,
             SocketOption::SocksProxy => zmq_sys_crate::ZMQ_SOCKS_PROXY as i32,
             SocketOption::XpubNoDrop => zmq_sys_crate::ZMQ_XPUB_NODROP as i32,
@@ -1495,6 +1525,14 @@ impl From<SocketOption> for i32 {
             #[cfg(zmq_has_vmci)]
             SocketOption::VmciConntectTimeout => zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32,
             SocketOption::UseFd => zmq_sys_crate::ZMQ_USE_FD as i32,
+            #[cfg(zmq_has_gssapi)]
+            SocketOption::GssApiPrincipalNametype => {
+                zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE as i32
+            }
+            #[cfg(zmq_has_gssapi)]
+            SocketOption::GssApiServicePrincipalNametype => {
+                zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE as i32
+            }
             SocketOption::BindToDevice => zmq_sys_crate::ZMQ_BINDTODEVICE as i32,
             #[cfg(feature = "draft-api")]
             SocketOption::ZapEnforceDomain => zmq_sys_crate::ZMQ_ZAP_ENFORCE_DOMAIN as i32,
@@ -1613,6 +1651,10 @@ mod socket_option_tests {
     #[case(SocketOption::IpcFilterUserId, zmq_sys_crate::ZMQ_IPC_FILTER_UID as i32)]
     #[case(SocketOption::IpcFilterGroupId, zmq_sys_crate::ZMQ_IPC_FILTER_GID as i32)]
     #[case(SocketOption::ConnectRoutingId, zmq_sys_crate::ZMQ_CONNECT_ROUTING_ID as i32)]
+    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiServer, zmq_sys_crate::ZMQ_GSSAPI_SERVER as i32))]
+    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiPrincipal, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL as i32))]
+    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiServicePrincipal, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL as i32))]
+    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiPlainText, zmq_sys_crate::ZMQ_GSSAPI_PLAINTEXT as i32))]
     #[case(SocketOption::HandshakeInterval, zmq_sys_crate::ZMQ_HANDSHAKE_IVL as i32)]
     #[case(SocketOption::SocksProxy, zmq_sys_crate::ZMQ_SOCKS_PROXY as i32)]
     #[case(SocketOption::XpubNoDrop, zmq_sys_crate::ZMQ_XPUB_NODROP as i32)]
@@ -1633,6 +1675,8 @@ mod socket_option_tests {
     #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferMaxSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32))]
     #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciConntectTimeout, zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32))]
     #[case(SocketOption::UseFd, zmq_sys_crate::ZMQ_USE_FD as i32)]
+    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiPrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE as i32))]
+    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiServicePrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE as i32))]
     #[case(SocketOption::BindToDevice, zmq_sys_crate::ZMQ_BINDTODEVICE as i32)]
     #[cfg_attr(feature = "draft-api", case(SocketOption::ZapEnforceDomain, zmq_sys_crate::ZMQ_ZAP_ENFORCE_DOMAIN as i32))]
     #[cfg_attr(feature = "draft-api", case(SocketOption::Metadata, zmq_sys_crate::ZMQ_METADATA as i32))]
@@ -1946,6 +1990,156 @@ impl<T: sealed::SocketType> Socket<T> {
             .try_into()
             .map(PollEvents::from_bits_truncate)
             .map_err(|_err| ZmqError::InvalidArgument)
+    }
+
+    /// # Disable GSSAPI encryption `ZMQ_GSSAPI_PLAINTEXT`
+    ///
+    /// Defines whether communications on the socket will be encrypted. A value of `true` means
+    /// that communications will be plaintext. A value of `false` means communications will be
+    /// encrypted.
+    ///
+    /// | Default value | Applicable socket types               |
+    /// | :-----------: | :-----------------------------------: |
+    /// | false         | all, when using TCP or IPC transports |
+    #[cfg(zmq_has_gssapi)]
+    pub fn set_gssapi_plaintext(&self, value: bool) -> ZmqResult<()> {
+        self.set_sockopt_bool(SocketOption::GssApiPlainText, value)
+    }
+
+    /// # Retrieve GSSAPI plaintext or encrypted status `ZMQ_GSSAPI_PLAINTEXT`
+    ///
+    /// Returns the [`gssapi_plaintext()`] option, if any, previously set on the socket. A value of
+    /// `true` means that communications will be plaintext. A value of `false` means communications
+    /// will be encrypted.
+    ///
+    /// | Default value | Applicable socket types               |
+    /// | :-----------: | :-----------------------------------: |
+    /// | false         | all, when using TCP or IPC transports |
+    ///
+    /// [`gssapi_plaintext()`]: #method.gssapi_plaintext
+    #[cfg(zmq_has_gssapi)]
+    pub fn gssapi_plaintext(&self) -> ZmqResult<bool> {
+        self.get_sockopt_bool(SocketOption::GssApiPlainText)
+    }
+
+    /// # Set name type of service principal `ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE`
+    ///
+    /// Sets the name type of the GSSAPI service principal. A value of [`NtHostbased`] means the
+    /// name specified with [`GssApiServicePrincipal`] is interpreted as a host based name. A value
+    /// of [`NtUsername`] means it is interpreted as a local user name. A value of
+    /// [`NtKrb5Principal`] means it is interpreted as an unparsed principal name string (valid
+    /// only with the krb5 GSSAPI mechanism).
+    ///
+    /// | Default value   | Applicable socket types               |
+    /// | :-------------: | :-----------------------------------: |
+    /// | [`NtHostbased`] | all, when using TCP or IPC transports |
+    ///
+    /// [`GssApiServicePrincipal`]: SocketOption::GssApiServicePrincipal
+    /// [`NtHostbased`]: GssApiNametype::NtHostbased
+    /// [`NtUsername`]: GssApiNametype::NtUsername
+    /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
+    #[cfg(zmq_has_gssapi)]
+    pub fn set_gssapi_service_principal_nametype(&self, value: GssApiNametype) -> ZmqResult<()> {
+        self.set_sockopt_int(SocketOption::GssApiServicePrincipalNametype, value as i32)
+    }
+
+    /// # Retrieve nametype for service principal `ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE`
+    ///
+    /// Returns the [`GssApiServicePrincipalNametype`] option, if any, previously set on the socket.
+    /// A value of [`NtHostbased`] means the name specified with [`GssApiServicePrincipal`] is
+    /// interpreted as a host based name. A value of [`NtUsername`] means it is interpreted as a
+    /// local user name. A value of [`NtKrb5Principal`] means it is interpreted as an unparsed
+    /// principal name string (valid only with the krb5 GSSAPI mechanism).
+    ///
+    /// | Default value   | Applicable socket types               |
+    /// | :-------------: | :-----------------------------------: |
+    /// | [`NtHostbased`] | all, when using TCP or IPC transports |
+    ///
+    /// [`GssApiServicePrincipalNametype`]: SocketOption::GssApiServicePrincipalNametype
+    /// [`GssApiServicePrincipal`]: SocketOption::GssApiServicePrincipal
+    /// [`NtHostbased`]: GssApiNametype::NtHostbased
+    /// [`NtUsername`]: GssApiNametype::NtUsername
+    /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
+    #[cfg(zmq_has_gssapi)]
+    pub fn gssapi_service_principal_nametype(&self) -> ZmqResult<GssApiNametype> {
+        self.get_sockopt_int::<i32>(SocketOption::GssApiServicePrincipalNametype)
+            .and_then(GssApiNametype::try_from)
+    }
+
+    /// # Set name of GSSAPI principal `ZMQ_GSSAPI_PRINCIPAL`
+    ///
+    /// Sets the name of the principal for whom GSSAPI credentials should be acquired.
+    ///
+    /// | Default value   | Applicable socket types              |
+    /// | :-------------: | :----------------------------------: |
+    /// | not set         | all, when using TCP or IPC transport |
+    #[cfg(zmq_has_gssapi)]
+    pub fn set_gssapi_principal<V>(&self, value: V) -> ZmqResult<()>
+    where
+        V: AsRef<str>,
+    {
+        self.set_sockopt_string(SocketOption::GssApiPrincipal, value.as_ref())
+    }
+
+    /// # Retrieve the name of the GSSAPI principal `ZMQ_GSSAPI_PRINCIPAL`
+    ///
+    /// The [`gssapi_principal()`] option shall retrieve the principal name set for the GSSAPI
+    /// security mechanism. The returned value shall be a NULL-terminated string and MAY be empty.
+    /// The returned size SHALL include the terminating null byte.
+    ///
+    /// | Default value   | Applicable socket types              |
+    /// | :-------------: | :----------------------------------: |
+    /// | not set         | all, when using TCP or IPC transport |
+    ///
+    /// [`gssapi_principal()`]: #method.gssapi_principal
+    #[cfg(zmq_has_gssapi)]
+    pub fn gssapi_principal(&self) -> ZmqResult<String> {
+        self.socket
+            .get_sockopt_gssapi(SocketOption::GssApiPrincipal.into())
+    }
+
+    /// # Set name type of principal `ZMQ_GSSAPI_PRINCIPAL_NAMETYPE`
+    ///
+    /// Sets the name type of the GSSAPI principal. A value of [`NtHostbased`] means the name
+    /// specified with [`GssApiPrincipal`] is interpreted as a host based name. A value of
+    /// [`NtUsername`] means it is interpreted as a local user name. A value of [`NtKrb5Principal`]
+    /// means it is interpreted as an unparsed principal name string (valid only with the krb5
+    /// GSSAPI mechanism).
+    ///
+    /// | Default value   | Applicable socket types               |
+    /// | :-------------: | :-----------------------------------: |
+    /// | [`NtHostbased`] | all, when using TCP or IPC transports |
+    ///
+    /// [`GssApiPrincipal`]: SocketOption::GssApiPrincipal
+    /// [`NtHostbased`]: GssApiNametype::NtHostbased
+    /// [`NtUsername`]: GssApiNametype::NtUsername
+    /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
+    #[cfg(zmq_has_gssapi)]
+    pub fn set_gssapi_principal_nametype(&self, value: GssApiNametype) -> ZmqResult<()> {
+        self.set_sockopt_int(SocketOption::GssApiPrincipalNametype, value as i32)
+    }
+
+    /// # Retrieve nametype for service principal `ZMQ_GSSAPI_PRINCIPAL_NAMETYPE`
+    ///
+    /// Returns the [`GssApiPrincipalNametype`] option, if any, previously set on the socket. A
+    /// value of [`NtHostbased`] means the name specified with [`GssApiPrincipal`] is
+    /// interpreted as a host based name. A value of [`NtUsername`] means it is interpreted as a
+    /// local user name. A value of [`NtKrb5Principal`] means it is interpreted as an unparsed
+    /// principal name string (valid only with the krb5 GSSAPI mechanism).
+    ///
+    /// | Default value   | Applicable socket types               |
+    /// | :-------------: | :-----------------------------------: |
+    /// | [`NtHostbased`] | all, when using TCP or IPC transports |
+    ///
+    /// [`GssApiPrincipalNametype`]: SocketOption::GssApiPrincipalNametype
+    /// [`GssApiPrincipal`]: SocketOption::GssApiPrincipal
+    /// [`NtHostbased`]: GssApiNametype::NtHostbased
+    /// [`NtUsername`]: GssApiNametype::NtUsername
+    /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
+    #[cfg(zmq_has_gssapi)]
+    pub fn gssapi_principal_nametype(&self) -> ZmqResult<GssApiNametype> {
+        self.get_sockopt_int::<i32>(SocketOption::GssApiPrincipalNametype)
+            .and_then(GssApiNametype::try_from)
     }
 
     /// # Set maximum handshake interval `ZMQ_HANDSHAKE_IVL`
@@ -3543,6 +3737,8 @@ mod socket_tests {
     use super::{
         DealerSocket, MonitorFlags, MonitorSocketEvent, PairSocket, PollEvents, SendFlags,
     };
+    #[cfg(zmq_has_gssapi)]
+    use crate::security::GssApiNametype;
     use crate::{
         prelude::{Context, MonitorReceiver, Sender, ZmqResult},
         security::SecurityMechanism,
@@ -3608,6 +3804,64 @@ mod socket_tests {
         client_socket.connect(endpoint)?;
 
         assert_eq!(client_socket.events()?, PollEvents::POLL_OUT);
+
+        Ok(())
+    }
+
+    #[cfg(zmq_has_gssapi)]
+    #[test]
+    fn set_gssapi_plaintext_sets_gssapi_plaintext() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_plaintext(true)?;
+
+        assert!(socket.gssapi_plaintext()?);
+
+        Ok(())
+    }
+
+    #[cfg(zmq_has_gssapi)]
+    #[test]
+    fn set_gssapi_service_principal_sets_gssapi_service_principal() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_service_principal_nametype(GssApiNametype::NtUsername)?;
+
+        assert_eq!(
+            socket.gssapi_service_principal_nametype()?,
+            GssApiNametype::NtUsername
+        );
+
+        Ok(())
+    }
+
+    #[cfg(zmq_has_gssapi)]
+    #[test]
+    fn set_gssapi_principal_sets_gssapi_principal() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_principal("test")?;
+
+        assert_eq!(socket.gssapi_principal()?, "test");
+
+        Ok(())
+    }
+
+    #[cfg(zmq_has_gssapi)]
+    #[test]
+    fn set_gssapi_principal_nametype_sets_gssapi_principal_nametype() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+        socket.set_gssapi_principal_nametype(GssApiNametype::NtHostbased)?;
+
+        assert_eq!(
+            socket.gssapi_principal_nametype()?,
+            GssApiNametype::NtHostbased
+        );
 
         Ok(())
     }

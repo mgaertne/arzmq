@@ -298,7 +298,7 @@ fn configure(build: &mut cc::Build) {
     if libraries
         .iter()
         .iter()
-        .any(|(name, _lib)| *name == "openpgm")
+        .any(|(name, _lib)| *name == "gnutls")
     {
         add_cpp_sources(build, vendor.join("src"), &["wss_address", "wss_engine"]);
     }
@@ -375,6 +375,7 @@ fn configure(build: &mut cc::Build) {
         #[cfg(any(target_os = "android", target_env = "musl"))]
         build.define("ZMQ_HAVE_STRLCPY", "1");
     }
+
     #[cfg(any(target_os = "macos", target_os = "freebsd"))]
     {
         create_platform_hpp_shim(build);

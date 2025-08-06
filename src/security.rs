@@ -44,6 +44,14 @@ pub enum SecurityMechanism {
     #[display("CurveServer {{ ... }}")]
     /// Elliptic curve server authentication and encryption
     CurveServer { secret_key: Vec<u8> },
+    #[cfg(zmq_has_gssapi)]
+    #[display("GssApiClient {{ ... }}")]
+    /// GSSAPI client authentication and encryption
+    GssApiClient { service_principal: String },
+    #[cfg(zmq_has_gssapi)]
+    #[display("GssApiServer {{ ... }}")]
+    /// GSSAPI server authentication and encryption
+    GssApiServer,
 }
 
 impl SecurityMechanism {
@@ -70,6 +78,15 @@ impl SecurityMechanism {
                 socket.set_sockopt_bytes(SocketOption::CurveServerKey, server_key)?;
                 socket.set_sockopt_bytes(SocketOption::CurvePublicKey, public_key)?;
                 socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key)?;
+            }
+            #[cfg(zmq_has_gssapi)]
+            SecurityMechanism::GssApiClient { service_principal } => {
+                socket
+                    .set_sockopt_string(SocketOption::GssApiServicePrincipal, service_principal)?;
+            }
+            #[cfg(zmq_has_gssapi)]
+            SecurityMechanism::GssApiServer => {
+                socket.set_sockopt_bool(SocketOption::GssApiServer, true)?;
             }
         }
         Ok(())
@@ -100,6 +117,16 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
                         public_key,
                         secret_key,
                     })
+                }
+            }
+            #[cfg(zmq_has_gssapi)]
+            value if value == zmq_sys_crate::ZMQ_GSSAPI as i32 => {
+                if socket.get_sockopt_bool(SocketOption::GssApiServer)? {
+                    Ok(Self::GssApiServer)
+                } else {
+                    let service_principal =
+                        socket.get_sockopt_string(SocketOption::GssApiServicePrincipal)?;
+                    Ok(Self::GssApiClient { service_principal })
                 }
             }
             _ => Err(ZmqError::Unsupported),
@@ -386,5 +413,56 @@ mod curve_keypair_tests {
         assert_eq!(public_key, pub_key);
 
         Ok(())
+    }
+}
+
+#[cfg(zmq_has_gssapi)]
+#[derive(Debug, Display, PartialEq, Eq, Clone, Hash)]
+#[repr(i32)]
+/// # name types for GSSAPI
+pub enum GssApiNametype {
+    /// the name is interpreted as a host based name
+    NtHostbased,
+    /// the name is interpreted as a local user name
+    NtUsername,
+    /// the name is interpreted as an unparsed principal name string (valid only with the krb5
+    /// GSSAPI mechanism).
+    NtKrb5Principal,
+}
+
+#[cfg(zmq_has_gssapi)]
+impl TryFrom<i32> for GssApiNametype {
+    type Error = ZmqError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32 => Ok(Self::NtHostbased),
+            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32 => Ok(Self::NtUsername),
+            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32 => {
+                Ok(Self::NtKrb5Principal)
+            }
+            _ => Err(ZmqError::Unsupported),
+        }
+    }
+}
+
+#[cfg(zmq_has_gssapi)]
+#[cfg(test)]
+mod gss_api_nametype_tests {
+    use rstest::*;
+
+    use super::GssApiNametype;
+    use crate::{
+        prelude::{ZmqError, ZmqResult},
+        zmq_sys_crate,
+    };
+
+    #[rstest]
+    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32, Ok(GssApiNametype::NtHostbased))]
+    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32, Ok(GssApiNametype::NtUsername))]
+    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32, Ok(GssApiNametype::NtKrb5Principal))]
+    #[case(666, Err(ZmqError::Unsupported))]
+    fn nametype_try_from(#[case] value: i32, #[case] expected: ZmqResult<GssApiNametype>) {
+        assert_eq!(expected, GssApiNametype::try_from(value));
     }
 }
