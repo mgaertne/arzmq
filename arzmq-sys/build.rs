@@ -469,6 +469,7 @@ fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
         build.define("ZMQ_HAVE_NORM", "1");
         build.includes(&lib.include_paths);
 
+        #[cfg(not(target_os = "linux"))]
         println!("cargo:rustc-link-lib=static=protokit");
 
         #[cfg(target_os = "windows")]
