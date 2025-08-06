@@ -1,16 +1,16 @@
 use core::error::Error;
-#[cfg(target_env = "msvc")]
-use std::fs;
 use std::{
     env,
-    fs::File,
+    fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
 };
 
 use cc::Build;
 use system_deps::{Config, Dependencies};
-use tap::{TapFallible, TapOptional};
+#[cfg(target_env = "msvc")]
+use tap::TapFallible;
+use tap::TapOptional;
 
 static DEFAULT_SOURCES: &[&str] = &[
     "address",
@@ -321,11 +321,11 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
     #[cfg(not(windows))]
     let create_platform_hpp_shim = |build: &mut cc::Build| {
-        let out_includes = PathBuf::from(env::var("OUT_DIR")?);
+        let out_includes = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-        let mut f = File::create(out_includes.join("platform.hpp"))?;
-        f.write_all(b"")?;
-        f.sync_all()?;
+        let mut f = File::create(out_includes.join("platform.hpp")).unwrap();
+        f.write_all(b"").unwrap();
+        f.sync_all().unwrap();
 
         build.include(out_includes);
     };
