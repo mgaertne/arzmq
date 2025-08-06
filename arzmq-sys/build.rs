@@ -449,10 +449,7 @@ fn configure(build: &mut cc::Build) {
             build.define("ZMQ_HAVE_NORM", "1");
             build.includes(&lib.include_paths);
 
-            #[cfg(target_env = "msvc")]
-            {
-                println!("cargo:rustc-link-lib=static=protokit");
-            }
+            println!("cargo:rustc-link-lib=static=protokit");
 
             #[cfg(target_os = "windows")]
             println!("cargo:rustc-link-lib=user32");
