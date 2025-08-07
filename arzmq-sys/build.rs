@@ -478,8 +478,6 @@ fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
 
 #[cfg_attr(target_env = "msvc", allow(unused))]
 fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
-    #[cfg(not(target_env = "msvc"))]
-    {
         let out_dir = env::var("OUT_DIR")?;
         let vmci_includes = PathBuf::from(&out_dir).join("vmci");
         if !vmci_includes.exists() {
@@ -500,9 +498,11 @@ fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
         build.define("ZMQ_HAVE_VMCI", "1");
 
+        #[cfg(windows)]
+        build.define("_WIN32", "1");
+
         build.cpp(false);
         build.include(vmci_includes);
-    }
 
     Ok(())
 }
