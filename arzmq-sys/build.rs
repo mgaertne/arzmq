@@ -294,8 +294,7 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
     build
         .define("ZMQ_BUILD_TESTS", "OFF")
-        .include(vendor.join("include"))
-        .include(vendor.join("src"));
+        .include(vendor.join("include"));
 
     add_cpp_sources(build, vendor.join("src"), DEFAULT_SOURCES);
 
