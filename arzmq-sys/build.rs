@@ -309,9 +309,6 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
     add_c_sources(build, vendor.join("external/sha1"), &["sha1.c"]);
 
-    #[cfg(feature = "draft-api")]
-    build.define("ZMQ_BUILD_DRAFT_API", "1");
-
     build.define("ZMQ_USE_CV_IMPL_STL11", "1");
     build.define("ZMQ_STATIC", "1");
     build.define("ZMQ_USE_BUILTIN_SHA1", "1");
