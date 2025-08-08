@@ -1040,7 +1040,7 @@ pub use xsubscribe::XSubscribeSocket;
 #[cfg(feature = "builder")]
 pub use xsubscribe::builder::XSubscribeBuilder;
 
-#[cfg(zmq_has_gssapi)]
+#[cfg(zmq_has = "gssapi")]
 use crate::security::GssApiNametype;
 use crate::{auth::ZapDomain, security::SecurityMechanism};
 
@@ -1247,16 +1247,16 @@ pub enum SocketOption {
     PlainUsername,
     /// Current PLAIN password
     PlainPassword,
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     /// Current CURVE public key
     CurvePublicKey,
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     /// Current CURVE secret key
     CurveSecretKey,
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     /// Current CURVE server role
     CurveServer,
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     /// Current CURVE server key
     CurveServerKey,
     /// Bootstrap connections to [`Router`](RouterSocket) sockets
@@ -1273,27 +1273,27 @@ pub enum SocketOption {
     RouterHandover,
     /// Type-of-service on the underlying socket
     TypeOfService,
-    #[cfg(zmq_has_ipc)]
+    #[cfg(zmq_has = "ipc")]
     /// Process ID filters to allow new IPC connections
     IpcFilterProcessId,
-    #[cfg(zmq_has_ipc)]
+    #[cfg(zmq_has = "ipc")]
     /// User ID filters to allow new IPC connections
     IpcFilterUserId,
-    #[cfg(zmq_has_ipc)]
+    #[cfg(zmq_has = "ipc")]
     /// Group ID filters to allow new IPC connections
     IpcFilterGroupId,
     /// Next outbound routing id
     ConnectRoutingId,
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     /// GSSAPI server role
     GssApiServer,
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     /// Name of GSSAPI principal
     GssApiPrincipal,
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     /// Name of GSSAPI service principal
     GssApiServicePrincipal,
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     /// Enable/disable GSSAPI encryption
     GssApiPlainText,
     /// Maximum handshake interval
@@ -1328,24 +1328,24 @@ pub enum SocketOption {
     ThreadSafe,
     /// Maximum transport data unit size for multicast packets
     MulticastMaxTransportDataUnitSize,
-    #[cfg(zmq_has_vmci)]
+    #[cfg(zmq_has = "vmci")]
     /// Buffer size of the VMCI socket
     VmciBufferSize,
-    #[cfg(zmq_has_vmci)]
+    #[cfg(zmq_has = "vmci")]
     /// Minimum buffer size of the VMCI socket
     VmciBufferMinSize,
-    #[cfg(zmq_has_vmci)]
+    #[cfg(zmq_has = "vmci")]
     /// Maximum buffer size of the VMCI socket
     VmciBufferMaxSize,
-    #[cfg(zmq_has_vmci)]
+    #[cfg(zmq_has = "vmci")]
     /// Connection timeout of the VMCI socket
     VmciConntectTimeout,
     /// Retrive the pre-allocated socket file descriptor
     UseFd,
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     /// Nametype for GSSAPI principal
     GssApiPrincipalNametype,
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     /// Nametype for GSSAPI service principal
     GssApiServicePrincipalNametype,
     /// Name of the devive to bind the socket to
@@ -1405,28 +1405,28 @@ pub enum SocketOption {
     #[cfg(feature = "draft-api")]
     /// Number of topic subscriptions received
     TopicsCount,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM sender mode
     NormMode,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM unicast NACK mode
     NormUnicastNack,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM buffer size
     NormBufferSize,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM segment size
     NormSegmentSize,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM block size
     NormBlockSize,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM parity segment setting
     NormNumnParity,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// Proactive NORM parity segment setting
     NormNumnAutoParity,
-    #[cfg(all(feature = "draft-api", zmq_has_norm))]
+    #[cfg(zmq_has = "norm")]
     /// NORM push mode
     NormPush,
 }
@@ -1470,13 +1470,13 @@ impl From<SocketOption> for i32 {
             SocketOption::PlainServer => zmq_sys_crate::ZMQ_PLAIN_SERVER as i32,
             SocketOption::PlainUsername => zmq_sys_crate::ZMQ_PLAIN_USERNAME as i32,
             SocketOption::PlainPassword => zmq_sys_crate::ZMQ_PLAIN_PASSWORD as i32,
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             SocketOption::CurvePublicKey => zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32,
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             SocketOption::CurveSecretKey => zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32,
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             SocketOption::CurveServer => zmq_sys_crate::ZMQ_CURVE_SERVER as i32,
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             SocketOption::CurveServerKey => zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32,
             SocketOption::ProbeRouter => zmq_sys_crate::ZMQ_PROBE_ROUTER as i32,
             SocketOption::RequestCorrelate => zmq_sys_crate::ZMQ_REQ_CORRELATE as i32,
@@ -1489,15 +1489,15 @@ impl From<SocketOption> for i32 {
             SocketOption::IpcFilterUserId => zmq_sys_crate::ZMQ_IPC_FILTER_UID as i32,
             SocketOption::IpcFilterGroupId => zmq_sys_crate::ZMQ_IPC_FILTER_GID as i32,
             SocketOption::ConnectRoutingId => zmq_sys_crate::ZMQ_CONNECT_ROUTING_ID as i32,
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SocketOption::GssApiServer => zmq_sys_crate::ZMQ_GSSAPI_SERVER as i32,
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SocketOption::GssApiPrincipal => zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL as i32,
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SocketOption::GssApiServicePrincipal => {
                 zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL as i32
             }
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SocketOption::GssApiPlainText => zmq_sys_crate::ZMQ_GSSAPI_PLAINTEXT as i32,
             SocketOption::HandshakeInterval => zmq_sys_crate::ZMQ_HANDSHAKE_IVL as i32,
             SocketOption::SocksProxy => zmq_sys_crate::ZMQ_SOCKS_PROXY as i32,
@@ -1516,20 +1516,20 @@ impl From<SocketOption> for i32 {
                 zmq_sys_crate::ZMQ_MULTICAST_MAXTPDU as i32
             }
             SocketOption::ThreadSafe => zmq_sys_crate::ZMQ_THREAD_SAFE as i32,
-            #[cfg(zmq_has_vmci)]
+            #[cfg(zmq_has = "vmci")]
             SocketOption::VmciBufferSize => zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32,
-            #[cfg(zmq_has_vmci)]
+            #[cfg(zmq_has = "vmci")]
             SocketOption::VmciBufferMinSize => zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32,
-            #[cfg(zmq_has_vmci)]
+            #[cfg(zmq_has = "vmci")]
             SocketOption::VmciBufferMaxSize => zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32,
-            #[cfg(zmq_has_vmci)]
+            #[cfg(zmq_has = "vmci")]
             SocketOption::VmciConntectTimeout => zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32,
             SocketOption::UseFd => zmq_sys_crate::ZMQ_USE_FD as i32,
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SocketOption::GssApiPrincipalNametype => {
                 zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE as i32
             }
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SocketOption::GssApiServicePrincipalNametype => {
                 zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE as i32
             }
@@ -1572,21 +1572,21 @@ impl From<SocketOption> for i32 {
             }
             #[cfg(feature = "draft-api")]
             SocketOption::TopicsCount => zmq_sys_crate::ZMQ_TOPICS_COUNT as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormMode => zmq_sys_crate::ZMQ_NORM_MODE as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormUnicastNack => zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormBufferSize => zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormSegmentSize => zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormBlockSize => zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormNumnParity => zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormNumnAutoParity => zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32,
-            #[cfg(all(feature = "draft-api", zmq_has_norm))]
+            #[cfg(zmq_has = "norm")]
             SocketOption::NormPush => zmq_sys_crate::ZMQ_NORM_PUSH as i32,
         }
     }
@@ -1636,10 +1636,10 @@ mod socket_option_tests {
     #[case(SocketOption::PlainServer, zmq_sys_crate::ZMQ_PLAIN_SERVER as i32)]
     #[case(SocketOption::PlainUsername, zmq_sys_crate::ZMQ_PLAIN_USERNAME as i32)]
     #[case(SocketOption::PlainPassword, zmq_sys_crate::ZMQ_PLAIN_PASSWORD as i32)]
-    #[cfg_attr(zmq_has_curve, case(SocketOption::CurvePublicKey, zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32))]
-    #[cfg_attr(zmq_has_curve, case(SocketOption::CurveSecretKey, zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32))]
-    #[cfg_attr(zmq_has_curve, case(SocketOption::CurveServer, zmq_sys_crate::ZMQ_CURVE_SERVER as i32))]
-    #[cfg_attr(zmq_has_curve, case(SocketOption::CurveServerKey, zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32))]
+    #[cfg_attr(zmq_has = "curve", case(SocketOption::CurvePublicKey, zmq_sys_crate::ZMQ_CURVE_PUBLICKEY as i32))]
+    #[cfg_attr(zmq_has = "curve", case(SocketOption::CurveSecretKey, zmq_sys_crate::ZMQ_CURVE_SECRETKEY as i32))]
+    #[cfg_attr(zmq_has = "curve", case(SocketOption::CurveServer, zmq_sys_crate::ZMQ_CURVE_SERVER as i32))]
+    #[cfg_attr(zmq_has = "curve", case(SocketOption::CurveServerKey, zmq_sys_crate::ZMQ_CURVE_SERVERKEY as i32))]
     #[case(SocketOption::ProbeRouter, zmq_sys_crate::ZMQ_PROBE_ROUTER as i32)]
     #[case(SocketOption::RequestCorrelate, zmq_sys_crate::ZMQ_REQ_CORRELATE as i32)]
     #[case(SocketOption::RequestRelaxed, zmq_sys_crate::ZMQ_REQ_RELAXED as i32)]
@@ -1651,10 +1651,10 @@ mod socket_option_tests {
     #[case(SocketOption::IpcFilterUserId, zmq_sys_crate::ZMQ_IPC_FILTER_UID as i32)]
     #[case(SocketOption::IpcFilterGroupId, zmq_sys_crate::ZMQ_IPC_FILTER_GID as i32)]
     #[case(SocketOption::ConnectRoutingId, zmq_sys_crate::ZMQ_CONNECT_ROUTING_ID as i32)]
-    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiServer, zmq_sys_crate::ZMQ_GSSAPI_SERVER as i32))]
-    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiPrincipal, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL as i32))]
-    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiServicePrincipal, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL as i32))]
-    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiPlainText, zmq_sys_crate::ZMQ_GSSAPI_PLAINTEXT as i32))]
+    #[cfg_attr(zmq_has = "gssapi", case(SocketOption::GssApiServer, zmq_sys_crate::ZMQ_GSSAPI_SERVER as i32))]
+    #[cfg_attr(zmq_has = "gssapi", case(SocketOption::GssApiPrincipal, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL as i32))]
+    #[cfg_attr(zmq_has = "gssapi", case(SocketOption::GssApiServicePrincipal, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL as i32))]
+    #[cfg_attr(zmq_has = "gssapi", case(SocketOption::GssApiPlainText, zmq_sys_crate::ZMQ_GSSAPI_PLAINTEXT as i32))]
     #[case(SocketOption::HandshakeInterval, zmq_sys_crate::ZMQ_HANDSHAKE_IVL as i32)]
     #[case(SocketOption::SocksProxy, zmq_sys_crate::ZMQ_SOCKS_PROXY as i32)]
     #[case(SocketOption::XpubNoDrop, zmq_sys_crate::ZMQ_XPUB_NODROP as i32)]
@@ -1670,13 +1670,13 @@ mod socket_option_tests {
     #[case(SocketOption::MaxTcpRetransmitTimeout, zmq_sys_crate::ZMQ_TCP_MAXRT as i32)]
     #[case(SocketOption::MulticastMaxTransportDataUnitSize, zmq_sys_crate::ZMQ_MULTICAST_MAXTPDU as i32)]
     #[case(SocketOption::ThreadSafe, zmq_sys_crate::ZMQ_THREAD_SAFE as i32)]
-    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32))]
-    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferMinSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32))]
-    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciBufferMaxSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32))]
-    #[cfg_attr(zmq_has_vmci, case(SocketOption::VmciConntectTimeout, zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32))]
+    #[cfg_attr(zmq_has = "vmci", case(SocketOption::VmciBufferSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_SIZE as i32))]
+    #[cfg_attr(zmq_has = "vmci", case(SocketOption::VmciBufferMinSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MIN_SIZE as i32))]
+    #[cfg_attr(zmq_has = "vmci", case(SocketOption::VmciBufferMaxSize, zmq_sys_crate::ZMQ_VMCI_BUFFER_MAX_SIZE as i32))]
+    #[cfg_attr(zmq_has = "vmci", case(SocketOption::VmciConntectTimeout, zmq_sys_crate::ZMQ_VMCI_CONNECT_TIMEOUT as i32))]
     #[case(SocketOption::UseFd, zmq_sys_crate::ZMQ_USE_FD as i32)]
-    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiPrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE as i32))]
-    #[cfg_attr(zmq_has_gssapi, case(SocketOption::GssApiServicePrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE as i32))]
+    #[cfg_attr(zmq_has = "gssapi", case(SocketOption::GssApiPrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE as i32))]
+    #[cfg_attr(zmq_has = "gssapi", case(SocketOption::GssApiServicePrincipalNametype, zmq_sys_crate::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE as i32))]
     #[case(SocketOption::BindToDevice, zmq_sys_crate::ZMQ_BINDTODEVICE as i32)]
     #[cfg_attr(feature = "draft-api", case(SocketOption::ZapEnforceDomain, zmq_sys_crate::ZMQ_ZAP_ENFORCE_DOMAIN as i32))]
     #[cfg_attr(feature = "draft-api", case(SocketOption::Metadata, zmq_sys_crate::ZMQ_METADATA as i32))]
@@ -1696,14 +1696,14 @@ mod socket_option_tests {
     #[cfg_attr(feature = "draft-api", case(SocketOption::HiccupMessage, zmq_sys_crate::ZMQ_HICCUP_MSG as i32))]
     #[cfg_attr(feature = "draft-api", case(SocketOption::XsubVerboseUnsubscribe, zmq_sys_crate::ZMQ_XSUB_VERBOSE_UNSUBSCRIBE as i32))]
     #[cfg_attr(feature = "draft-api", case(SocketOption::TopicsCount, zmq_sys_crate::ZMQ_TOPICS_COUNT as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormMode, zmq_sys_crate::ZMQ_NORM_MODE as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormUnicastNack, zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormBufferSize, zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormSegmentSize, zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormBlockSize, zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormNumnParity, zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormNumnAutoParity, zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32))]
-    #[cfg_attr(all(feature = "draft-api", zmq_has_norm), case(SocketOption::NormPush, zmq_sys_crate::ZMQ_NORM_PUSH as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormMode, zmq_sys_crate::ZMQ_NORM_MODE as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormUnicastNack, zmq_sys_crate::ZMQ_NORM_UNICAST_NACK as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormBufferSize, zmq_sys_crate::ZMQ_NORM_BUFFER_SIZE as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormSegmentSize, zmq_sys_crate::ZMQ_NORM_SEGMENT_SIZE as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormBlockSize, zmq_sys_crate::ZMQ_NORM_BLOCK_SIZE as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormNumnParity, zmq_sys_crate::ZMQ_NORM_NUM_PARITY as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormNumnAutoParity, zmq_sys_crate::ZMQ_NORM_NUM_AUTOPARITY as i32))]
+    #[cfg_attr(zmq_has = "norm", case(SocketOption::NormPush, zmq_sys_crate::ZMQ_NORM_PUSH as i32))]
     fn converts_to_raw(#[case] option: SocketOption, #[case] expected: i32) {
         assert_eq!(<SocketOption as Into<i32>>::into(option), expected);
     }
@@ -1785,7 +1785,7 @@ impl<T: sealed::SocketType> Socket<T> {
         self.socket.set_sockopt_bool(option.into(), value)
     }
 
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     pub(crate) fn get_sockopt_curve(&self, option: SocketOption) -> ZmqResult<Vec<u8>> {
         self.socket.get_sockopt_curve(option.into())
     }
@@ -2001,7 +2001,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// | Default value | Applicable socket types               |
     /// | :-----------: | :-----------------------------------: |
     /// | false         | all, when using TCP or IPC transports |
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn set_gssapi_plaintext(&self, value: bool) -> ZmqResult<()> {
         self.set_sockopt_bool(SocketOption::GssApiPlainText, value)
     }
@@ -2017,7 +2017,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// | false         | all, when using TCP or IPC transports |
     ///
     /// [`gssapi_plaintext()`]: #method.gssapi_plaintext
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn gssapi_plaintext(&self) -> ZmqResult<bool> {
         self.get_sockopt_bool(SocketOption::GssApiPlainText)
     }
@@ -2038,7 +2038,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`NtHostbased`]: GssApiNametype::NtHostbased
     /// [`NtUsername`]: GssApiNametype::NtUsername
     /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn set_gssapi_service_principal_nametype(&self, value: GssApiNametype) -> ZmqResult<()> {
         self.set_sockopt_int(SocketOption::GssApiServicePrincipalNametype, value as i32)
     }
@@ -2060,7 +2060,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`NtHostbased`]: GssApiNametype::NtHostbased
     /// [`NtUsername`]: GssApiNametype::NtUsername
     /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn gssapi_service_principal_nametype(&self) -> ZmqResult<GssApiNametype> {
         self.get_sockopt_int::<i32>(SocketOption::GssApiServicePrincipalNametype)
             .and_then(GssApiNametype::try_from)
@@ -2073,7 +2073,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// | Default value   | Applicable socket types              |
     /// | :-------------: | :----------------------------------: |
     /// | not set         | all, when using TCP or IPC transport |
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn set_gssapi_principal<V>(&self, value: V) -> ZmqResult<()>
     where
         V: AsRef<str>,
@@ -2092,7 +2092,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// | not set         | all, when using TCP or IPC transport |
     ///
     /// [`gssapi_principal()`]: #method.gssapi_principal
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn gssapi_principal(&self) -> ZmqResult<String> {
         self.socket
             .get_sockopt_gssapi(SocketOption::GssApiPrincipal.into())
@@ -2114,7 +2114,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`NtHostbased`]: GssApiNametype::NtHostbased
     /// [`NtUsername`]: GssApiNametype::NtUsername
     /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn set_gssapi_principal_nametype(&self, value: GssApiNametype) -> ZmqResult<()> {
         self.set_sockopt_int(SocketOption::GssApiPrincipalNametype, value as i32)
     }
@@ -2136,7 +2136,7 @@ impl<T: sealed::SocketType> Socket<T> {
     /// [`NtHostbased`]: GssApiNametype::NtHostbased
     /// [`NtUsername`]: GssApiNametype::NtUsername
     /// [`NtKrb5Principal`]: GssApiNametype::NtKrb5Principal
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub fn gssapi_principal_nametype(&self) -> ZmqResult<GssApiNametype> {
         self.get_sockopt_int::<i32>(SocketOption::GssApiPrincipalNametype)
             .and_then(GssApiNametype::try_from)
@@ -3737,7 +3737,7 @@ mod socket_tests {
     use super::{
         DealerSocket, MonitorFlags, MonitorSocketEvent, PairSocket, PollEvents, SendFlags,
     };
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     use crate::security::GssApiNametype;
     use crate::{
         prelude::{Context, MonitorReceiver, Sender, ZmqResult},
@@ -3808,7 +3808,7 @@ mod socket_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     #[test]
     fn set_gssapi_plaintext_sets_gssapi_plaintext() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -3821,7 +3821,7 @@ mod socket_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     #[test]
     fn set_gssapi_service_principal_sets_gssapi_service_principal() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -3837,7 +3837,7 @@ mod socket_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     #[test]
     fn set_gssapi_principal_sets_gssapi_principal() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -3850,7 +3850,7 @@ mod socket_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     #[test]
     fn set_gssapi_principal_nametype_sets_gssapi_principal_nametype() -> ZmqResult<()> {
         let context = Context::new()?;

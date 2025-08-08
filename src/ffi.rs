@@ -318,7 +318,7 @@ impl RawSocket {
         Ok(())
     }
 
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     pub(crate) fn get_sockopt_curve(&self, option: i32) -> ZmqResult<Vec<u8>> {
         let mut buffer = vec![0; 41];
         let mut buffer_len = buffer.len();
@@ -329,7 +329,7 @@ impl RawSocket {
         Ok(buffer)
     }
 
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     pub(crate) fn get_sockopt_gssapi(&self, option: i32) -> ZmqResult<String> {
         let mut buffer = vec![0; 260];
         let mut buffer_len = buffer.len();

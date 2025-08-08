@@ -1,15 +1,20 @@
+use std::ffi::CString;
+
 fn main() {
-    [
-        c"ipc", c"pgm", c"tipc", c"vmci", c"norm", c"curve", c"gssapi", c"draft",
-    ]
-    .iter()
-    .for_each(|capability| {
-        println!(
-            "cargo::rustc-check-cfg=cfg(zmq_has_{})",
-            capability.to_string_lossy()
-        );
-        if unsafe { arzmq_sys::zmq_has(capability.as_ptr()) } != 0 {
-            println!("cargo::rustc-cfg=zmq_has_{}", capability.to_string_lossy());
-        }
-    });
+    let capabilities = [
+        "ipc", "pgm", "tipc", "vmci", "norm", "curve", "gssapi", "draft",
+    ];
+
+    println!(
+        "cargo::rustc-check-cfg=cfg(zmq_has, values(\"{}\"))",
+        capabilities.join("\", \"")
+    );
+
+    capabilities
+        .iter()
+        .filter(|&&capability| {
+            let c_str = CString::new(capability).unwrap();
+            (unsafe { arzmq_sys::zmq_has(c_str.as_ptr()) } != 0)
+        })
+        .for_each(|capability| println!("cargo::rustc-cfg=zmq_has=\"{capability}\""));
 }

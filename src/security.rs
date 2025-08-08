@@ -7,7 +7,7 @@
 //! [`Null`]: SecurityMechanism::Null
 //! [`Plain`]: SecurityMechanism::Plain
 
-#[cfg(zmq_has_curve)]
+#[cfg(zmq_has = "curve")]
 use core::{ffi::c_char, hint::cold_path};
 
 use derive_more::Display;
@@ -32,7 +32,7 @@ pub enum SecurityMechanism {
     #[display("Plain {{ username = {username}, password = {password} }}")]
     /// Plain-textauthentication using username and password
     Plain { username: String, password: String },
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     #[display("CurveClient {{ ... }}")]
     /// Elliptic curve client authentication and encryption
     CurveClient {
@@ -40,15 +40,15 @@ pub enum SecurityMechanism {
         public_key: Vec<u8>,
         secret_key: Vec<u8>,
     },
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     #[display("CurveServer {{ ... }}")]
     /// Elliptic curve server authentication and encryption
     CurveServer { secret_key: Vec<u8> },
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     #[display("GssApiClient {{ ... }}")]
     /// GSSAPI client authentication and encryption
     GssApiClient { service_principal: String },
-    #[cfg(zmq_has_gssapi)]
+    #[cfg(zmq_has = "gssapi")]
     #[display("GssApiServer {{ ... }}")]
     /// GSSAPI server authentication and encryption
     GssApiServer,
@@ -64,12 +64,12 @@ impl SecurityMechanism {
                 socket.set_sockopt_string(SocketOption::PlainUsername, username)?;
                 socket.set_sockopt_string(SocketOption::PlainPassword, password)?;
             }
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             SecurityMechanism::CurveServer { secret_key } => {
                 socket.set_sockopt_bool(SocketOption::CurveServer, true)?;
                 socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key)?;
             }
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             SecurityMechanism::CurveClient {
                 server_key,
                 public_key,
@@ -79,12 +79,12 @@ impl SecurityMechanism {
                 socket.set_sockopt_bytes(SocketOption::CurvePublicKey, public_key)?;
                 socket.set_sockopt_bytes(SocketOption::CurveSecretKey, secret_key)?;
             }
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SecurityMechanism::GssApiClient { service_principal } => {
                 socket
                     .set_sockopt_string(SocketOption::GssApiServicePrincipal, service_principal)?;
             }
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             SecurityMechanism::GssApiServer => {
                 socket.set_sockopt_bool(SocketOption::GssApiServer, true)?;
             }
@@ -104,7 +104,7 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
                 let password = socket.get_sockopt_string(SocketOption::PlainPassword)?;
                 Ok(Self::Plain { username, password })
             }
-            #[cfg(zmq_has_curve)]
+            #[cfg(zmq_has = "curve")]
             value if value == zmq_sys_crate::ZMQ_CURVE as i32 => {
                 let secret_key = socket.get_sockopt_curve(SocketOption::CurveSecretKey)?;
                 if socket.get_sockopt_bool(SocketOption::CurveServer)? {
@@ -119,7 +119,7 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
                     })
                 }
             }
-            #[cfg(zmq_has_gssapi)]
+            #[cfg(zmq_has = "gssapi")]
             value if value == zmq_sys_crate::ZMQ_GSSAPI as i32 => {
                 if socket.get_sockopt_bool(SocketOption::GssApiServer)? {
                     Ok(Self::GssApiServer)
@@ -137,7 +137,7 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
 #[cfg(test)]
 mod security_mechanism_tests {
     use super::SecurityMechanism;
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     use super::curve_keypair;
     use crate::{
         prelude::{Context, DealerSocket, SocketOption, ZmqResult},
@@ -188,7 +188,7 @@ mod security_mechanism_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     #[test]
     fn apply_curve_server_security() -> ZmqResult<()> {
         let (_, secret_key) = curve_keypair()?;
@@ -214,7 +214,7 @@ mod security_mechanism_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     #[test]
     fn apply_curve_client_security() -> ZmqResult<()> {
         let (_, server_key) = curve_keypair()?;
@@ -284,7 +284,7 @@ mod security_mechanism_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     #[test]
     fn try_from_socket_with_curve_security() -> ZmqResult<()> {
         let (_, secret_key) = curve_keypair()?;
@@ -305,7 +305,7 @@ mod security_mechanism_tests {
         Ok(())
     }
 
-    #[cfg(zmq_has_curve)]
+    #[cfg(zmq_has = "curve")]
     #[test]
     fn try_from_socket_with_curve_client_security() -> ZmqResult<()> {
         let (_, server_key) = curve_keypair()?;
@@ -332,9 +332,9 @@ mod security_mechanism_tests {
 }
 
 /// Z85 decoding error
-#[cfg(zmq_has_curve)]
+#[cfg(zmq_has = "curve")]
 pub use z85::DecodeError as Z85DecodeError;
-#[cfg(zmq_has_curve)]
+#[cfg(zmq_has = "curve")]
 pub use z85::{decode as z85_decode, encode as z85_encode};
 
 /// # generate a new CURVE keypair
@@ -344,7 +344,7 @@ pub use z85::{decode as z85_decode, encode as z85_encode};
 ///
 /// [`curve_keypair()`]: curve_keypair
 /// [`z85_encode()`]: z85_encode
-#[cfg(zmq_has_curve)]
+#[cfg(zmq_has = "curve")]
 pub fn curve_keypair() -> ZmqResult<(Vec<u8>, Vec<u8>)> {
     let mut public_key: [u8; 41] = [0; 41];
     let mut secret_key: [u8; 41] = [0; 41];
@@ -373,7 +373,7 @@ pub fn curve_keypair() -> ZmqResult<(Vec<u8>, Vec<u8>)> {
 ///
 /// [`curve_public()`]: curve_public
 /// [`z85_encode()`]: z85_encode
-#[cfg(zmq_has_curve)]
+#[cfg(zmq_has = "curve")]
 pub fn curve_public<T>(mut secret_key: T) -> ZmqResult<Vec<u8>>
 where
     T: AsMut<[u8]>,
@@ -398,7 +398,7 @@ where
     Ok(public_key.to_vec())
 }
 
-#[cfg(zmq_has_curve)]
+#[cfg(zmq_has = "curve")]
 #[cfg(test)]
 mod curve_keypair_tests {
     use super::{curve_keypair, curve_public};
@@ -416,7 +416,7 @@ mod curve_keypair_tests {
     }
 }
 
-#[cfg(zmq_has_gssapi)]
+#[cfg(zmq_has = "gssapi")]
 #[derive(Debug, Display, PartialEq, Eq, Clone, Hash)]
 #[repr(i32)]
 /// # name types for GSSAPI
@@ -430,7 +430,7 @@ pub enum GssApiNametype {
     NtKrb5Principal,
 }
 
-#[cfg(zmq_has_gssapi)]
+#[cfg(zmq_has = "gssapi")]
 impl TryFrom<i32> for GssApiNametype {
     type Error = ZmqError;
 
@@ -446,7 +446,7 @@ impl TryFrom<i32> for GssApiNametype {
     }
 }
 
-#[cfg(zmq_has_gssapi)]
+#[cfg(zmq_has = "gssapi")]
 #[cfg(test)]
 mod gss_api_nametype_tests {
     use rstest::*;

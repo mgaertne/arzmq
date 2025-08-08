@@ -25,6 +25,11 @@ bench = false
 [features]
 default = []
 draft-api = []
+curve = []
+gssapi = []
+pgm = []
+norm = ["draft-api"]
+vmci = []
 
 [build-dependencies]
 cc = { version = "1.2.31", features = ["parallel"] }
@@ -44,8 +49,7 @@ vcpkg = { version = "0.2.15" }
 
 [package.metadata.system-deps]
 gnutls = { version = ">=3", optional = true }
-libsodium = { version = ">=1.0", optional = true }
-gssapi = { name = "mit-krb5-gssapi", version = ">=0.1", fallback-names = ["gssapi_krb5", "krb5-gssapi", "Kerberos"], optional = true }
-openpgm = { name = "openpgm-5.1", version = ">=5.1", fallback-names = ["openpgm-5.2", "openpgm-5.3"], optional = true }
-norm = { version = ">=1.0", optional = true }
-vmci = { version = ">=0.1", optional = true }
+libsodium = { version = ">=1.0", feature = "curve", optional = true }
+gssapi = { name = "mit-krb5-gssapi", version = ">=0.1", feature = "gssapi", fallback-names = ["gssapi_krb5", "krb5-gssapi", "Kerberos"], optional = true }
+openpgm = { name = "openpgm-5.1", version = ">=5.1", feature = "pgm", fallback-names = ["openpgm-5.2", "openpgm-5.3"], optional = true }
+norm = { version = ">=1.0", feature = "norm", optional = true }

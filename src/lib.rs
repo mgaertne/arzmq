@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![doc = include_str!("../features.md")]
 #![feature(cold_path, doc_cfg, stmt_expr_attributes, doc_auto_cfg)]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
@@ -145,7 +146,7 @@ mod has_capability_tests {
 
     #[test]
     fn has_curve_capability() {
-        assert_eq!(has_capability(Capability::Curve), cfg!(zmq_has_curve));
+        assert_eq!(has_capability(Capability::Curve), cfg!(zmq_has = "curve"));
     }
 
     #[test]

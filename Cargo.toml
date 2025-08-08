@@ -5,13 +5,13 @@ members = ["arzmq-sys"]
 resolver = "3"
 
 [workspace.package]
-version = "0.3.0-alpha.1"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.89"
 authors = ["Markus 'ShiN0' Gaertner"]
 
 [workspace.dependencies]
-arzmq-sys = { path = "arzmq-sys" }
+arzmq-sys = { version = "0.3.0", path = "arzmq-sys" }
 
 [workspace.lints.rust]
 non_local_definitions = "allow"
@@ -89,6 +89,17 @@ builder = ["dep:serde", "dep:derive_builder"]
 futures = ["dep:async-trait", "dep:futures"]
 # enables Draft API features in the underlying libzmq.
 draft-api = ["arzmq-sys/draft-api"]
+
+# enables CURVE authorization through libsodium
+curve = ["arzmq-sys/curve"]
+# enables GSS-API (Kerbereos V) authoriazazion
+gssapi = ["arzmq-sys/gssapi"]
+# enables PGM transportation capability if available on the system.
+pgm = ["arzmq-sys/pgm"]
+# enables NORM transportation capability if available on the system.
+norm = ["draft-api", "arzmq-sys/norm"]
+# enables the VMCI transportation capability
+vmci = ["arzmq-sys/vmci"]
 
 examples-tokio = ["futures", "dep:tokio"]
 examples-async-std = ["futures", "dep:async-std"]

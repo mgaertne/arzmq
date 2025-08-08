@@ -410,6 +410,10 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 }
 
 fn check_curve_config(build: &mut Build, libraries: &Dependencies) {
+    if cfg!(not(feature = "curve")) {
+        return;
+    }
+    
     libraries.get_by_name("libsodium").tap_some(|lib| {
         build.define("ZMQ_USE_LIBSODIUM", "1");
         build.define("ZMQ_HAVE_CURVE", "1");
@@ -427,6 +431,10 @@ fn check_curve_config(build: &mut Build, libraries: &Dependencies) {
 }
 
 fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
+    if cfg!(not(feature = "gssapi")) {
+        return;
+    }
+
     libraries.get_by_name("gssapi").tap_some(|lib| {
         build.define("HAVE_LIBGSSAPI_KRB5", "1");
         build.includes(&lib.include_paths);
@@ -451,6 +459,10 @@ fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
 }
 
 fn check_pgm_config(build: &mut Build, libraries: &Dependencies) {
+    if cfg!(not(feature = "pgm")) {
+        return;
+    }
+
     libraries.get_by_name("openpgm").tap_some(|lib| {
         build.define("ZMQ_HAVE_OPENPGM", "1");
         build.includes(&lib.include_paths);
@@ -461,6 +473,10 @@ fn check_pgm_config(build: &mut Build, libraries: &Dependencies) {
 }
 
 fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
+    if cfg!(not(feature = "norm")) {
+        return;
+    }
+
     libraries.get_by_name("norm").tap_some(|lib| {
         build.define("ZMQ_HAVE_NORM", "1");
         build.includes(&lib.include_paths);
@@ -474,6 +490,10 @@ fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
 }
 
 fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
+    if cfg!(not(feature = "vmci")) {
+        return Ok(());
+    }
+
     let out_dir = env::var("OUT_DIR")?;
     let vmci_includes = PathBuf::from(&out_dir).join("vmci");
     if !vmci_includes.exists() {
