@@ -476,33 +476,29 @@ fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
     });
 }
 
-#[cfg_attr(target_env = "msvc", allow(unused))]
 fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
-    #[cfg(not(target_env = "msvc"))]
-    {
-        let out_dir = env::var("OUT_DIR")?;
-        let vmci_includes = PathBuf::from(&out_dir).join("vmci");
-        if !vmci_includes.exists() {
-            fs::create_dir(&vmci_includes)?;
-        }
+    let out_dir = env::var("OUT_DIR")?;
+    let vmci_includes = PathBuf::from(&out_dir).join("vmci");
+    if !vmci_includes.exists() {
+        fs::create_dir(&vmci_includes)?;
+    }
 
-        let vmci_sockets_header = vmci_includes.join("vmci_sockets.h");
-        if !vmci_sockets_header.exists() {
-            let mut vmci_file = File::create(vmci_sockets_header)?;
-            vmci_file.write_all(
+    let vmci_sockets_header = vmci_includes.join("vmci_sockets.h");
+    if !vmci_sockets_header.exists() {
+        let mut vmci_file = File::create(vmci_sockets_header)?;
+        vmci_file.write_all(
                 reqwest::blocking::get(
                     "https://raw.githubusercontent.com/vmware/open-vm-tools/462c995f2deeaa578792b65c22eb082b9f487305/open-vm-tools/lib/include/vmci_sockets.h")?
                     .bytes()?
                     .as_ref()
             )?;
-            vmci_file.flush()?;
-        }
-
-        build.define("ZMQ_HAVE_VMCI", "1");
-
-        build.cpp(false);
-        build.include(vmci_includes);
+        vmci_file.flush()?;
     }
+
+    build.define("ZMQ_HAVE_VMCI", "1");
+
+    build.cpp(false);
+    build.include(vmci_includes);
 
     Ok(())
 }

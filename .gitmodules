@@ -1,4 +1,4 @@
 [submodule "libzmq"]
 	path = arzmq-sys/vendor
-	url = https://github.com/zeromq/libzmq
-	branch = v4.3.5
+	url = https://github.com/mgaertne/libzmq.git
+	branch = patch-1
