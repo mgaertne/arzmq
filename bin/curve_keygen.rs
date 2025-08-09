@@ -1,4 +1,4 @@
-#![cfg(zmq_has = "curve")]
+#![cfg(feature = "curve")]
 
 use core::ffi::{CStr, c_char};
 
@@ -12,6 +12,12 @@ is described in 0MQ RFC 32, and which has an implementation in the z85_codec.h s
 by this tool. The keypair always works with the secret key held by one party and the public \
 key distributed (securely!) to peers wishing to connect to it."
     );
+
+    if !cfg!(zmq_has = "curve") {
+        return Err(
+            "To use curve_keygen, please install libsodium and then rebuild libzmq.",
+        );
+    }
 
     let mut public_key: [u8; 41] = [0; 41];
     let mut secret_key: [u8; 41] = [0; 41];
