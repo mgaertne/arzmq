@@ -1183,54 +1183,167 @@ mod socket_type_tests {
 #[non_exhaustive]
 /// Options that can be set or retrieved on a 0MQ socket
 pub enum SocketOption {
+    /// Socket type
+    Type,
+
     /// I/O thread affinity
     Affinity,
+    /// File descriptor associated with the socket
+    FileDescriptor,
+    /// Retrive the pre-allocated socket file descriptor
+    UseFd,
+    /// Name of the devive to bind the socket to
+    BindToDevice,
+    /// Type-of-service on the underlying socket
+    TypeOfService,
+    /// IPv6 setting
+    IPv6,
+
+    /// Connect timeout
+    ConnectTimeout,
+    #[cfg(feature = "draft-api")]
+    /// Set a hello message that will be sent when a new peer connects
+    HelloMessage,
+    /// Maximum handshake interval
+    HandshakeInterval,
+
+    /// Last endpoint set
+    LastEndpoint,
+
+    /// Interval between sending ZMTP heartbeats
+    HeartbeatInterval,
+    /// Time-to-live for ZMTP heartbeats
+    HeartbeatTimeToLive,
+    /// Timeout for ZMTP heartbeats
+    HeartbeatTimeout,
+
+    /// Reconnection interval
+    ReconnectInterval,
+    /// Maximum reconnection interval
+    ReconnectIntervalMax,
+    #[cfg(feature = "draft-api")]
+    /// Set a hiccup message that the socket will generate when connected peer temprarily
+    /// disconnects
+    HiccupMessage,
+    #[cfg(feature = "draft-api")]
+    /// Set condition when reconnection will stop
+    ReconnectStop,
+
+    #[cfg(feature = "draft-api")]
+    /// Set a disconnect message that the socket will generate when accepted peer disconnect
+    DisconnectMessage,
+
+    /// Socket event state
+    Events,
+    /// Linger period for socket shutdown
+    Linger,
+    /// Queue messages only to completed connections
+    Immediate,
+
+    /// Keep only last message
+    Conflate,
+    /// more message data to follow
+    ReceiveMore,
+    /// Maximum length of the queue of outstanding connections
+    Backlog,
+    /// Maximum acceptable inbound message size
+    MaxMessageSize,
+    /// Kernel receive buffer size
+    ReceiveBuffer,
+    /// Maximum time before a socket operation returns with [`Again`](crate::ZmqError::Again)
+    ReceiveTimeout,
+    /// High water mark for inbound messages
+    ReceiveHighWatermark,
+    /// Kernel transmit buffer size
+    SendBuffer,
+    /// Maximum time before a socket operation returns with [`Again`](crate::ZmqError::Again)
+    SendTimeout,
+    /// High water mark for outbound messages
+    SendHighWatermark,
+    /// Retrieve socket thread-safety
+    ThreadSafe,
+    #[cfg(feature = "draft-api")]
+    /// Application metadata properties on the socket
+    Metadata,
+    #[cfg(feature = "draft-api")]
+    /// Maximum receive batch size
+    InBatchSize,
+    #[cfg(feature = "draft-api")]
+    /// Maximum send batch size
+    OutBatchSize,
+    #[cfg(feature = "draft-api")]
+    /// Set the priority on the socket
+    Priority,
+    #[cfg(feature = "draft-api")]
+    /// This removes delays caused by the interrupt and the resultant context switch
+    BusyPoll,
+
     /// Socket routing id
     RoutingId,
+    /// Accept only routable messages on [`Router`](RouterSocket) sockets
+    RouterMandatory,
+    /// Handle duplicate client routing ids on [`Router`](RouterSocket) sockets
+    RouterHandover,
+    /// Bootstrap connections to [`Router`](RouterSocket) sockets
+    ProbeRouter,
+    /// Next outbound routing id
+    ConnectRoutingId,
+    #[cfg(feature = "draft-api")]
+    /// Send connect and disconnect notifications
+    RouterNotify,
+
+    /// Match replies with requests on [`Request`](RequestSocket) sockets
+    RequestCorrelate,
+    /// Relax strict alternation between reques and reply
+    RequestRelaxed,
+
     /// Establish message filter
     Subscribe,
     /// Remove message filter
     Unsubscribe,
+    /// Invert message filtering
+    InvertMatching,
+    #[cfg(feature = "draft-api")]
+    /// Process only first subscribe/unsubscribe in a multipart message
+    OnlyFirstSubscribe,
+    #[cfg(feature = "draft-api")]
+    /// Pass duplicate unsubscribe messages on [`XSubscribe`](XSubscribeSocket) sockets
+    XsubVerboseUnsubscribe,
+    #[cfg(feature = "draft-api")]
+    /// Number of topic subscriptions received
+    TopicsCount,
+
+    /// Pass duplicate subscribe messages on [`XPublish`](XPublishSocket) sockets
+    XpubVerbose,
+    /// Pass duplicate subscribe and unsubscribe message on [`XPublish`](XPublishSocket) sockets
+    XpubVerboser,
+    /// Do not silently drop message if SendHighWatermark is reached on [`XPublish`](XPublishSocket)
+    /// sockets
+    XpubNoDrop,
+    /// Change the subscription handling to manual
+    XpubManual,
+    /// Welcome message that will be received by [`Subscribe`](SubscribeSocket) when connecting to a
+    /// [`XPublish`](XPublishSocket) socket.
+    XpubWelcomeMessage,
+    #[cfg(feature = "draft-api")]
+    /// Change the subscription handling to manual
+    XpubManualLastValue,
+
+    /// Send connect and disconnect notifications
+    StreamNotify,
+
     /// Multicast data rate
     Rate,
     /// Multicast recovery interval
     RecoveryInterval,
-    /// Kernel transmit buffer size
-    SendBuffer,
-    /// Kernel receive buffer size
-    ReceiveBuffer,
-    /// more message data to follow
-    ReceiveMore,
-    /// File descriptor associated with the socket
-    FileDescriptor,
-    /// Socket event state
-    Events,
-    /// Socket type
-    Type,
-    /// Linger period for socket shutdown
-    Linger,
-    /// Reconnection interval
-    ReconnectInterval,
-    /// Maximum length of the queue of outstanding connections
-    Backlog,
-    /// Maximum reconnection interval
-    ReconnectIntervalMax,
-    /// Maximum acceptable inbound message size
-    MaxMessageSize,
-    /// High water mark for outbound messages
-    SendHighWatermark,
-    /// High water mark for inbound messages
-    ReceiveHighWatermark,
     /// Maximum network hops for multicast packets
     MulticastHops,
-    /// Maximum time before a socket operation returns with [`Again`](crate::ZmqError::Again)
-    ReceiveTimeout,
-    /// Maximum time before a socket operation returns with [`Again`](crate::ZmqError::Again)
-    SendTimeout,
-    /// Last endpoint set
-    LastEndpoint,
-    /// Accept only routable messages on [`Router`](RouterSocket) sockets
-    RouterMandatory,
+    /// Maximum transport data unit size for multicast packets
+    MulticastMaxTransportDataUnitSize,
+    #[cfg(feature = "draft-api")]
+    /// Control multicast local loopback
+    MulticastLoop,
+
     /// Overrides SO_KEEPALIVE socket option
     TcpKeepalive,
     /// Override TCP_KEEPCNT sockt option
@@ -1241,46 +1354,9 @@ pub enum SocketOption {
     TcpKeepaliveInterval,
     /// Assign filters to allow new TCP connections
     TcpAcceptFilter,
-    /// Queue messages only to completed connections
-    Immediate,
-    /// Pass duplicate subscribe messages on [`XPublish`](XPublishSocket) sockets
-    XpubVerbose,
-    /// IPv6 setting
-    IPv6,
-    /// Current security mechanism
-    Mechanism,
-    /// Current PLAIN server role
-    PlainServer,
-    /// Current PLAIN username
-    PlainUsername,
-    /// Current PLAIN password
-    PlainPassword,
-    #[cfg(zmq_has = "curve")]
-    /// Current CURVE public key
-    CurvePublicKey,
-    #[cfg(zmq_has = "curve")]
-    /// Current CURVE secret key
-    CurveSecretKey,
-    #[cfg(zmq_has = "curve")]
-    /// Current CURVE server role
-    CurveServer,
-    #[cfg(zmq_has = "curve")]
-    /// Current CURVE server key
-    CurveServerKey,
-    /// Bootstrap connections to [`Router`](RouterSocket) sockets
-    ProbeRouter,
-    /// Match replies with requests on [`Request`](RequestSocket) sockets
-    RequestCorrelate,
-    /// Relax strict alternation between reques and reply
-    RequestRelaxed,
-    /// Keep only last message
-    Conflate,
-    /// RFC27 authentifcation domain
-    ZapDomain,
-    /// Handle duplicate client routing ids on [`Router`](RouterSocket) sockets
-    RouterHandover,
-    /// Type-of-service on the underlying socket
-    TypeOfService,
+    /// TCP maximum retransmit timeout
+    MaxTcpRetransmitTimeout,
+
     #[cfg(zmq_has = "ipc")]
     /// Process ID filters to allow new IPC connections
     IpcFilterProcessId,
@@ -1290,52 +1366,7 @@ pub enum SocketOption {
     #[cfg(zmq_has = "ipc")]
     /// Group ID filters to allow new IPC connections
     IpcFilterGroupId,
-    /// Next outbound routing id
-    ConnectRoutingId,
-    #[cfg(zmq_has = "gssapi")]
-    /// GSSAPI server role
-    GssApiServer,
-    #[cfg(zmq_has = "gssapi")]
-    /// Name of GSSAPI principal
-    GssApiPrincipal,
-    #[cfg(zmq_has = "gssapi")]
-    /// Name of GSSAPI service principal
-    GssApiServicePrincipal,
-    #[cfg(zmq_has = "gssapi")]
-    /// Enable/disable GSSAPI encryption
-    GssApiPlainText,
-    /// Maximum handshake interval
-    HandshakeInterval,
-    /// SOCKS5 proxy address
-    SocksProxy,
-    /// Do not silently drop message if SendHighWatermark is reached on [`XPublish`](XPublishSocket)
-    /// sockets
-    XpubNoDrop,
-    /// Change the subscription handling to manual
-    XpubManual,
-    /// Welcome message that will be received by [`Subscribe`](SubscribeSocket) when connecting to a
-    /// [`XPublish`](XPublishSocket) socket.
-    XpubWelcomeMessage,
-    /// Send connect and disconnect notifications
-    StreamNotify,
-    /// Invert message filtering
-    InvertMatching,
-    /// Interval between sending ZMTP heartbeats
-    HeartbeatInterval,
-    /// Time-to-live for ZMTP heartbeats
-    HeartbeatTimeToLive,
-    /// Timeout for ZMTP heartbeats
-    HeartbeatTimeout,
-    /// Pass duplicate subscribe and unsubscribe message on [`XPublish`](XPublishSocket) sockets
-    XpubVerboser,
-    /// Connect timeout
-    ConnectTimeout,
-    /// TCP maximum retransmit timeout
-    MaxTcpRetransmitTimeout,
-    /// Retrieve socket thread-safety
-    ThreadSafe,
-    /// Maximum transport data unit size for multicast packets
-    MulticastMaxTransportDataUnitSize,
+
     #[cfg(zmq_has = "vmci")]
     /// Buffer size of the VMCI socket
     VmciBufferSize,
@@ -1348,71 +1379,7 @@ pub enum SocketOption {
     #[cfg(zmq_has = "vmci")]
     /// Connection timeout of the VMCI socket
     VmciConntectTimeout,
-    /// Retrive the pre-allocated socket file descriptor
-    UseFd,
-    #[cfg(zmq_has = "gssapi")]
-    /// Nametype for GSSAPI principal
-    GssApiPrincipalNametype,
-    #[cfg(zmq_has = "gssapi")]
-    /// Nametype for GSSAPI service principal
-    GssApiServicePrincipalNametype,
-    /// Name of the devive to bind the socket to
-    BindToDevice,
-    #[cfg(feature = "draft-api")]
-    /// Strict ZAP domain handling
-    ZapEnforceDomain,
-    #[cfg(feature = "draft-api")]
-    /// Application metadata properties on the socket
-    Metadata,
-    #[cfg(feature = "draft-api")]
-    /// Control multicast local loopback
-    MulticastLoop,
-    #[cfg(feature = "draft-api")]
-    /// Send connect and disconnect notifications
-    RouterNotify,
-    #[cfg(feature = "draft-api")]
-    /// Change the subscription handling to manual
-    XpubManualLastValue,
-    #[cfg(feature = "draft-api")]
-    /// SOCKS username and select basic authentification
-    SocksUsername,
-    #[cfg(feature = "draft-api")]
-    /// SOCKS basic authentification password
-    SocksPassword,
-    #[cfg(feature = "draft-api")]
-    /// Maximum receive batch size
-    InBatchSize,
-    #[cfg(feature = "draft-api")]
-    /// Maximum send batch size
-    OutBatchSize,
-    #[cfg(feature = "draft-api")]
-    /// Process only first subscribe/unsubscribe in a multipart message
-    OnlyFirstSubscribe,
-    #[cfg(feature = "draft-api")]
-    /// Set condition when reconnection will stop
-    ReconnectStop,
-    #[cfg(feature = "draft-api")]
-    /// Set a hello message that will be sent when a new peer connects
-    HelloMessage,
-    #[cfg(feature = "draft-api")]
-    /// Set a disconnect message that the socket will generate when accepted peer disconnect
-    DisconnectMessage,
-    #[cfg(feature = "draft-api")]
-    /// Set the priority on the socket
-    Priority,
-    #[cfg(feature = "draft-api")]
-    /// This removes delays caused by the interrupt and the resultant context switch
-    BusyPoll,
-    #[cfg(feature = "draft-api")]
-    /// Set a hiccup message that the socket will generate when connected peer temprarily
-    /// disconnects
-    HiccupMessage,
-    #[cfg(feature = "draft-api")]
-    /// Pass duplicate unsubscribe messages on [`XSubscribe`](XSubscribeSocket) sockets
-    XsubVerboseUnsubscribe,
-    #[cfg(feature = "draft-api")]
-    /// Number of topic subscriptions received
-    TopicsCount,
+
     #[cfg(zmq_has = "norm")]
     /// NORM sender mode
     NormMode,
@@ -1437,6 +1404,60 @@ pub enum SocketOption {
     #[cfg(zmq_has = "norm")]
     /// NORM push mode
     NormPush,
+
+    /// RFC27 authentifcation domain
+    ZapDomain,
+    #[cfg(feature = "draft-api")]
+    /// Strict ZAP domain handling
+    ZapEnforceDomain,
+
+    /// SOCKS5 proxy address
+    SocksProxy,
+    #[cfg(feature = "draft-api")]
+    /// SOCKS username and select basic authentification
+    SocksUsername,
+    #[cfg(feature = "draft-api")]
+    /// SOCKS basic authentification password
+    SocksPassword,
+
+    /// Current security mechanism
+    Mechanism,
+    /// Current PLAIN server role
+    PlainServer,
+    /// Current PLAIN username
+    PlainUsername,
+    /// Current PLAIN password
+    PlainPassword,
+    #[cfg(zmq_has = "curve")]
+    /// Current CURVE public key
+    CurvePublicKey,
+    #[cfg(zmq_has = "curve")]
+    /// Current CURVE secret key
+    CurveSecretKey,
+    #[cfg(zmq_has = "curve")]
+    /// Current CURVE server role
+    CurveServer,
+    #[cfg(zmq_has = "curve")]
+    /// Current CURVE server key
+    CurveServerKey,
+    #[cfg(zmq_has = "gssapi")]
+    /// GSSAPI server role
+    GssApiServer,
+    #[cfg(zmq_has = "gssapi")]
+    /// Name of GSSAPI principal
+    GssApiPrincipal,
+    #[cfg(zmq_has = "gssapi")]
+    /// Name of GSSAPI service principal
+    GssApiServicePrincipal,
+    #[cfg(zmq_has = "gssapi")]
+    /// Enable/disable GSSAPI encryption
+    GssApiPlainText,
+    #[cfg(zmq_has = "gssapi")]
+    /// Nametype for GSSAPI principal
+    GssApiPrincipalNametype,
+    #[cfg(zmq_has = "gssapi")]
+    /// Nametype for GSSAPI service principal
+    GssApiServicePrincipalNametype,
 }
 
 impl From<SocketOption> for i32 {

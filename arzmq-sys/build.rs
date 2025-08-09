@@ -140,9 +140,9 @@ fn add_cpp_sources(build: &mut Build, root: impl AsRef<Path>, files: &[&str]) {
     build.files(files.iter().map(|src| {
         let mut p = root.join(src);
         p.set_extension("cpp");
+        println!("cargo:rerun-if-changed={}", p.display());
         p
     }));
-
     build.include(root);
 }
 
@@ -152,7 +152,10 @@ fn add_c_sources(build: &mut Build, root: impl AsRef<Path>, files: &[&str]) {
     build.cpp(false);
     build.files(files.iter().map(|src| {
         let mut p = root.join(src);
+        p.set_extension("h");
+        println!("cargo:rerun-if-changed={}", p.display());
         p.set_extension("c");
+        println!("cargo:rerun-if-changed={}", p.display());
         p
     }));
 
@@ -299,6 +302,23 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
         .include(vendor.join("include"));
 
     add_cpp_sources(build, vendor.join("src"), DEFAULT_SOURCES);
+
+    walkdir::WalkDir::new(vendor.join("src"))
+        .into_iter()
+        .filter(|entry| {
+            entry.as_ref().is_ok_and(|dir_entry| {
+                dir_entry.path().is_file()
+                    && dir_entry
+                        .path()
+                        .extension()
+                        .is_some_and(|dir_path| dir_path.to_string_lossy() == "hpp")
+            })
+        })
+        .for_each(|entry| {
+            if let Ok(dir_entry) = entry {
+                println!("cargo:rerun-if-changed={}", dir_entry.path().display());
+            }
+        });
 
     libraries
         .iter()

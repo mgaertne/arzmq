@@ -38,12 +38,12 @@ dircpy = { version = "0.3.19" }
 tempfile = { version = "3.20" }
 bindgen = { version = "0.72" }
 system-deps = { version = "7.0.5" }
+walkdir = { version = "2.5" }
 
 [target."cfg(unix)".dependencies]
 libc = { version = "1.0.0-alpha.1", default-features = false }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
-walkdir = { version = "2.5" }
 vcpkg = { version = "0.2.15" }
 
 [package.metadata.system-deps]

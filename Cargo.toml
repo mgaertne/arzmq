@@ -63,7 +63,6 @@ parking_lot = { version = ">=0.12.4", default-features = false, features = ["arc
 
 derive_builder = { version = ">=0.20", default-features = false, features = ["alloc"], optional = true }
 serde = { version = ">=1.0.219", default-features = false, optional = true, features = ["derive", "alloc"] }
-z85 = { version = ">=3.0.6", default-features = false }
 async-trait = { version = ">=0.1.88", default-features = false, optional = true }
 futures = { version = ">=0.3.31", default-features = false, features = ["async-await", "alloc"], optional = true}
 

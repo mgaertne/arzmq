@@ -25,8 +25,7 @@ fn run_tcp_client(endpoint: &str, iterations: i32) -> Result<(), Box<dyn Error>>
         tcp_stream.write_all("Hello".as_bytes()).unwrap();
 
         let mut buffer = [0; 256];
-        if let Ok(length) = tcp_stream.read(&mut buffer)
-        {
+        if let Ok(length) = tcp_stream.read(&mut buffer) {
             if length != 0 {
                 let recevied_msg = &buffer[..length];
                 println!(

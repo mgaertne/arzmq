@@ -6,12 +6,9 @@
 //! [`Null`]: SecurityMechanism::Null
 //! [`Plain`]: SecurityMechanism::Plain
 
-#[cfg(zmq_has = "curve")]
-use core::ffi::c_char;
-#[cfg(all(zmq_has = "curve", nightly))]
-use core::hint::cold_path;
-
 use derive_more::Display;
+#[cfg(zmq_has = "gssapi")]
+pub use gssapi::GssApiNametype;
 
 use crate::{
     ZmqError, ZmqResult, sealed,
@@ -139,7 +136,7 @@ impl<T: sealed::SocketType> TryFrom<&Socket<T>> for SecurityMechanism {
 mod security_mechanism_tests {
     use super::SecurityMechanism;
     #[cfg(zmq_has = "curve")]
-    use super::curve_keypair;
+    use super::curve::curve_keypair;
     use crate::{
         prelude::{Context, DealerSocket, SocketOption, ZmqResult},
         zmq_sys_crate,
@@ -252,6 +249,39 @@ mod security_mechanism_tests {
         Ok(())
     }
 
+    #[cfg(zmq_has = "gssapi")]
+    #[test]
+    fn apply_gssapi_server_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        let security = SecurityMechanism::GssApiServer;
+        security.apply(&socket)?;
+
+        assert!(socket.get_sockopt_bool(SocketOption::GssApiServer)?);
+
+        Ok(())
+    }
+
+    #[cfg(zmq_has = "gssapi")]
+    #[test]
+    fn apply_gssapi_client_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        let security = SecurityMechanism::GssApiClient {
+            service_principal: "service_principal".to_string(),
+        };
+        security.apply(&socket)?;
+
+        assert_eq!(
+            socket.get_sockopt_string(SocketOption::GssApiServicePrincipal)?,
+            "service_principal"
+        );
+
+        Ok(())
+    }
+
     #[test]
     fn try_from_socket_with_no_security() -> ZmqResult<()> {
         let context = Context::new()?;
@@ -330,142 +360,341 @@ mod security_mechanism_tests {
 
         Ok(())
     }
-}
 
-/// Z85 decoding error
-#[cfg(zmq_has = "curve")]
-pub use z85::DecodeError as Z85DecodeError;
-#[cfg(zmq_has = "curve")]
-pub use z85::{decode as z85_decode, encode as z85_encode};
-
-/// # generate a new CURVE keypair
-///
-/// The [`curve_keypair()`] function returns a newly generated random keypair consisting of a
-/// public key and a secret key. The keys are encoded using [`z85_encode()`].
-///
-/// [`curve_keypair()`]: curve_keypair
-/// [`z85_encode()`]: z85_encode
-#[cfg(zmq_has = "curve")]
-pub fn curve_keypair() -> ZmqResult<(Vec<u8>, Vec<u8>)> {
-    let mut public_key: [u8; 41] = [0; 41];
-    let mut secret_key: [u8; 41] = [0; 41];
-
-    if unsafe {
-        zmq_sys_crate::zmq_curve_keypair(
-            public_key.as_mut_ptr() as *mut c_char,
-            secret_key.as_mut_ptr() as *mut c_char,
-        )
-    } == -1
-    {
-        #[cfg(nightly)]
-        cold_path();
-        match unsafe { zmq_sys_crate::zmq_errno() } {
-            errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
-            _ => unreachable!(),
-        }
-    }
-
-    Ok((public_key.to_vec(), secret_key.to_vec()))
-}
-
-/// # derive the public key from a private key
-///
-/// The [`curve_public()`] function shall derive the public key from a private key. The keys are
-/// encoded using [`z85_encode()`].
-///
-/// [`curve_public()`]: curve_public
-/// [`z85_encode()`]: z85_encode
-#[cfg(zmq_has = "curve")]
-pub fn curve_public<T>(mut secret_key: T) -> ZmqResult<Vec<u8>>
-where
-    T: AsMut<[u8]>,
-{
-    let mut public_key: [u8; 41] = [0; 41];
-    let secret_key_array = secret_key.as_mut();
-
-    if unsafe {
-        zmq_sys_crate::zmq_curve_public(
-            public_key.as_mut_ptr() as *mut c_char,
-            secret_key_array.as_ptr() as *const c_char,
-        )
-    } == -1
-    {
-        #[cfg(nightly)]
-        cold_path();
-        match unsafe { zmq_sys_crate::zmq_errno() } {
-            errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
-            _ => unreachable!(),
-        }
-    }
-
-    Ok(public_key.to_vec())
-}
-
-#[cfg(zmq_has = "curve")]
-#[cfg(test)]
-mod curve_keypair_tests {
-    use super::{curve_keypair, curve_public};
-    use crate::prelude::ZmqResult;
-
+    #[cfg(zmq_has = "gssapi")]
     #[test]
-    fn curve_keypair_generate_curve_keypair() -> ZmqResult<()> {
-        let (public_key, secret_key) = curve_keypair()?;
+    fn try_from_socket_with_gssapi_security() -> ZmqResult<()> {
+        let context = Context::new()?;
 
-        let pub_key = curve_public(secret_key)?;
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_sockopt_string(SocketOption::GssApiServicePrincipal, "service_principal")?;
+        socket.set_sockopt_bool(SocketOption::GssApiServer, true)?;
+        assert_eq!(
+            SecurityMechanism::try_from(&socket)?,
+            SecurityMechanism::GssApiServer
+        );
 
-        assert_eq!(public_key, pub_key);
+        Ok(())
+    }
+
+    #[cfg(zmq_has = "gssapi")]
+    #[test]
+    fn try_from_socket_with_gssapi_client_security() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_sockopt_string(SocketOption::GssApiServicePrincipal, "service_principal")?;
+        socket.set_sockopt_bool(SocketOption::GssApiServer, false)?;
+        assert_eq!(
+            SecurityMechanism::try_from(&socket)?,
+            SecurityMechanism::GssApiClient {
+                service_principal: "service_principal".to_string()
+            }
+        );
 
         Ok(())
     }
 }
 
-#[cfg(zmq_has = "gssapi")]
-#[derive(Debug, Display, PartialEq, Eq, Clone, Hash)]
-#[repr(i32)]
-/// # name types for GSSAPI
-pub enum GssApiNametype {
-    /// the name is interpreted as a host based name
-    NtHostbased,
-    /// the name is interpreted as a local user name
-    NtUsername,
-    /// the name is interpreted as an unparsed principal name string (valid only with the krb5
-    /// GSSAPI mechanism).
-    NtKrb5Principal,
-}
+/// # `Curve` related convenience functions
+#[cfg(zmq_has = "curve")]
+pub mod curve {
+    use alloc::ffi::CString;
+    use core::ffi::c_char;
+    #[cfg(nightly)]
+    use core::hint::cold_path;
 
-#[cfg(zmq_has = "gssapi")]
-impl TryFrom<i32> for GssApiNametype {
-    type Error = ZmqError;
+    use derive_more::Display;
+    use thiserror::Error;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32 => Ok(Self::NtHostbased),
-            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32 => Ok(Self::NtUsername),
-            _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32 => {
-                Ok(Self::NtKrb5Principal)
-            }
-            _ => Err(ZmqError::Unsupported),
-        }
-    }
-}
-
-#[cfg(zmq_has = "gssapi")]
-#[cfg(test)]
-mod gss_api_nametype_tests {
-    use rstest::*;
-
-    use super::GssApiNametype;
     use crate::{
         prelude::{ZmqError, ZmqResult},
         zmq_sys_crate,
     };
 
-    #[rstest]
-    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32, Ok(GssApiNametype::NtHostbased))]
-    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32, Ok(GssApiNametype::NtUsername))]
-    #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32, Ok(GssApiNametype::NtKrb5Principal))]
-    #[case(666, Err(ZmqError::Unsupported))]
-    fn nametype_try_from(#[case] value: i32, #[case] expected: ZmqResult<GssApiNametype>) {
-        assert_eq!(expected, GssApiNametype::try_from(value));
+    #[derive(Debug, PartialEq, Eq, Clone, Hash, Error, Display)]
+    /// Error that can occur while encoding Z85
+    pub enum EncodeError {
+        /// The input string slice’s length was not a multiple of 4.
+        BadLength,
+        /// The underlying `zmq_z85_encode()` function returned an error.
+        EncodingFailed,
+        /// Converting the returned string failed.
+        Utf8Error,
+    }
+
+    /// # encode a binary key as Z85 printable text
+    ///
+    /// The [`encode()`] function shall encode the binary block specified by 'data' into a string.
+    /// The size of the binary block must be divisible by 4. A 32-byte CURVE key is encoded as 40 ASCII
+    /// characters plus a null terminator.
+    ///
+    /// [`encode()`]: #method.encode
+    pub fn encode<T>(data: T) -> Result<String, EncodeError>
+    where
+        T: AsRef<[u8]>,
+    {
+        let input = data.as_ref();
+        if input.len() % 4 != 0 {
+            return Err(EncodeError::BadLength);
+        }
+
+        let len = input.len() * 5 / 4 + 1;
+        let mut dest = vec![0u8; len];
+
+        if unsafe {
+            zmq_sys_crate::zmq_z85_encode(
+                dest.as_mut_ptr() as *mut c_char,
+                input.as_ptr(),
+                input.len(),
+            )
+        }
+        .is_null()
+        {
+            #[cfg(nightly)]
+            cold_path();
+            return Err(EncodeError::EncodingFailed);
+        }
+
+        dest.truncate(len - 1);
+        String::from_utf8(dest).map_err(|_| EncodeError::Utf8Error)
+    }
+
+    #[cfg(test)]
+    mod z85_encode_tests {
+        use super::{EncodeError, encode};
+
+        #[test]
+        fn z85_encode_for_empty_input() -> Result<(), EncodeError> {
+            let encoded_string = encode(vec![])?;
+            assert_eq!(encoded_string, "");
+            Ok(())
+        }
+
+        #[test]
+        fn z85_encode_for_invalid_input_length() {
+            let result = encode(b"a");
+            assert!(result.is_err_and(|err| err == EncodeError::BadLength));
+        }
+
+        #[test]
+        fn z85_encode_for_valid_input() -> Result<(), EncodeError> {
+            let encoded_string = encode(b"Hello World!")?;
+            assert_eq!(encoded_string, "nm=QNzY&b1A+]nf");
+
+            Ok(())
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, Clone, Hash, Error, Display)]
+    /// Error that can occur while decoding Z85.
+    pub enum DecodeError {
+        /// The input string slice’s length was not a multiple of 5.
+        InvalidLength,
+        /// The underlying `zmq_z85_decode()` function returned an error.
+        DecodingFailed,
+    }
+
+    /// # decode a binary key from Z85 printable text
+    ///
+    /// The [`decode()`] function shall decode 'string'. The length of 'string' shall be divisible
+    /// by 5.
+    ///
+    /// [`decode()`]: #method.decode
+    pub fn decode<T>(string: T) -> Result<Vec<u8>, DecodeError>
+    where
+        T: AsRef<str>,
+    {
+        let input = string.as_ref();
+        let input_len = input.len();
+        if input_len == 0 {
+            return Ok(vec![]);
+        }
+
+        if input.len() % 5 != 0 {
+            return Err(DecodeError::InvalidLength);
+        }
+
+        let dest_len = input_len * 4 / 5;
+        let mut dest = vec![0; dest_len];
+
+        let c_str = CString::new(input).map_err(|_| DecodeError::DecodingFailed)?;
+
+        if unsafe { zmq_sys_crate::zmq_z85_decode(dest.as_mut_ptr(), c_str.into_raw()) }.is_null() {
+            #[cfg(nightly)]
+            cold_path();
+            return Err(DecodeError::DecodingFailed);
+        }
+
+        Ok(dest)
+    }
+
+    #[cfg(test)]
+    mod z85_decode_tests {
+        use super::{DecodeError, decode};
+
+        #[test]
+        fn z85_decode_z85_encoded_string() -> Result<(), DecodeError> {
+            let encoded_string = "nm=QNzY&b1A+]nf";
+            let decoded_string = decode(encoded_string)?;
+
+            assert_eq!(decoded_string, b"Hello World!");
+
+            Ok(())
+        }
+
+        #[test]
+        fn z85_decode_for_empty_input() -> Result<(), DecodeError> {
+            let encoded_string = "";
+            let decoded_string = decode(encoded_string)?;
+
+            assert_eq!(decoded_string, vec![]);
+
+            Ok(())
+        }
+
+        #[test]
+        fn z85_decode_for_invalid_input_length() {
+            let encoded_string = "a";
+            let result = decode(encoded_string);
+
+            assert!(result.is_err_and(|err| err == DecodeError::InvalidLength));
+        }
+    }
+
+    /// # generate a new CURVE keypair
+    ///
+    /// The [`curve_keypair()`] function returns a newly generated random keypair consisting of a
+    /// public key and a secret key. The keys are encoded using [`z85_encode()`].
+    ///
+    /// [`curve_keypair()`]: curve_keypair
+    /// [`z85_encode()`]: encode
+    pub fn curve_keypair() -> ZmqResult<(Vec<u8>, Vec<u8>)> {
+        let mut public_key: [u8; 41] = [0; 41];
+        let mut secret_key: [u8; 41] = [0; 41];
+
+        if unsafe {
+            zmq_sys_crate::zmq_curve_keypair(
+                public_key.as_mut_ptr() as *mut c_char,
+                secret_key.as_mut_ptr() as *mut c_char,
+            )
+        } == -1
+        {
+            #[cfg(nightly)]
+            cold_path();
+            match unsafe { zmq_sys_crate::zmq_errno() } {
+                errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
+                _ => unreachable!(),
+            }
+        }
+
+        Ok((public_key.to_vec(), secret_key.to_vec()))
+    }
+
+    /// # derive the public key from a private key
+    ///
+    /// The [`curve_public()`] function shall derive the public key from a private key. The keys are
+    /// encoded using [`z85_encode()`].
+    ///
+    /// [`curve_public()`]: curve_public
+    /// [`z85_encode()`]: encode
+    pub fn curve_public<T>(mut secret_key: T) -> ZmqResult<Vec<u8>>
+    where
+        T: AsMut<[u8]>,
+    {
+        let mut public_key: [u8; 41] = [0; 41];
+        let secret_key_array = secret_key.as_mut();
+
+        if unsafe {
+            zmq_sys_crate::zmq_curve_public(
+                public_key.as_mut_ptr() as *mut c_char,
+                secret_key_array.as_ptr() as *const c_char,
+            )
+        } == -1
+        {
+            #[cfg(nightly)]
+            cold_path();
+            match unsafe { zmq_sys_crate::zmq_errno() } {
+                errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
+                _ => unreachable!(),
+            }
+        }
+
+        Ok(public_key.to_vec())
+    }
+
+    #[cfg(test)]
+    mod curve_keypair_tests {
+        use super::{curve_keypair, curve_public};
+        use crate::prelude::ZmqResult;
+
+        #[test]
+        fn curve_keypair_generate_curve_keypair() -> ZmqResult<()> {
+            let (public_key, secret_key) = curve_keypair()?;
+
+            let pub_key = curve_public(secret_key)?;
+
+            assert_eq!(public_key, pub_key);
+
+            Ok(())
+        }
+    }
+}
+
+#[cfg(zmq_has = "gssapi")]
+mod gssapi {
+    use derive_more::Display;
+
+    use crate::{prelude::ZmqError, zmq_sys_crate};
+
+    #[derive(Debug, Display, PartialEq, Eq, Clone, Hash)]
+    #[repr(i32)]
+    /// # name types for GSSAPI
+    pub enum GssApiNametype {
+        /// the name is interpreted as a host based name
+        NtHostbased,
+        /// the name is interpreted as a local user name
+        NtUsername,
+        /// the name is interpreted as an unparsed principal name string (valid only with the krb5
+        /// GSSAPI mechanism).
+        NtKrb5Principal,
+    }
+
+    impl TryFrom<i32> for GssApiNametype {
+        type Error = ZmqError;
+
+        fn try_from(value: i32) -> Result<Self, Self::Error> {
+            match value {
+                _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32 => {
+                    Ok(Self::NtHostbased)
+                }
+                _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32 => Ok(Self::NtUsername),
+                _ if value == zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32 => {
+                    Ok(Self::NtKrb5Principal)
+                }
+                _ => Err(ZmqError::Unsupported),
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod gss_api_nametype_tests {
+        use rstest::*;
+
+        use super::GssApiNametype;
+        use crate::{
+            prelude::{ZmqError, ZmqResult},
+            zmq_sys_crate,
+        };
+
+        #[rstest]
+        #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_HOSTBASED as i32, Ok(GssApiNametype::NtHostbased))]
+        #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_USER_NAME as i32, Ok(GssApiNametype::NtUsername))]
+        #[case(zmq_sys_crate::ZMQ_GSSAPI_NT_KRB5_PRINCIPAL as i32, Ok(GssApiNametype::NtKrb5Principal)
+        )]
+        #[case(666, Err(ZmqError::Unsupported))]
+        fn nametype_try_from(#[case] value: i32, #[case] expected: ZmqResult<GssApiNametype>) {
+            assert_eq!(expected, GssApiNametype::try_from(value));
+        }
     }
 }
