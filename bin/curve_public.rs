@@ -7,7 +7,6 @@ use core::ffi::{CStr, c_char};
 
 use arzmq_sys as zmq_sys_crate;
 
-#[allow(dead_code)]
 pub fn main() -> Result<(), &'static str> {
     println!(
         "This tool generates a CurveZMQ public key from a secret key, as printable string you can \

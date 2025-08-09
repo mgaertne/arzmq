@@ -1,12 +1,9 @@
 #![cfg(zmq_has = "curve")]
 
-mod curve_public;
-
 use core::ffi::{CStr, c_char};
 
 use arzmq_sys as zmq_sys_crate;
 
-#[allow(dead_code)]
 pub fn main() -> Result<(), &'static str> {
     println!(
         "This tool generates a CurveZMQ keypair, as two printable strings you can use in \
