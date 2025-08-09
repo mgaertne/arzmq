@@ -7,7 +7,7 @@ use core::ffi::{CStr, c_char};
 use arzmq_sys as zmq_sys_crate;
 
 #[allow(dead_code)]
-fn main() -> Result<(), &'static str> {
+pub fn main() -> Result<(), &'static str> {
     println!(
         "This tool generates a CurveZMQ keypair, as two printable strings you can use in \
 configuration files or source code. The encoding uses Z85, which is a base-85 format that \
