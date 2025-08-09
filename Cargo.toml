@@ -110,6 +110,16 @@ rustdoc-args = ["--cfg", "docsrs"]
 [lints]
 workspace = true
 
+[[bin]]
+name = "curve_keygen"
+path = "bin/curve_keygen.rs"
+required-features = ["curve"]
+
+[[bin]]
+name = "curve_public"
+path = "bin/curve_public.rs"
+required-features = ["curve"]
+
 [[example]]
 name = "version"
 path = "examples/version.rs"

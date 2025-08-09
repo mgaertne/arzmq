@@ -435,11 +435,12 @@ pub mod curve {
         T: AsRef<[u8]>,
     {
         let input = data.as_ref();
-        if input.len() % 4 != 0 {
+        let input_len = input.len();
+        if input_len % 4 != 0 {
             return Err(EncodeError::BadLength);
         }
 
-        let len = input.len() * 5 / 4 + 1;
+        let len = input_len * 5 / 4 + 1;
         let mut dest = vec![0u8; len];
 
         if unsafe {
@@ -511,7 +512,7 @@ pub mod curve {
             return Ok(vec![]);
         }
 
-        if input.len() % 5 != 0 {
+        if input_len % 5 != 0 {
             return Err(DecodeError::InvalidLength);
         }
 
