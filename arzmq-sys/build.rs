@@ -1,7 +1,9 @@
 use core::error::Error;
+#[cfg(target_env = "msvc")]
+use std::fs;
 use std::{
     env,
-    fs::{self, File},
+    fs::File,
     io::Write,
     path::{Path, PathBuf},
 };
