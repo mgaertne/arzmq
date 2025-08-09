@@ -1,6 +1,10 @@
 #![cfg(feature = "examples-futures")]
+#[rustversion::since(1.87)]
+use core::str;
 use core::{error::Error, sync::atomic::Ordering};
 use std::net::TcpStream;
+#[rustversion::before(1.87)]
+use std::str;
 
 use arzmq::prelude::{Context, MultipartReceiver, StreamSocket};
 use futures::{

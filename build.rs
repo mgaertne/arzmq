@@ -1,6 +1,11 @@
 use std::ffi::CString;
 
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(nightly)");
+    if rustversion::cfg!(nightly) {
+        println!("cargo:rustc-cfg=nightly");
+    }
+
     let capabilities = [
         "ipc", "pgm", "tipc", "vmci", "norm", "curve", "gssapi", "draft",
     ];

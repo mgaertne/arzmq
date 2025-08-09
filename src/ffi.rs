@@ -1,12 +1,17 @@
 use alloc::ffi::CString;
+#[cfg(nightly)]
+use core::hint::cold_path;
+#[rustversion::since(1.87)]
+use core::str;
 use core::{
     ffi::{CStr, c_long, c_void},
     fmt::Formatter,
-    hint::cold_path,
     ops::Deref,
     ptr, slice,
     str::FromStr,
 };
+#[rustversion::before(1.87)]
+use std::str;
 
 use derive_more::{Debug as DebugDeriveMore, Display as DisplayDeriveMore};
 use num_traits::PrimInt;
@@ -27,6 +32,7 @@ impl RawContext {
     pub(crate) fn new() -> ZmqResult<Self> {
         match unsafe { zmq_sys_crate::zmq_ctx_new() } {
             null_ptr if null_ptr.is_null() => {
+                #[cfg(nightly)]
                 cold_path();
                 match unsafe { zmq_sys_crate::zmq_errno() } {
                     errno @ zmq_sys_crate::errno::EMFILE => Err(ZmqError::from(errno)),
@@ -42,6 +48,7 @@ impl RawContext {
     fn set(&self, option: i32, value: i32) -> ZmqResult<()> {
         let context = self.context.lock();
         if unsafe { zmq_sys_crate::zmq_ctx_set(*context, option, value) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
@@ -69,6 +76,7 @@ impl RawContext {
             )
         } == -1
         {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
@@ -102,6 +110,7 @@ impl RawContext {
         let context = self.context.lock();
         match unsafe { zmq_sys_crate::zmq_ctx_get(*context, option) } {
             -1 => {
+                #[cfg(nightly)]
                 cold_path();
                 match unsafe { zmq_sys_crate::zmq_errno() } {
                     errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
@@ -129,6 +138,7 @@ impl RawContext {
             )
         } == -1
         {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
@@ -163,6 +173,7 @@ impl RawContext {
         let context = self.context.lock();
         match unsafe { zmq_sys_crate::zmq_ctx_shutdown(*context) } {
             -1 => {
+                #[cfg(nightly)]
                 cold_path();
                 match unsafe { zmq_sys_crate::zmq_errno() } {
                     errno @ zmq_sys_crate::errno::EFAULT => Err(ZmqError::from(errno)),
@@ -176,6 +187,7 @@ impl RawContext {
     pub(crate) fn terminate(&self) {
         let context = self.context.lock();
         while unsafe { zmq_sys_crate::zmq_ctx_term(*context) } != 0 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 zmq_sys_crate::errno::EINTR => (),
@@ -201,6 +213,7 @@ impl RawSocket {
         let context_guard = context.context.lock();
         let socket_ptr = unsafe { zmq_sys_crate::zmq_socket(*context_guard, socket_type) };
         if socket_ptr.is_null() {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -222,6 +235,7 @@ impl RawSocket {
 
         let socket_guard = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_connect(*socket_guard, c_endpoint.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -244,6 +258,7 @@ impl RawSocket {
 
         let socket_guard = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_disconnect(*socket_guard, c_endpoint.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -262,6 +277,7 @@ impl RawSocket {
 
         let socket_guard = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_bind(*socket_guard, c_endpoint.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -287,6 +303,7 @@ impl RawSocket {
 
         let socket_guard = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_unbind(*socket_guard, c_endpoint.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -303,6 +320,7 @@ impl RawSocket {
     fn get_sockopt(&self, option: i32, value_ptr: *mut c_void, size: &mut usize) -> ZmqResult<()> {
         let socket = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_getsockopt(*socket, option, value_ptr, size) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -394,6 +412,7 @@ impl RawSocket {
     fn set_sockopt(&self, option: i32, value_ptr: *const c_void, size: usize) -> ZmqResult<()> {
         let socket = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_setsockopt(*socket, option, value_ptr, size) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -441,6 +460,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_socket_monitor(*socket_guard, c_endpoint.as_ptr(), event) }
             == -1
         {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::ETERM
@@ -532,6 +552,7 @@ impl RawSocket {
         let routing_id =
             unsafe { zmq_sys_crate::zmq_connect_peer(*socket_guard, c_endpoint.as_ptr()) };
         if routing_id == 0 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::EINVAL
@@ -557,6 +578,7 @@ impl RawSocket {
 
         let socket_guard = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_join(*socket_guard, c_group.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::ETERM
@@ -577,6 +599,7 @@ impl RawSocket {
 
         let socket_guard = self.socket.lock();
         if unsafe { zmq_sys_crate::zmq_leave(*socket_guard, c_group.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::ETERM
@@ -652,6 +675,7 @@ impl RawMessage {
     #[cfg(feature = "draft-api")]
     pub(crate) fn set_routing_id(&mut self, value: u32) -> ZmqResult<()> {
         if unsafe { zmq_sys_crate::zmq_msg_set_routing_id(&mut self.message, value) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 event @ zmq_sys_crate::errno::EINVAL => return Err(ZmqError::from(event)),
@@ -674,6 +698,7 @@ impl RawMessage {
         let c_value = CString::from_str(value)?;
 
         if unsafe { zmq_sys_crate::zmq_msg_set_group(&mut self.message, c_value.as_ptr()) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             let errno = unsafe { zmq_sys_crate::zmq_errno() };
             return Err(ZmqError::from(errno));
@@ -730,6 +755,7 @@ impl Clone for RawMessage {
 impl Drop for RawMessage {
     fn drop(&mut self) {
         if unsafe { zmq_sys_crate::zmq_msg_close(&mut self.message) } == -1 {
+            #[cfg(nightly)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 zmq_sys_crate::errno::EFAULT => (),
@@ -772,6 +798,7 @@ impl core::fmt::Display for RawMessage {
     }
 }
 
+#[rustversion::attr(all(nightly, since(1.88)), allow(clippy::collapsible_if))]
 impl core::fmt::Debug for RawMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match str::from_utf8(self.as_ref()) {
@@ -790,10 +817,10 @@ impl core::fmt::Debug for RawMessage {
         }
 
         #[cfg(feature = "draft-api")]
-        if let Some(group) = self.group()
-            && !group.is_empty()
-        {
-            write!(f, " (group: {group})")?;
+        if let Some(group) = self.group() {
+            if !group.is_empty() {
+                write!(f, " (group: {group})")?;
+            }
         }
 
         Ok(())

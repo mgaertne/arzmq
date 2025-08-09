@@ -1,4 +1,8 @@
 use core::error::Error;
+#[rustversion::since(1.87)]
+use core::str;
+#[rustversion::before(1.87)]
+use std::str;
 use std::{io::prelude::*, net::TcpListener, thread};
 
 use arzmq::prelude::{

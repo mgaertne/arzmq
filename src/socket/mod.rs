@@ -619,7 +619,11 @@
 //! ### Example
 //! Stream as client:
 //! ```
+//! # #[rustversion::since(1.87)]
+//! # use core::str;
 //! # use core::error::Error;
+//! # #[rustversion::before(1.87)]
+//! # use std::str;
 //! # use std::{io::prelude::*, net::TcpListener, thread};
 //! #
 //! # use arzmq::prelude::{ZmqResult, Context, MultipartMessage, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket};
@@ -683,7 +687,11 @@
 //!
 //! Stream as server:
 //! ```
+//! # #[rustversion::since(1.87)]
+//! # use core::str;
 //! # use core::error::Error;
+//! # #[rustversion::before(1.87)]
+//! # use std::str;
 //! # use std::{io::prelude::*, net::TcpStream, thread};
 //! #
 //! # use arzmq::prelude::{ZmqResult, Context, MultipartReceiver, MultipartSender, RecvFlags, SendFlags, StreamSocket};
@@ -3626,6 +3634,7 @@ mod futures {
         pub(super) flags: SendFlags,
     }
 
+    #[rustversion::attr(before(1.87), allow(clippy::needless_lifetimes))]
     impl<'a, T, M> Future for MessageSendingFuture<'a, T, M>
     where
         T: sealed::SocketType + sealed::SenderFlag + Unpin,

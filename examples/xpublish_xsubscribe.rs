@@ -1,4 +1,8 @@
+#[rustversion::since(1.87)]
+use core::str;
 use core::sync::atomic::Ordering;
+#[rustversion::before(1.87)]
+use std::str;
 use std::thread;
 
 use arzmq::prelude::{

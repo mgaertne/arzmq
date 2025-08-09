@@ -183,6 +183,7 @@ mod stream_tests {
     }
 
     #[test]
+    #[rustversion::attr(all(nightly, since(1.88)), allow(clippy::collapsible_if))]
     fn stream_server() -> Result<(), Box<dyn Error>> {
         let context = Context::new()?;
 
@@ -206,11 +207,11 @@ mod stream_tests {
         tcp_stream.write_all(b"Hello")?;
 
         let mut buffer = [0; 256];
-        if let Ok(length) = tcp_stream.read(&mut buffer)
-            && length != 0
-        {
-            let received_msg = &buffer[..length];
-            assert_eq!(received_msg, b"World");
+        if let Ok(length) = tcp_stream.read(&mut buffer) {
+            if length != 0 {
+                let received_msg = &buffer[..length];
+                assert_eq!(received_msg, b"World");
+            }
         }
 
         Ok(())
@@ -218,6 +219,7 @@ mod stream_tests {
 
     #[cfg(feature = "futures")]
     #[test]
+    #[rustversion::attr(all(nightly, since(1.88)), allow(clippy::collapsible_if))]
     fn stream_server_async() -> Result<(), Box<dyn Error>> {
         let context = Context::new()?;
 
@@ -243,11 +245,11 @@ mod stream_tests {
         tcp_stream.write_all(b"Hello")?;
 
         let mut buffer = [0; 256];
-        if let Ok(length) = tcp_stream.read(&mut buffer)
-            && length != 0
-        {
-            let received_msg = &buffer[..length];
-            assert_eq!(received_msg, b"World");
+        if let Ok(length) = tcp_stream.read(&mut buffer) {
+            if length != 0 {
+                let received_msg = &buffer[..length];
+                assert_eq!(received_msg, b"World");
+            }
         }
 
         Ok(())

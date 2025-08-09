@@ -1,4 +1,8 @@
 use core::error::Error;
+#[rustversion::since(1.87)]
+use core::str;
+#[rustversion::before(1.87)]
+use std::str;
 use std::{io::prelude::*, net::TcpStream, thread};
 
 use arzmq::prelude::{
@@ -13,6 +17,7 @@ fn run_stream_socket(zmq_stream: &StreamSocket, msg: &str) -> ZmqResult<()> {
     zmq_stream.send_multipart(message, SendFlags::empty())
 }
 
+#[rustversion::attr(all(nightly, since(1.88)), allow(clippy::collapsible_if))]
 fn run_tcp_client(endpoint: &str, iterations: i32) -> Result<(), Box<dyn Error>> {
     let mut tcp_stream = TcpStream::connect(endpoint)?;
     (0..iterations).try_for_each(|request_no| {
@@ -21,13 +26,14 @@ fn run_tcp_client(endpoint: &str, iterations: i32) -> Result<(), Box<dyn Error>>
 
         let mut buffer = [0; 256];
         if let Ok(length) = tcp_stream.read(&mut buffer)
-            && length != 0
         {
-            let recevied_msg = &buffer[..length];
-            println!(
-                "Received reply {request_no:2} {}",
-                str::from_utf8(recevied_msg).unwrap()
-            );
+            if length != 0 {
+                let recevied_msg = &buffer[..length];
+                println!(
+                    "Received reply {request_no:2} {}",
+                    str::from_utf8(recevied_msg).unwrap()
+                );
+            }
         }
 
         Ok::<(), Box<dyn Error>>(())

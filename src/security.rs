@@ -7,7 +7,9 @@
 //! [`Plain`]: SecurityMechanism::Plain
 
 #[cfg(zmq_has = "curve")]
-use core::{ffi::c_char, hint::cold_path};
+use core::ffi::c_char;
+#[cfg(all(zmq_has = "curve", nightly))]
+use core::hint::cold_path;
 
 use derive_more::Display;
 
@@ -355,6 +357,7 @@ pub fn curve_keypair() -> ZmqResult<(Vec<u8>, Vec<u8>)> {
         )
     } == -1
     {
+        #[cfg(nightly)]
         cold_path();
         match unsafe { zmq_sys_crate::zmq_errno() } {
             errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
@@ -387,6 +390,7 @@ where
         )
     } == -1
     {
+        #[cfg(nightly)]
         cold_path();
         match unsafe { zmq_sys_crate::zmq_errno() } {
             errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
