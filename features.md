@@ -3,7 +3,7 @@ This crate offers to compile the underlying [`libzmq`](https://github.com/zeromq
 based on your needs by enabling or disabling cargo features. In addition to that, there are several 
 [`Rust-related features`](#rust-related-features) that you can enable or diable.
 
-[`Below`](#libzmq-related-features) tere is a brief overview, with steps for `Windows`, `Linux`, and `MacOs` for the 
+[`Below`](#libzmq-related-features) there is a brief overview, with steps for `Windows`, `Linux`, and `MacOs` for the 
 underlying dependencies for `libzmq`. Other platforms might work as well, but are untested at this point. Let me know 
 if you made experiences on unmentioned platforms, so that I can provide hints for others in similar situations.
 
