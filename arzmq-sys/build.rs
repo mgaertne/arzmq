@@ -413,7 +413,7 @@ fn check_curve_config(build: &mut Build, libraries: &Dependencies) {
     if cfg!(not(feature = "curve")) {
         return;
     }
-    
+
     libraries.get_by_name("libsodium").tap_some(|lib| {
         build.define("ZMQ_USE_LIBSODIUM", "1");
         build.define("ZMQ_HAVE_CURVE", "1");
@@ -494,28 +494,12 @@ fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    let out_dir = env::var("OUT_DIR")?;
-    let vmci_includes = PathBuf::from(&out_dir).join("vmci");
-    if !vmci_includes.exists() {
-        fs::create_dir(&vmci_includes)?;
-    }
-
-    let vmci_sockets_header = vmci_includes.join("vmci_sockets.h");
-    if !vmci_sockets_header.exists() {
-        let mut vmci_file = File::create(vmci_sockets_header)?;
-        vmci_file.write_all(
-                reqwest::blocking::get(
-                    "https://raw.githubusercontent.com/vmware/open-vm-tools/462c995f2deeaa578792b65c22eb082b9f487305/open-vm-tools/lib/include/vmci_sockets.h")?
-                    .bytes()?
-                    .as_ref()
-            )?;
-        vmci_file.flush()?;
-    }
+    let vmci = Path::new(env!("CARGO_MANIFEST_DIR")).join("vmci");
 
     build.define("ZMQ_HAVE_VMCI", "1");
 
     build.cpp(false);
-    build.include(vmci_includes);
+    build.include(vmci);
 
     Ok(())
 }

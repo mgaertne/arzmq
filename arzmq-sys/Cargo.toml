@@ -32,13 +32,12 @@ norm = ["draft-api"]
 vmci = []
 
 [build-dependencies]
-cc = { version = "1.2.31", features = ["parallel"] }
+tap = { version = "1.0.1" }
+cc = { version = "1.2.32", features = ["parallel"] }
 dircpy = { version = "0.3.19" }
 tempfile = { version = "3.20" }
 bindgen = { version = "0.72" }
 system-deps = { version = "7.0.5" }
-reqwest = { version = "0.12.22", default-features = false, features = ["blocking", "default-tls"] }
-tap = { version = "1.0.1" }
 
 [target."cfg(unix)".dependencies]
 libc = { version = "1.0.0-alpha.1", default-features = false }

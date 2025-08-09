@@ -150,5 +150,4 @@ Library locations will be gathered through these variables and linked statically
 
 ### `vmci`
 Enables the VMware socket types for connecting to a virtual machine. There are no external dependendencies necessary 
-beyond that as the functionality can be compiled in from a simple header file that will be gathered automatically during
-the build process on all platforms.
+beyond that as the functionality can be compiled in from a simple header file on all platforms.
