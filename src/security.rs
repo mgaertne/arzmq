@@ -1,8 +1,7 @@
 //! 0MQ security mechanisms
 //!
-//! Currently only support [`Null`] and [`Plain`] across different platforms. Curve is
-//! available with the <span class="stab portability"><code>curve</code></span> feature on Linux
-//! and MacOS, but not on Windows.
+//! Ssupports [`Null`] and [`Plain`] out of the box. `Curve` and `GSSAPI` can be enabled via
+//! feature flags.
 //!
 //! [`Null`]: SecurityMechanism::Null
 //! [`Plain`]: SecurityMechanism::Plain
