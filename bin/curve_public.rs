@@ -18,7 +18,7 @@ distributed (securely!) to peers wishing to connect to it."
 
     if !cfg!(zmq_has = "curve") {
         return Err(
-            "To use curve_keygen, please install libsodium and then rebuild libzmq.",
+            "To use curve_public, please install libsodium and then rebuild libzmq.",
         );
     }
 
@@ -38,7 +38,7 @@ distributed (securely!) to peers wishing to connect to it."
         match unsafe { zmq_sys_crate::zmq_errno() } {
             zmq_sys_crate::errno::ENOTSUP => {
                 return Err(
-                    "To use curve_keygen, please install libsodium and then rebuild libzmq.",
+                    "To use curve_public, please install libsodium and then rebuild libzmq.",
                 );
             }
             zmq_sys_crate::errno::EINVAL => {
