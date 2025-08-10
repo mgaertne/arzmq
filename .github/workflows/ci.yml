@@ -156,7 +156,7 @@ jobs:
         run: sudo apt-get install -y libsodium-dev libkrb5-dev libpgm-dev libnorm-dev
       - name: install macos dependencies for optional features
         if: matrix.os == 'macos-latest'
-        run: brew install -y libsodium
+        run: brew install libsodium
         env:
           SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
           SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
