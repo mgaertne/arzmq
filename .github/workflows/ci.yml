@@ -151,10 +151,27 @@ jobs:
           toolchain: nightly
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - name: install dependencies for optional features
+      - name: install linux dependencies for optional features
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y libsodium-dev libkrb5-dev libpgm-dev libnorm-dev
-      - run: cargo hack test --each-feature --clean-per-run --verbose
+      - name: install macos dependencies for optional features
+        if: matrix.os == 'macos-latest'
+        run: brew install -y libsodium
+        env:
+          SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
+          SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
+      - name: checkout libnorm
+        if: matrix.os != 'ubuntu-latest'
+        uses: actions/checkout@v4
+        with:
+          repository: 'https://github.com/USNavalResearchLaboratory/norm.git'
+          path: 'libnorm'
+      - name: build libnorm
+        if: matrix.os != 'ubuntu-latest'
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          source-dir: 'libnorm'
+          build-dir: 'libnorm/build'
 
   examples:
     name: examples
