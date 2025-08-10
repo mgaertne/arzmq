@@ -173,9 +173,17 @@ jobs:
         with:
           source-dir: 'libnorm'
           build-dir: 'libnorm/build'
-      - name: debug
+          args: '--install libnorm/installed'
+      - name: build libnorm
         if: runner.os != 'Linux'
-        run: find libnorm/build -type f
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          source-dir: 'libnorm'
+          build-dir: 'libnorm/build'
+          args: '--install libnorm/build --prefix libnorm/installed'
+      - name: debug
+        if: runner.os == 'macOS'
+        run: find libnorm/installed -type f
       - run: cargo hack test --each-feature --clean-per-run --verbose
 
   examples:
