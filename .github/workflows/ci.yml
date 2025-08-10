@@ -173,13 +173,11 @@ jobs:
         with:
           source-dir: 'libnorm'
           build-dir: 'libnorm/build'
-          args: '--install libnorm/installed'
       - name: build libnorm
         if: runner.os != 'Linux'
         uses: threeal/cmake-action@v2.1.0
         with:
           source-dir: 'libnorm'
-          build-dir: 'libnorm/build'
           args: '--install libnorm/build --prefix libnorm/installed'
       - name: debug
         if: runner.os == 'macOS'
