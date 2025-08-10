@@ -172,6 +172,7 @@ jobs:
         with:
           source-dir: 'libnorm'
           build-dir: 'libnorm/build'
+      - run: cargo hack test --each-feature --clean-per-run --verbose
 
   examples:
     name: examples
