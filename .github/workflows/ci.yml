@@ -180,7 +180,7 @@ jobs:
           SYSTEM_DEPS_NORM_NO_PKG_CONFIG: 1
       - name: debug
         if: runner.os == 'macOS'
-        run: find libnorm/installed -type f
+        run: find libnorm/build -type f
       - run: cargo hack test --each-feature --clean-per-run --verbose
 
   examples:
