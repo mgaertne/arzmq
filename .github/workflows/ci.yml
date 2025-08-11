@@ -168,17 +168,16 @@ jobs:
           submodules: recursive
           path: 'libnorm'
       - name: build libnorm
-        if: runner.os != 'Linux'
+        if: runner.os == 'macOS'
         uses: threeal/cmake-action@v2.1.0
         with:
           source-dir: 'libnorm'
           build-dir: 'libnorm/build'
-      - name: build libnorm
-        if: runner.os != 'Linux'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          source-dir: 'libnorm'
-          args: '--install libnorm/build --prefix libnorm/installed'
+        env:
+          SYSTEM_DEPS_NORM_INCLUDE: ${{ github.workspace }}/libnorm/include
+          SYSTEM_DEPS_NORM_SEARCH_NATIVE: ${{ github.workspace }}/libnorm/build ${{ github.workspace }}/libnorm/build/_deps/protokit-build
+          SYSTEM_DEPS_NORM_LIB: norm protokit
+          SYSTEM_DEPS_NORM_NO_PKG_CONFIG: 1
       - name: debug
         if: runner.os == 'macOS'
         run: find libnorm/installed -type f
