@@ -92,61 +92,12 @@ vcpkg install krb5
 Library locations will be gathered through vcpkg and linked dynamically to the underlying `libzmq` library.
 
 ### PGM
-PGM is provided through the [`openpgm`](https://github.com/steve-o/openpgm) project. Library versions 5.1, 5.2, and 5.3 
-should work through pkg-config out of the box. You may have to manually compile it on some platforms and let the build 
-process know of its installation through environment variables or your pkg-config configuration.
-
-#### Linux
-On Linux, you will have to install the `libpgm-dev` package through your package manager, i.e.
-```bash,ignore
-sudo apt-get install libpgm-dev
-```
-Library locations will be gathered through pkg-config and linked statically to the underlying `libzmq` library.
-
-#### MacOS
-On MacOS, you will have to compile the `OpenPGM` library from source on your own with cmake. Library locations will be
-gathered through pkg-config and linked statically to the underlying `libzmq` library.
-
-#### Windows
-On Windows, you have to compile the `openpgm` library from source on your own with cmake and install it onto your
-machine on your own. After that, and before compiling you need to set the following environment variables to let the
-build script know where to find them:
-```shell,ignore
-set SYSTEM_DEPS_OPENPGM_SEARCH_NATIVE=<openpgm-installation-dir>\lib
-set SYSTEM_DEPS_OPENPGM_INCLUDE=<openpgm-installation-dir>\include
-set SYSTEM_DEPS_OPENPGM_LIB=libpgm-v143-mt-5_2_127
-set SYSTEM_DEPS_OPENPGM_NO_PKG_CONFIG=1
-```
-Library locations will be gathered through these variables and linked statically to the underlying `libzmq` library.
+PGM is provided through the [`openpgm`](https://github.com/steve-o/openpgm) project. The latest [`openpgm`] version will be built during the build 
+process, if the feature `norm` is enabled.
 
 ### NACK-Oriented Reliable Multicast (NORM)
-The official source code for the NORM library can be downloaded from the 
-[`repository of the US Naval Research Laboratory`](https://github.com/USNavalResearchLaboratory/norm). You may have to 
-manually compile it on some platforms and let the build process know of its installation through environment variables 
-or your pkg-config configuration..
-
-#### Linux
-On Linux, you will have to install the `libnorm-dev` package through your package manager, i.e.
-```bash,ignore
-sudo apt-get install libnorm-dev
-```
-Library locations will be gathered through pkg-config and linked statically to the underlying `libzmq` library.
-
-#### MacOS
-On MacOS, you will have to compile the `libnorm` library from source on your own with cmake. Library locations will be 
-gathered through pkg-config and linked statically to the underlying `libzmq` library.
-
-#### Windows
-On Windows, you have to compile the `libnorm` library from source on your own with cmake and install it onto your 
-machine on your own. After that, and before compiling you need to set the following environment variables to let the 
-build script know where to find them:
-```shell,ignore
-set SYSTEM_DEPS_NORM_SEARCH_NATIVE=<norm-installation-dir>\lib
-set SYSTEM_DEPS_NORM_INCLUDE=<norm-installation-dir>\include
-set SYSTEM_DEPS_NORM_LIB=norm
-set SYSTEM_DEPS_NORM_NO_PKG_CONFIG=1
-```
-Library locations will be gathered through these variables and linked statically to the underlying `libzmq` library.
+NORM is provided through the [`NORM`](https://github.com/USNavalResearchLaboratory/norm) project. The latest [`NORM`] 
+version will be built during the build process, if the feature `norm` is enabled.
 
 ### `vmci`
 Enables the VMware socket types for connecting to a virtual machine. There are no external dependendencies necessary 

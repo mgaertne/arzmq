@@ -153,34 +153,13 @@ jobs:
         uses: taiki-e/install-action@cargo-hack
       - name: install linux dependencies for optional features
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y libsodium-dev libkrb5-dev libpgm-dev libnorm-dev
+        run: sudo apt-get install -y libsodium-dev libkrb5-dev
       - name: install macos dependencies for optional features
         if: runner.os == 'macOS'
         run: brew install libsodium
         env:
           SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
           SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
-      - name: checkout libnorm
-        if: matrix.os != 'ubuntu-latest'
-        uses: actions/checkout@v4
-        with:
-          repository: 'USNavalResearchLaboratory/norm'
-          submodules: recursive
-          path: 'libnorm'
-      - name: build libnorm
-        if: runner.os == 'macOS'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          source-dir: 'libnorm'
-          build-dir: 'libnorm/build'
-        env:
-          SYSTEM_DEPS_NORM_INCLUDE: ${{ github.workspace }}/libnorm/include
-          SYSTEM_DEPS_NORM_SEARCH_NATIVE: ${{ github.workspace }}/libnorm/build ${{ github.workspace }}/libnorm/build/_deps/protokit-build
-          SYSTEM_DEPS_NORM_LIB: norm protokit
-          SYSTEM_DEPS_NORM_NO_PKG_CONFIG: 1
-      - name: debug
-        if: runner.os == 'macOS'
-        run: find libnorm/build -type f
       - run: cargo hack test --each-feature --clean-per-run --verbose
 
   examples:

@@ -39,6 +39,7 @@ tempfile = { version = "3.20" }
 bindgen = { version = "0.72" }
 system-deps = { version = "7.0.5" }
 walkdir = { version = "2.5" }
+cmake = { version = "0.1.54" }
 
 [target."cfg(unix)".dependencies]
 libc = { version = "1.0.0-alpha.1", default-features = false }
@@ -50,5 +51,3 @@ vcpkg = { version = "0.2.15" }
 gnutls = { version = ">=3", optional = true }
 libsodium = { version = ">=1.0", feature = "curve", optional = true }
 gssapi = { name = "mit-krb5-gssapi", version = ">=0.1", feature = "gssapi", fallback-names = ["gssapi_krb5", "krb5-gssapi", "Kerberos"], optional = true }
-openpgm = { name = "openpgm-5.1", version = ">=5.1", feature = "pgm", fallback-names = ["openpgm-5.2", "openpgm-5.3"], optional = true }
-norm = { version = ">=1.0", feature = "norm", optional = true }

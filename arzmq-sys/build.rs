@@ -163,9 +163,10 @@ fn add_c_sources(build: &mut Build, root: impl AsRef<Path>, files: &[&str]) {
 }
 
 #[cfg(target_env = "msvc")]
-fn rename_libzmq_in_dir<D, N>(dir: D, new_name: N) -> Result<(), ()>
+fn rename_lib_in_dir<D, C, N>(dir: D, check: C, new_name: N) -> Result<(), ()>
 where
     D: AsRef<Path>,
+    C: Fn(&Path) -> bool,
     N: AsRef<Path>,
 {
     let dir = dir.as_ref();
@@ -176,11 +177,7 @@ where
         .filter_map(|entry| {
             entry.ok().filter(|dir_entry| {
                 let path = dir_entry.path();
-                path.is_file()
-                    && path.extension().is_some_and(|ext| ext == "lib")
-                    && path
-                        .file_name()
-                        .is_some_and(|file_name| file_name.to_string_lossy().contains("rust_zmq"))
+                path.is_file() && path.extension().is_some_and(|ext| ext == "lib") && check(path)
             })
         })
         .map(|e| e.path().to_owned())
@@ -426,8 +423,8 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
     check_curve_config(build, &libraries);
     check_gssapi_config(build, &libraries);
-    check_pgm_config(build, &libraries);
-    check_norm_config(build, &libraries);
+    check_pgm_config(build);
+    check_norm_config(build);
     check_vmci_config(build)
 }
 
@@ -480,35 +477,73 @@ fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
     }
 }
 
-fn check_pgm_config(build: &mut Build, libraries: &Dependencies) {
+fn check_pgm_config(build: &mut Build) {
     if cfg!(not(feature = "pgm")) {
         return;
     }
 
-    libraries.get_by_name("openpgm").tap_some(|lib| {
-        build.define("ZMQ_HAVE_OPENPGM", "1");
-        build.includes(&lib.include_paths);
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let pgm_install_dir = cmake::Config::new("openpgm/openpgm/pgm")
+        .out_dir(out_dir.join("openpgm"))
+        .pic(true)
+        .profile("Release")
+        .configure_arg("-Wno-dev")
+        .build();
 
-        #[cfg(target_os = "macos")]
-        build.define("restrict", "__restrict__");
-    });
+    let lib_dir = pgm_install_dir.join("lib");
+    build.define("ZMQ_HAVE_OPENPGM", "1");
+    build.include(pgm_install_dir.join("include"));
+
+    #[cfg(target_os = "macos")]
+    build.define("restrict", "__restrict__");
+
+    #[cfg(target_env = "msvc")]
+    if rename_lib_in_dir(
+        &lib_dir,
+        |path| {
+            path.file_name()
+                .is_some_and(|file_name| file_name.to_string_lossy().contains("libpgm"))
+        },
+        "pgm.lib",
+    )
+    .is_err()
+    {
+        panic!("unable to find compiled `libzmq` lib");
+    }
+
+    println!("cargo:rustc-link-search={}", lib_dir.display());
+    println!("cargo:rustc-link-lib=static=pgm");
 }
 
-fn check_norm_config(build: &mut Build, libraries: &Dependencies) {
+fn check_norm_config(build: &mut Build) {
     if cfg!(not(feature = "norm")) {
         return;
     }
 
-    libraries.get_by_name("norm").tap_some(|lib| {
-        build.define("ZMQ_HAVE_NORM", "1");
-        build.includes(&lib.include_paths);
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let mut norm_build = cmake::Config::new("libnorm");
 
-        #[cfg(not(target_os = "linux"))]
-        println!("cargo:rustc-link-lib=static=protokit");
+    norm_build
+        .pic(true)
+        .configure_arg("-Wno-dev")
+        .out_dir(out_dir.join("libnorm"))
+        .profile("Release");
 
-        #[cfg(target_os = "windows")]
-        println!("cargo:rustc-link-lib=user32");
-    });
+    #[cfg(target_env = "msvc")]
+    norm_build.cxxflag("/DWIN32 /_WINDOWS");
+
+    let norm_install_dir = norm_build.build();
+
+    let lib_dir = norm_install_dir.join("lib");
+    build.define("ZMQ_HAVE_NORM", "1");
+    build.include(norm_install_dir.join("include"));
+
+    println!("cargo:rustc-link-search={}", lib_dir.display());
+    println!("cargo:rustc-link-lib=static=norm");
+    println!("cargo:rustc-link-lib=static=protokit");
+
+    #[cfg(target_os = "windows")]
+    println!("cargo:rustc-link-lib=user32");
 }
 
 fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
@@ -540,7 +575,16 @@ fn build_zmq() -> Result<(), Box<dyn Error>> {
     build.compile("zmq");
 
     #[cfg(target_env = "msvc")]
-    if rename_libzmq_in_dir(&lib_dir, "zmq.lib").is_err() {
+    if rename_lib_in_dir(
+        &lib_dir,
+        |path| {
+            path.file_name()
+                .is_some_and(|file_name| file_name.to_string_lossy().contains("rust_zmq"))
+        },
+        "zmq.lib",
+    )
+    .is_err()
+    {
         panic!("unable to find compiled `libzmq` lib");
     }
 

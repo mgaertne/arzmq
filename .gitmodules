@@ -1,3 +1,9 @@
 [submodule "libzmq"]
 	path = arzmq-sys/vendor
 	url = https://github.com/zeromq/libzmq.git
+[submodule "libnorm"]
+	path = arzmq-sys/libnorm
+	url = https://github.com/USNavalResearchLaboratory/norm.git
+[submodule "openpgm"]
+	path = arzmq-sys/openpgm
+	url = https://github.com/steve-o/openpgm.git
