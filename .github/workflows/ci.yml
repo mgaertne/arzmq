@@ -162,7 +162,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         with:
           pkgs: 'libsodium'
-          triplet: 'x64-windows-static'
+          triplet: 'x64-windows-static-md'
           token: ${{ github.token }}
       - name: install windows dependencies for optional features
         if: runner.os == 'Windows'
