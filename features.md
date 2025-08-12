@@ -92,12 +92,14 @@ vcpkg install krb5
 Library locations will be gathered through vcpkg and linked dynamically to the underlying `libzmq` library.
 
 ### PGM
-PGM is provided through the [`openpgm`](https://github.com/steve-o/openpgm) project. The latest [`openpgm`] version will be built during the build 
-process, if the feature `norm` is enabled.
+PGM is provided through the [`openpgm`](https://github.com/steve-o/openpgm) project. The latest 
+[`openpgm`](https://github.com/steve-o/openpgm) version will be built during the build process, if the feature `PGM` 
+is enabled.
 
 ### NACK-Oriented Reliable Multicast (NORM)
-NORM is provided through the [`NORM`](https://github.com/USNavalResearchLaboratory/norm) project. The latest [`NORM`] 
-version will be built during the build process, if the feature `norm` is enabled.
+NORM is provided through the [`NORM`](https://github.com/USNavalResearchLaboratory/norm) project. The latest
+[`NORM`](https://github.com/USNavalResearchLaboratory/norm) version will be built during the build process, if the 
+feature `norm` is enabled.
 
 ### `vmci`
 Enables the VMware socket types for connecting to a virtual machine. There are no external dependendencies necessary 

@@ -153,7 +153,7 @@ jobs:
         uses: taiki-e/install-action@cargo-hack
       - name: install linux dependencies for optional features
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y libsodium-dev libkrb5-dev
+        run: sudo apt-get install -y libsodium-dev libkrb5-dev autoconf
       - name: install macos dependencies for optional features
         if: runner.os == 'macOS'
         run: brew install libsodium
