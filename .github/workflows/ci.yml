@@ -157,10 +157,25 @@ jobs:
       - name: install macos dependencies for optional features
         if: runner.os == 'macOS'
         run: brew install libsodium automake libtool autoconf
+      - name: install windows dependencies for optional features
+        if: runner.os == 'Windows'
+        uses: johnwason/vcpkg-action@v7
+        with:
+          pkgs: 'libsodium'
+          triplet: 'x64-windows-static'
+      - name: install windows dependencies for optional features
+        if: runner.os == 'Windows'
+        uses: johnwason/vcpkg-action@v7
+        with:
+          pkgs: 'krb5'
+          triplet: 'x64-windows'
+      - run: cargo hack test --each-feature --clean-per-run --verbose
+        if: runner.os == 'Windows'
         env:
           SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
           SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
       - run: cargo hack test --each-feature --clean-per-run --verbose
+        if: runner.os != 'Windows'
 
   examples:
     name: examples
