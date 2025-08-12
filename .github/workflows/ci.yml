@@ -156,7 +156,7 @@ jobs:
         run: sudo apt-get install -y libsodium-dev libkrb5-dev autoconf
       - name: install macos dependencies for optional features
         if: runner.os == 'macOS'
-        run: brew install libsodium
+        run: brew install libsodium autoconf
         env:
           SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
           SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
