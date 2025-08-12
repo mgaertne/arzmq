@@ -176,10 +176,12 @@ jobs:
         env:
           SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
           SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
+      - run: dir /R ${{ github.workspace }}/vcpkg
+        if: runner.os == 'Windows'
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Windows'
         env:
-          VCPKG_CONFIG_DIR: ${{ github.workspace }}/vcpkg
+          VCPKG_CONFIG_DIR: ${{ github.workspace }}/vcpkg/installed
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Linux'
 
