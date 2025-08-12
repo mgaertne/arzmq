@@ -482,37 +482,76 @@ fn check_pgm_config(build: &mut Build) {
         return;
     }
 
+    let base_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let pgm_install_dir = cmake::Config::new("openpgm/openpgm/pgm")
-        .out_dir(out_dir.join("openpgm"))
-        .pic(true)
-        .profile("Release")
-        .configure_arg("-Wno-dev")
-        .build();
-
-    let lib_dir = pgm_install_dir.join("lib");
-    build.define("ZMQ_HAVE_OPENPGM", "1");
-    build.include(pgm_install_dir.join("include"));
-
-    #[cfg(target_os = "macos")]
-    build.define("restrict", "__restrict__");
 
     #[cfg(target_env = "msvc")]
-    if rename_lib_in_dir(
-        &lib_dir,
-        |path| {
-            path.file_name()
-                .is_some_and(|file_name| file_name.to_string_lossy().contains("libpgm"))
-        },
-        "pgm.lib",
-    )
-    .is_err()
     {
-        panic!("unable to find compiled `libzmq` lib");
-    }
+        let mut pgm_build = cmake::Config::new("openpgm/openpgm/pgm");
 
-    println!("cargo:rustc-link-search={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=static=pgm");
+        pgm_build
+            .no_build_target(true)
+            .out_dir(out_dir.join("openpgm"))
+            .profile("Release")
+            .build_target("libpgm");
+
+        let pgm_install_dir = pgm_build.build();
+
+        let lib_dir = pgm_install_dir.join("build").join("lib");
+        build.define("ZMQ_HAVE_OPENPGM", "1");
+        build.include(
+            base_dir
+                .join("openpgm")
+                .join("openpgm")
+                .join("pgm")
+                .join("include"),
+        );
+
+        if rename_lib_in_dir(
+            &lib_dir,
+            |path| {
+                path.file_name()
+                    .is_some_and(|file_name| file_name.to_string_lossy().starts_with("libpgm"))
+            },
+            "pgm.lib",
+        )
+        .is_err()
+        {
+            panic!("unable to find compiled `libpgm` lib");
+        }
+
+        println!("cargo:rustc-link-search={}", lib_dir.display());
+        println!("cargo:rustc-link-lib=static=pgm");
+    }
+    #[cfg(not(target_env = "msvc"))]
+    {
+        std::fs::create_dir_all(out_dir.join("openpgm")).unwrap();
+
+        let mut pgm_build = autotools::Config::new(base_dir.join("openpgm/openpgm/pgm"));
+        pgm_build
+            .reconf("-ivf")
+            .disable_shared()
+            .enable_static()
+            .out_dir(out_dir.join("openpgm"));
+
+        let pgm_install_dir = pgm_build.build();
+
+        let lib_dir = pgm_install_dir.join("lib");
+        build.define("ZMQ_HAVE_OPENPGM", "1");
+        build.include(
+            base_dir
+                .join("openpgm")
+                .join("openpgm")
+                .join("pgm")
+                .join("include"),
+        );
+
+        #[cfg(target_os = "macos")]
+        build.define("restrict", "__restrict__");
+
+        println!("cargo:rustc-link-search={}", lib_dir.display());
+        println!("cargo:rustc-link-lib=static=pgm");
+    }
 }
 
 fn check_norm_config(build: &mut Build) {
