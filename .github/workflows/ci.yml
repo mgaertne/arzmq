@@ -163,12 +163,14 @@ jobs:
         with:
           pkgs: 'libsodium'
           triplet: 'x64-windows-static'
+          token: ${{ github.token }}
       - name: install windows dependencies for optional features
         if: runner.os == 'Windows'
         uses: johnwason/vcpkg-action@v7
         with:
           pkgs: 'krb5'
           triplet: 'x64-windows'
+          token: ${{ github.token }}
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Windows'
         env:
