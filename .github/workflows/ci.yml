@@ -179,7 +179,7 @@ jobs:
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Windows'
         env:
-          VCPKG_CONFIG_DIR: ${{ github.workspace }}/vcpkg/installed
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Linux'
 
