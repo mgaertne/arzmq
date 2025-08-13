@@ -163,6 +163,7 @@ jobs:
         with:
           pkgs: 'libsodium'
           triplet: 'x64-windows-static-md'
+          cache-key: 'windows-build'
           token: ${{ github.token }}
       - name: install windows dependencies for optional features
         if: runner.os == 'Windows'
@@ -170,6 +171,7 @@ jobs:
         with:
           pkgs: 'krb5'
           triplet: 'x64-windows'
+          cache-key: 'windows-build'
           token: ${{ github.token }}
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'macOS'
