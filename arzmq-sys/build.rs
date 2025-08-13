@@ -162,32 +162,39 @@ fn add_c_sources(build: &mut Build, root: impl AsRef<Path>, files: &[&str]) {
     build.include(root);
 }
 
-#[cfg(target_env = "msvc")]
-fn rename_lib_in_dir<D, C, N>(dir: D, check: C, new_name: N) -> Result<(), ()>
+fn emit_static_libs_in<D>(dir: D)
 where
     D: AsRef<Path>,
-    C: Fn(&Path) -> bool,
-    N: AsRef<Path>,
 {
     let dir = dir.as_ref();
-    let new_name = new_name.as_ref();
 
-    let artifacts = walkdir::WalkDir::new(dir)
+    println!("cargo:rustc-link-search=native={}", dir.display());
+
+    walkdir::WalkDir::new(dir)
         .into_iter()
         .filter_map(|entry| {
             entry.ok().filter(|dir_entry| {
                 let path = dir_entry.path();
-                path.is_file() && path.extension().is_some_and(|ext| ext == "lib") && check(path)
+                path.is_file()
+                    && path.extension().is_some_and(|ext| {
+                        (cfg!(target_env = "msvc") && ext == "lib") || ext == "a"
+                    })
             })
         })
-        .map(|e| e.path().to_owned())
-        .collect::<Vec<_>>();
-
-    for artifact in artifacts {
-        fs::copy(artifact, dir.join(new_name)).map_err(|_| ())?;
-    }
-
-    Ok(())
+        .for_each(|entry| {
+            if let Some(lib_name) = entry.path().file_stem() {
+                #[cfg(target_env = "msvc")]
+                println!("cargo::rustc-link-lib={lib_name}");
+                #[cfg(not(target_env = "msvc"))]
+                {
+                    let lib = lib_name.to_string_lossy();
+                    println!(
+                        "cargo::rustc-link-lib=static={}",
+                        lib.strip_prefix("lib").unwrap_or(&lib)
+                    );
+                }
+            }
+        });
 }
 
 fn check_low_level_compilation<S, F>(c_src: S, configure_build: F) -> Result<bool, Box<dyn Error>>
@@ -507,21 +514,7 @@ fn check_pgm_config(build: &mut Build) {
                 .join("include"),
         );
 
-        if rename_lib_in_dir(
-            &lib_dir,
-            |path| {
-                path.file_name()
-                    .is_some_and(|file_name| file_name.to_string_lossy().starts_with("libpgm"))
-            },
-            "pgm.lib",
-        )
-        .is_err()
-        {
-            panic!("unable to find compiled `libpgm` lib");
-        }
-
-        println!("cargo:rustc-link-search={}", lib_dir.display());
-        println!("cargo:rustc-link-lib=static=pgm");
+        emit_static_libs_in(&lib_dir);
     }
     #[cfg(not(target_env = "msvc"))]
     {
@@ -549,8 +542,7 @@ fn check_pgm_config(build: &mut Build) {
         #[cfg(target_os = "macos")]
         build.define("restrict", "__restrict__");
 
-        println!("cargo:rustc-link-search={}", lib_dir.display());
-        println!("cargo:rustc-link-lib=static=pgm");
+        emit_static_libs_in(&lib_dir);
     }
 }
 
@@ -577,9 +569,7 @@ fn check_norm_config(build: &mut Build) {
     build.define("ZMQ_HAVE_NORM", "1");
     build.include(norm_install_dir.join("include"));
 
-    println!("cargo:rustc-link-search={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=static=norm");
-    println!("cargo:rustc-link-lib=static=protokit");
+    emit_static_libs_in(lib_dir);
 
     #[cfg(target_os = "windows")]
     println!("cargo:rustc-link-lib=user32");
@@ -613,19 +603,7 @@ fn build_zmq() -> Result<(), Box<dyn Error>> {
 
     build.compile("zmq");
 
-    #[cfg(target_env = "msvc")]
-    if rename_lib_in_dir(
-        &lib_dir,
-        |path| {
-            path.file_name()
-                .is_some_and(|file_name| file_name.to_string_lossy().contains("rust_zmq"))
-        },
-        "zmq.lib",
-    )
-    .is_err()
-    {
-        panic!("unable to find compiled `libzmq` lib");
-    }
+    emit_static_libs_in(&lib_dir);
 
     let source_dir = out_dir.join("source");
     let include_dir = source_dir.join("include");
@@ -635,8 +613,6 @@ fn build_zmq() -> Result<(), Box<dyn Error>> {
     dircpy::copy_dir(vendor.join("external"), source_dir.join("external"))
         .expect("unable to copy external dir");
 
-    println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=static=zmq");
     println!("cargo:include={}", include_dir.display());
     println!("cargo:lib={}", lib_dir.display());
     println!("cargo:out={}", out_dir.display());
