@@ -166,8 +166,6 @@ where
 {
     let dir = dir.as_ref();
 
-    println!("cargo:rustc-link-search=native={}", dir.display());
-
     walkdir::WalkDir::new(dir)
         .into_iter()
         .filter_map(|entry| {
@@ -175,12 +173,15 @@ where
                 let path = dir_entry.path();
                 path.is_file()
                     && path.extension().is_some_and(|ext| {
-                        (cfg!(target_env = "msvc") && ext == "lib") || ext == "a"
+                        (cfg!(target_env = "msvc") && ext == "lib") || (cfg!(not(target_env = "msvc")) && ext == "a")
                     })
             })
         })
         .for_each(|entry| {
             if let Some(lib_name) = entry.path().file_stem() {
+                if let Some(parent) = entry.path().parent() {
+                    println!("cargo:rustc-link-search=native={}", parent.display());
+                }
                 #[cfg(target_env = "msvc")]
                 println!("cargo::rustc-link-lib={}", lib_name.display());
                 #[cfg(not(target_env = "msvc"))]
