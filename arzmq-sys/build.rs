@@ -1,6 +1,4 @@
 use core::error::Error;
-#[cfg(target_env = "msvc")]
-use std::fs;
 use std::{
     env,
     fs::File,
@@ -184,7 +182,7 @@ where
         .for_each(|entry| {
             if let Some(lib_name) = entry.path().file_stem() {
                 #[cfg(target_env = "msvc")]
-                println!("cargo::rustc-link-lib={lib_name}");
+                println!("cargo::rustc-link-lib={}", lib_name.display());
                 #[cfg(not(target_env = "msvc"))]
                 {
                     let lib = lib_name.to_string_lossy();
