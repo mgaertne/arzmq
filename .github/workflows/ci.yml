@@ -176,7 +176,7 @@ jobs:
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'macOS'
         env:
-          SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: Kerberos
+          SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: 'Kerberos'
           SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Windows'
