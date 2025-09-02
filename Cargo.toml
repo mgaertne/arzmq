@@ -5,7 +5,7 @@ resolver = "3"
 [workspace.package]
 version = "0.4.1-alpha.1"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.87"
 authors = ["Markus 'ShiN0' Gaertner"]
 
 [workspace.dependencies]
@@ -56,14 +56,14 @@ rustversion = { workspace = true }
 arzmq-sys = { workspace = true }
 
 num-traits = { version = ">=0.2.19", default-features = false }
-bitflags = { version = ">=2.9", default-features = false, features = ["core"]}
+bitflags = { version = ">=2.9", default-features = false }
 derive_more = { version = ">=2.0", default-features = false, features = ["from", "debug", "display", "deref"]}
-thiserror = { version = ">=2.0.12", default-features = false }
+thiserror = { version = ">=2.0.16", default-features = false }
 parking_lot = { version = ">=0.12.4", default-features = false, features = ["arc_lock"] }
 
 derive_builder = { version = ">=0.20", default-features = false, features = ["alloc"], optional = true }
 serde = { version = ">=1.0.219", default-features = false, optional = true, features = ["derive", "alloc"] }
-async-trait = { version = ">=0.1.88", default-features = false, optional = true }
+async-trait = { version = ">=0.1.89", default-features = false, optional = true }
 futures = { version = ">=0.3.31", default-features = false, features = ["async-await", "alloc"], optional = true}
 
 # for async examples
