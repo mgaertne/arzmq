@@ -32,23 +32,23 @@ norm = ["draft-api"]
 vmci = []
 
 [build-dependencies]
-tap = { version = "1.0.1" }
-cc = { version = "1.2.32", features = ["parallel"] }
-dircpy = { version = "0.3.19" }
-tempfile = { version = "3.20" }
-bindgen = { version = "0.72" }
-system-deps = { version = "7.0.5" }
-walkdir = { version = "2.5" }
-cmake = { version = "0.1.54" }
+tap = { version = ">=1.0" }
+cc = { version = ">=1.2", features = ["parallel"] }
+dircpy = { version = ">=0.3" }
+tempfile = { version = ">=3.21" }
+bindgen = { version = ">=0.72" }
+system-deps = { version = ">=7.0" }
+walkdir = { version = ">=2.5" }
+cmake = { version = ">=0.1" }
 
 [target."cfg(unix)".dependencies]
-libc = { version = "1.0.0-alpha.1", default-features = false }
+libc = { version = ">=1.0.0-alpha.1", default-features = false }
 
 [target.'cfg(not(target_env = "msvc"))'.build-dependencies]
-autotools = { version = "0.2.7" }
+autotools = { version = ">=0.2" }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = { version = "0.2.15" }
+vcpkg = { version = ">=0.2" }
 
 [package.metadata.system-deps]
 gnutls = { version = ">=3", optional = true }

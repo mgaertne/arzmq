@@ -9,7 +9,7 @@ rust-version = "1.87"
 authors = ["Markus 'ShiN0' Gaertner"]
 
 [workspace.dependencies]
-rustversion = { version = "1.0" }
+rustversion = { version = ">=1.0" }
 arzmq-sys = { version = "0.4.1-alpha.1", path = "arzmq-sys" }
 
 [workspace.lints.rust]
@@ -55,16 +55,16 @@ doc-scrape-examples = true
 rustversion = { workspace = true }
 arzmq-sys = { workspace = true }
 
-num-traits = { version = ">=0.2.19", default-features = false }
+num-traits = { version = ">=0.2", default-features = false }
 bitflags = { version = ">=2.9", default-features = false }
 derive_more = { version = ">=2.0", default-features = false, features = ["from", "debug", "display", "deref"]}
-thiserror = { version = ">=2.0.16", default-features = false }
-parking_lot = { version = ">=0.12.4", default-features = false, features = ["arc_lock"] }
+thiserror = { version = ">=2.0", default-features = false }
+parking_lot = { version = ">=0.12", default-features = false, features = ["arc_lock"] }
 
 derive_builder = { version = ">=0.20", default-features = false, features = ["alloc"], optional = true }
-serde = { version = ">=1.0.219", default-features = false, optional = true, features = ["derive", "alloc"] }
-async-trait = { version = ">=0.1.89", default-features = false, optional = true }
-futures = { version = ">=0.3.31", default-features = false, features = ["async-await", "alloc"], optional = true}
+serde = { version = ">=1.0", default-features = false, optional = true, features = ["derive", "alloc"] }
+async-trait = { version = ">=0.1", default-features = false, optional = true }
+futures = { version = ">=0.3", default-features = false, features = ["async-await", "alloc"], optional = true}
 
 # for async examples
 tokio = { version = ">=1.47", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"], optional = true }
@@ -76,7 +76,7 @@ arzmq-sys = { workspace = true }
 
 [dev-dependencies]
 rstest = { version = ">=0.26", default-features = false}
-futures = { version = ">=0.3.31", features = ["executor"] }
+futures = { version = ">=0.3", features = ["executor"] }
 
 [features]
 default = ["builder"]
