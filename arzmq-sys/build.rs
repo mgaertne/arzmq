@@ -173,7 +173,8 @@ where
                 let path = dir_entry.path();
                 path.is_file()
                     && path.extension().is_some_and(|ext| {
-                        (cfg!(target_env = "msvc") && ext == "lib") || (cfg!(not(target_env = "msvc")) && ext == "a")
+                        (cfg!(target_env = "msvc") && ext == "lib")
+                            || (cfg!(not(target_env = "msvc")) && ext == "a")
                     })
             })
         })
