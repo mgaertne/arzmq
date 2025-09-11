@@ -839,6 +839,7 @@ impl From<Vec<u8>> for RawMessage {
 
 #[cfg(not(feature = "draft-api"))]
 unsafe extern "C" fn drop_zmq_msg_t(data: *mut c_void, hint: *mut c_void) {
+    #[allow(clippy::cast_slice_from_raw_parts)]
     let _ = unsafe { Box::from_raw(slice::from_raw_parts_mut(data as *mut u8, hint as usize)) };
 }
 
