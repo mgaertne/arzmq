@@ -35,7 +35,7 @@ vmci = []
 tap = { version = ">=1.0" }
 cc = { version = ">=1.2", features = ["parallel"] }
 dircpy = { version = ">=0.3" }
-tempfile = { version = ">=3.22" }
+tempfile = { version = ">=3.23" }
 bindgen = { version = ">=0.72" }
 system-deps = { version = ">=7.0" }
 walkdir = { version = ">=2.5" }
