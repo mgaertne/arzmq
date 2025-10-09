@@ -2,7 +2,7 @@
 #![doc = include_str!("../features.md")]
 #![cfg_attr(
     nightly,
-    feature(cold_path, doc_cfg, stmt_expr_attributes, doc_auto_cfg,)
+    feature(cold_path, doc_cfg, stmt_expr_attributes)
 )]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
