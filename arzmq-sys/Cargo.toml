@@ -32,14 +32,14 @@ norm = ["draft-api"]
 vmci = []
 
 [build-dependencies]
-tap = { version = ">=1.0" }
-cc = { version = ">=1.2", features = ["parallel"] }
-dircpy = { version = ">=0.3" }
+tap = { version = ">=1.0.1" }
+cc = { version = ">=1.2.22", features = ["parallel"] }
+dircpy = { version = ">=0.3.4" }
 tempfile = { version = ">=3.23" }
 bindgen = { version = ">=0.72" }
 system-deps = { version = ">=7.0" }
 walkdir = { version = ">=2.5" }
-cmake = { version = ">=0.1" }
+cmake = { version = ">=0.1.43" }
 
 [target."cfg(unix)".dependencies]
 libc = { version = ">=1.0.0-alpha.1", default-features = false }
