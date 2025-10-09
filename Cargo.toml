@@ -3,14 +3,14 @@ members = ["arzmq-sys"]
 resolver = "3"
 
 [workspace.package]
-version = "0.5.5"
+version = "0.5.6"
 edition = "2024"
 rust-version = "1.87"
 authors = ["Markus 'ShiN0' Gaertner"]
 
 [workspace.dependencies]
 rustversion = { version = ">=1.0.6" }
-arzmq-sys = { version = "0.5.5", path = "arzmq-sys" }
+arzmq-sys = { version = "0.5.6", path = "arzmq-sys" }
 
 [workspace.lints.rust]
 non_local_definitions = "allow"
@@ -61,7 +61,7 @@ derive_more = { version = ">=2.0", default-features = false, features = ["from",
 thiserror = { version = ">=2.0", default-features = false }
 parking_lot = { version = ">=0.12", default-features = false, features = ["arc_lock"] }
 
-derive_builder = { version = ">=0.20", default-features = false, features = ["alloc"], optional = true }
+derive_builder = { version = ">=0.20.2", default-features = false, features = ["alloc"], optional = true }
 serde = { version = ">=1.0", default-features = false, optional = true, features = ["derive", "alloc"] }
 async-trait = { version = ">=0.1.9", default-features = false, optional = true }
 futures = { version = ">=0.3", default-features = false, features = ["async-await", "alloc"], optional = true}
