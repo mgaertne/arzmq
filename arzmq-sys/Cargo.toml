@@ -37,7 +37,7 @@ cc = { version = ">=1.2.22", features = ["parallel"] }
 dircpy = { version = ">=0.3.4" }
 tempfile = { version = ">=3.23" }
 bindgen = { version = ">=0.72" }
-system-deps = { version = ">=7.0" }
+system-deps = { version = ">=7.0.1" }
 walkdir = { version = ">=2.5" }
 cmake = { version = ">=0.1.43" }
 
