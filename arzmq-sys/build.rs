@@ -468,19 +468,12 @@ fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
 
     #[cfg(target_env = "msvc")]
     {
-        unsafe {
-            env::set_var("VCPKGRS_DYNAMIC", "1");
-        }
         let _ = vcpkg::Config::new()
-            .target_triplet("x64-windows")
             .find_package("krb5")
             .tap_ok(|lib| {
                 build.define("HAVE_LIBGSSAPI_KRB5", "1");
                 build.includes(&lib.include_paths);
             });
-        unsafe {
-            env::remove_var("VCPKGRS_DYNAMIC");
-        }
     }
 }
 
