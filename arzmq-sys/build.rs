@@ -468,12 +468,10 @@ fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
 
     #[cfg(target_env = "msvc")]
     {
-        let _ = vcpkg::Config::new()
-            .find_package("krb5")
-            .tap_ok(|lib| {
-                build.define("HAVE_LIBGSSAPI_KRB5", "1");
-                build.includes(&lib.include_paths);
-            });
+        let _ = vcpkg::Config::new().find_package("krb5").tap_ok(|lib| {
+            build.define("HAVE_LIBGSSAPI_KRB5", "1");
+            build.includes(&lib.include_paths);
+        });
     }
 }
 
