@@ -70,7 +70,6 @@ futures = { version = ">=0.3", default-features = false, features = ["async-awai
 tokio = { version = ">=1.48", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"], optional = true }
 smol = { version = ">=2.0.2", default-features = false, optional = true }
 smol-macros = { version = ">=0.1.1", default-features = false, optional = true }
-macro_rules_attribute = { version = ">=0.2.2", default-features = false, optional = true }
 
 [build-dependencies]
 rustversion = { workspace = true }
@@ -101,7 +100,7 @@ norm = ["draft-api", "arzmq-sys/norm"]
 vmci = ["arzmq-sys/vmci"]
 
 examples-tokio = ["futures", "dep:tokio"]
-examples-smol = ["futures", "dep:smol", "dep:smol-macros", "dep:macro_rules_attribute"]
+examples-smol = ["futures", "dep:smol", "dep:smol-macros"]
 examples-futures = ["futures", "futures/executor", "futures/thread-pool"]
 examples-draft-api = ["draft-api", "arzmq-sys/draft-api"]
 

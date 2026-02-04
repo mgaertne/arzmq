@@ -9,7 +9,6 @@ use arzmq::prelude::{
     Context, MultipartMessage, MultipartReceiver, MultipartSender, SendFlags, StreamSocket,
 };
 use futures::join;
-use macro_rules_attribute::apply;
 use smol::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
@@ -59,30 +58,31 @@ async fn run_stream_socket(zmq_stream: StreamSocket, routing_id: Vec<u8>, msg: &
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> Result<(), Box<dyn Error>> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> Result<(), Box<dyn Error>> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let port = 5558;
+        let port = 5558;
 
-    let tcp_endpoint = format!("127.0.0.1:{port}");
-    let tcp_listener = TcpListener::bind(tcp_endpoint).await?;
+        let tcp_endpoint = format!("127.0.0.1:{port}");
+        let tcp_listener = TcpListener::bind(tcp_endpoint).await?;
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let zmq_stream = StreamSocket::from_context(&context)?;
+        let zmq_stream = StreamSocket::from_context(&context)?;
 
-    let stream_endpoint = format!("tcp://127.0.0.1:{port}");
-    zmq_stream.connect(stream_endpoint)?;
+        let stream_endpoint = format!("tcp://127.0.0.1:{port}");
+        zmq_stream.connect(stream_endpoint)?;
 
-    let mut connect_msg = zmq_stream.recv_multipart_async().await;
-    let routing_id = connect_msg.pop_front().unwrap();
+        let mut connect_msg = zmq_stream.recv_multipart_async().await;
+        let routing_id = connect_msg.pop_front().unwrap();
 
-    let zmq_stream_handle =
-        executor.spawn(run_stream_socket(zmq_stream, routing_id.bytes(), "Hello"));
-    let tcp_handle = executor.spawn(run_tcp_server(tcp_listener, "World"));
+        let zmq_stream_handle =
+            executor.spawn(run_stream_socket(zmq_stream, routing_id.bytes(), "Hello"));
+        let tcp_handle = executor.spawn(run_tcp_server(tcp_listener, "World"));
 
-    let _ = join!(zmq_stream_handle, tcp_handle);
+        let _ = join!(zmq_stream_handle, tcp_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

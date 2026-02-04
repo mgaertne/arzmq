@@ -3,7 +3,6 @@ use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{Context, DealerSocket, ReplySocket, ZmqResult};
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -22,23 +21,24 @@ async fn run_dealer(dealer: DealerSocket, msg: &str) {
     }
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let reply = ReplySocket::from_context(&context)?;
-    reply.bind("tcp://127.0.0.1:*")?;
-    let dealer_endpoint = reply.last_endpoint()?;
+        let reply = ReplySocket::from_context(&context)?;
+        reply.bind("tcp://127.0.0.1:*")?;
+        let dealer_endpoint = reply.last_endpoint()?;
 
-    let dealer = DealerSocket::from_context(&context)?;
-    dealer.connect(dealer_endpoint)?;
+        let dealer = DealerSocket::from_context(&context)?;
+        dealer.connect(dealer_endpoint)?;
 
-    let dealer_handle = executor.spawn(run_dealer(dealer, "Hello"));
-    let reply_handle = executor.spawn(run_replier(reply, "World"));
+        let dealer_handle = executor.spawn(run_dealer(dealer, "Hello"));
+        let reply_handle = executor.spawn(run_replier(reply, "World"));
 
-    let _ = join!(reply_handle, dealer_handle);
+        let _ = join!(reply_handle, dealer_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

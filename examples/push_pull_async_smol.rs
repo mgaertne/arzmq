@@ -6,7 +6,6 @@ use arzmq::{
     prelude::{Context, PullSocket, PushSocket, Receiver, SendFlags, Sender},
 };
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -29,23 +28,24 @@ async fn run_publisher(push: PushSocket, msg: &str) {
     }
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let push = PushSocket::from_context(&context)?;
-    push.bind("tcp://127.0.0.1:*")?;
-    let pull_endpoint = push.last_endpoint()?;
+        let push = PushSocket::from_context(&context)?;
+        push.bind("tcp://127.0.0.1:*")?;
+        let pull_endpoint = push.last_endpoint()?;
 
-    let pull = PullSocket::from_context(&context)?;
-    pull.connect(pull_endpoint)?;
+        let pull = PullSocket::from_context(&context)?;
+        pull.connect(pull_endpoint)?;
 
-    let push_handle = executor.spawn(run_publisher(push, "important update"));
-    let pull_handle = executor.spawn(run_subscriber(pull));
+        let push_handle = executor.spawn(run_publisher(push, "important update"));
+        let pull_handle = executor.spawn(run_subscriber(pull));
 
-    let _ = join!(push_handle, pull_handle);
+        let _ = join!(push_handle, pull_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

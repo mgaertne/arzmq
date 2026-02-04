@@ -5,7 +5,6 @@ use arzmq::prelude::{
     Context, DishSocket, Message, RadioSocket, Receiver, SendFlags, Sender, ZmqResult,
 };
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -34,24 +33,25 @@ async fn run_radio(radio: RadioSocket, msg: &str) -> ZmqResult<()> {
     Ok(())
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let radio = RadioSocket::from_context(&context)?;
-    radio.bind("tcp://127.0.0.1:*")?;
-    let dish_endpoint = radio.last_endpoint()?;
+        let radio = RadioSocket::from_context(&context)?;
+        radio.bind("tcp://127.0.0.1:*")?;
+        let dish_endpoint = radio.last_endpoint()?;
 
-    let dish = DishSocket::from_context(&context)?;
-    dish.connect(dish_endpoint)?;
-    dish.join(GROUP)?;
+        let dish = DishSocket::from_context(&context)?;
+        dish.connect(dish_endpoint)?;
+        dish.join(GROUP)?;
 
-    let radio_handle = executor.spawn(run_radio(radio, "important update"));
-    let dish_handle = executor.spawn(run_dish(dish));
+        let radio_handle = executor.spawn(run_radio(radio, "important update"));
+        let dish_handle = executor.spawn(run_dish(dish));
 
-    let _ = join!(radio_handle, dish_handle);
+        let _ = join!(radio_handle, dish_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

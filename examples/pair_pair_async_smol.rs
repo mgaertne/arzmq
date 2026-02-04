@@ -3,7 +3,6 @@ use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{Context, PairSocket, ZmqResult};
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -23,24 +22,25 @@ async fn run_pair_client(pair: PairSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let endpoint = "inproc://arzmq-example-pair";
+        let endpoint = "inproc://arzmq-example-pair";
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let pair_server = PairSocket::from_context(&context)?;
-    pair_server.bind(endpoint)?;
+        let pair_server = PairSocket::from_context(&context)?;
+        pair_server.bind(endpoint)?;
 
-    let pair_client = PairSocket::from_context(&context)?;
-    pair_client.connect(endpoint)?;
+        let pair_client = PairSocket::from_context(&context)?;
+        pair_client.connect(endpoint)?;
 
-    let pair_client_handle = executor.spawn(run_pair_client(pair_client, "Hello"));
-    let pair_server_handle = executor.spawn(run_pair_server(pair_server, "World"));
+        let pair_client_handle = executor.spawn(run_pair_client(pair_client, "Hello"));
+        let pair_server_handle = executor.spawn(run_pair_server(pair_server, "World"));
 
-    let _ = join!(pair_server_handle, pair_client_handle);
+        let _ = join!(pair_server_handle, pair_client_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

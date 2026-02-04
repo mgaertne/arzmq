@@ -3,7 +3,6 @@ use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{ChannelSocket, Context, ZmqResult};
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -23,24 +22,25 @@ async fn run_channel_client(channel: ChannelSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let endpoint = "inproc://arzmq-example-channel";
+        let endpoint = "inproc://arzmq-example-channel";
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let channel_server = ChannelSocket::from_context(&context)?;
-    channel_server.bind(endpoint)?;
+        let channel_server = ChannelSocket::from_context(&context)?;
+        channel_server.bind(endpoint)?;
 
-    let channel_client = ChannelSocket::from_context(&context)?;
-    channel_client.connect(endpoint)?;
+        let channel_client = ChannelSocket::from_context(&context)?;
+        channel_client.connect(endpoint)?;
 
-    let channel_client_handle = executor.spawn(run_channel_client(channel_client, "Hello"));
-    let channel_server_handle = executor.spawn(run_channel_server(channel_server, "World"));
+        let channel_client_handle = executor.spawn(run_channel_client(channel_client, "Hello"));
+        let channel_server_handle = executor.spawn(run_channel_server(channel_server, "World"));
 
-    let _ = join!(channel_server_handle, channel_client_handle);
+        let _ = join!(channel_server_handle, channel_client_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

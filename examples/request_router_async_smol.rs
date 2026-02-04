@@ -3,7 +3,6 @@ use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{Context, RequestSocket, RouterSocket, ZmqResult};
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -23,23 +22,24 @@ async fn run_requester(request: RequestSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let router = RouterSocket::from_context(&context)?;
-    router.bind("tcp://127.0.0.1:*")?;
-    let request_endpoint = router.last_endpoint()?;
+        let router = RouterSocket::from_context(&context)?;
+        router.bind("tcp://127.0.0.1:*")?;
+        let request_endpoint = router.last_endpoint()?;
 
-    let request = RequestSocket::from_context(&context)?;
-    request.connect(request_endpoint)?;
+        let request = RequestSocket::from_context(&context)?;
+        request.connect(request_endpoint)?;
 
-    let request_handle = executor.spawn(run_requester(request, "Hello"));
-    let reply_handle = executor.spawn(run_router(router, "World"));
+        let request_handle = executor.spawn(run_requester(request, "Hello"));
+        let reply_handle = executor.spawn(run_router(router, "World"));
 
-    let _ = join!(reply_handle, request_handle);
+        let _ = join!(reply_handle, request_handle);
 
-    Ok(())
+        Ok(())
+    }
 }

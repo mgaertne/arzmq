@@ -6,7 +6,6 @@ use arzmq::{
     prelude::{ClientSocket, Context, Receiver, SendFlags, Sender, ServerSocket, ZmqResult},
 };
 use futures::join;
-use macro_rules_attribute::apply;
 use smol_macros::{Executor, main};
 
 mod common;
@@ -45,23 +44,24 @@ async fn run_client(client: ClientSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[apply(main!)]
-async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
-    ITERATIONS.store(10, Ordering::Release);
+main! {
+    async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
+        ITERATIONS.store(10, Ordering::Release);
 
-    let context = Context::new()?;
+        let context = Context::new()?;
 
-    let server = ServerSocket::from_context(&context)?;
-    server.bind("tcp://127.0.0.1:*")?;
-    let client_endpoint = server.last_endpoint()?;
+        let server = ServerSocket::from_context(&context)?;
+        server.bind("tcp://127.0.0.1:*")?;
+        let client_endpoint = server.last_endpoint()?;
 
-    let client = ClientSocket::from_context(&context)?;
-    client.connect(client_endpoint)?;
+        let client = ClientSocket::from_context(&context)?;
+        client.connect(client_endpoint)?;
 
-    let client_handle = executor.spawn(run_client(client, "Hello"));
-    let server_handle = executor.spawn(run_server(server, "World"));
+        let client_handle = executor.spawn(run_client(client, "Hello"));
+        let server_handle = executor.spawn(run_server(server, "World"));
 
-    let _ = join!(server_handle, client_handle);
+        let _ = join!(server_handle, client_handle);
 
-    Ok(())
+        Ok(())
+    }
 }
