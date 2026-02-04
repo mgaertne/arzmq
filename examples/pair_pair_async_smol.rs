@@ -1,9 +1,10 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{Context, PairSocket, ZmqResult};
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -22,8 +23,8 @@ async fn run_pair_client(pair: PairSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let endpoint = "inproc://arzmq-example-pair";
@@ -36,8 +37,8 @@ async fn main() -> ZmqResult<()> {
     let pair_client = PairSocket::from_context(&context)?;
     pair_client.connect(endpoint)?;
 
-    let pair_client_handle = task::spawn(run_pair_client(pair_client, "Hello"));
-    let pair_server_handle = task::spawn(run_pair_server(pair_server, "World"));
+    let pair_client_handle = executor.spawn(run_pair_client(pair_client, "Hello"));
+    let pair_server_handle = executor.spawn(run_pair_server(pair_server, "World"));
 
     let _ = join!(pair_server_handle, pair_client_handle);
 

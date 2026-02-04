@@ -1,12 +1,13 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::{
     message::Message,
     prelude::{Context, PeerSocket, Receiver, SendFlags, Sender, ZmqResult},
 };
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -48,8 +49,8 @@ async fn run_peer_client(peer: PeerSocket, routing_id: u32, msg: &str) -> ZmqRes
     Ok(())
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let endpoint = "inproc://arzmq-example-peer";
@@ -62,8 +63,8 @@ async fn main() -> ZmqResult<()> {
     let peer_client = PeerSocket::from_context(&context)?;
     let routing_id = peer_client.connect_peer(endpoint)?;
 
-    let peer_client_handle = task::spawn(run_peer_client(peer_client, routing_id, "Hello"));
-    let peer_server_handle = task::spawn(run_peer_server(peer_server, "World"));
+    let peer_client_handle = executor.spawn(run_peer_client(peer_client, routing_id, "Hello"));
+    let peer_server_handle = executor.spawn(run_peer_server(peer_server, "World"));
 
     let _ = join!(peer_server_handle, peer_client_handle);
 

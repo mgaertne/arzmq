@@ -1,9 +1,10 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{Context, DealerSocket, ReplySocket, ZmqResult};
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -21,8 +22,8 @@ async fn run_dealer(dealer: DealerSocket, msg: &str) {
     }
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let context = Context::new()?;
@@ -34,8 +35,8 @@ async fn main() -> ZmqResult<()> {
     let dealer = DealerSocket::from_context(&context)?;
     dealer.connect(dealer_endpoint)?;
 
-    let dealer_handle = task::spawn(run_dealer(dealer, "Hello"));
-    let reply_handle = task::spawn(run_replier(reply, "World"));
+    let dealer_handle = executor.spawn(run_dealer(dealer, "Hello"));
+    let reply_handle = executor.spawn(run_replier(reply, "World"));
 
     let _ = join!(reply_handle, dealer_handle);
 

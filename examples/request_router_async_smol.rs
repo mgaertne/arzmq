@@ -1,9 +1,10 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{Context, RequestSocket, RouterSocket, ZmqResult};
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -22,8 +23,8 @@ async fn run_requester(request: RequestSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let context = Context::new()?;
@@ -35,8 +36,8 @@ async fn main() -> ZmqResult<()> {
     let request = RequestSocket::from_context(&context)?;
     request.connect(request_endpoint)?;
 
-    let request_handle = task::spawn(run_requester(request, "Hello"));
-    let reply_handle = task::spawn(run_router(router, "World"));
+    let request_handle = executor.spawn(run_requester(request, "Hello"));
+    let reply_handle = executor.spawn(run_router(router, "World"));
 
     let _ = join!(reply_handle, request_handle);
 

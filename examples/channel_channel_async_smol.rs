@@ -1,9 +1,10 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{ChannelSocket, Context, ZmqResult};
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -22,8 +23,8 @@ async fn run_channel_client(channel: ChannelSocket, msg: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let endpoint = "inproc://arzmq-example-channel";
@@ -36,8 +37,8 @@ async fn main() -> ZmqResult<()> {
     let channel_client = ChannelSocket::from_context(&context)?;
     channel_client.connect(endpoint)?;
 
-    let channel_client_handle = task::spawn(run_channel_client(channel_client, "Hello"));
-    let channel_server_handle = task::spawn(run_channel_server(channel_server, "World"));
+    let channel_client_handle = executor.spawn(run_channel_client(channel_client, "Hello"));
+    let channel_server_handle = executor.spawn(run_channel_server(channel_server, "World"));
 
     let _ = join!(channel_server_handle, channel_client_handle);
 

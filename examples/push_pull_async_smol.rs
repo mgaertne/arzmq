@@ -1,12 +1,13 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::{
     ZmqResult,
     prelude::{Context, PullSocket, PushSocket, Receiver, SendFlags, Sender},
 };
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -28,8 +29,8 @@ async fn run_publisher(push: PushSocket, msg: &str) {
     }
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let context = Context::new()?;
@@ -41,8 +42,8 @@ async fn main() -> ZmqResult<()> {
     let pull = PullSocket::from_context(&context)?;
     pull.connect(pull_endpoint)?;
 
-    let push_handle = task::spawn(run_publisher(push, "important update"));
-    let pull_handle = task::spawn(run_subscriber(pull));
+    let push_handle = executor.spawn(run_publisher(push, "important update"));
+    let pull_handle = executor.spawn(run_subscriber(pull));
 
     let _ = join!(push_handle, pull_handle);
 

@@ -1,9 +1,10 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
-use arzmq::prelude::{Context, PublishSocket, SendFlags, Sender, XSubscribeSocket, ZmqResult};
-use async_std::task::spawn;
+use arzmq::prelude::{Context, SendFlags, Sender, XPublishSocket, XSubscribeSocket, ZmqResult};
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -16,28 +17,28 @@ async fn run_subscriber(subscribe: XSubscribeSocket, subscribed_topic: &str) {
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-async fn run_publisher(publisher: PublishSocket, msg: &str) {
+async fn run_publisher(publisher: XPublishSocket, msg: &str) {
     while KEEP_RUNNING.load(Ordering::Acquire) {
         publisher.send_msg_async(msg, SendFlags::DONT_WAIT).await;
     }
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let context = Context::new()?;
 
-    let publish = PublishSocket::from_context(&context)?;
-    publish.bind("tcp://127.0.0.1:*")?;
-    let xsubscribe_endpoint = publish.last_endpoint()?;
+    let xpublish = XPublishSocket::from_context(&context)?;
+    xpublish.bind("tcp://127.0.0.1:*")?;
+    let xsubscribe_endpoint = xpublish.last_endpoint()?;
 
     let xsubscribe = XSubscribeSocket::from_context(&context)?;
     xsubscribe.subscribe("arzmq-example")?;
     xsubscribe.connect(xsubscribe_endpoint)?;
 
-    let publish_handle = spawn(run_publisher(publish, "arzmq-example important update"));
-    let subscribe_handle = spawn(run_subscriber(xsubscribe, "arzmq-example"));
+    let publish_handle = executor.spawn(run_publisher(xpublish, "arzmq-example important update"));
+    let subscribe_handle = executor.spawn(run_subscriber(xsubscribe, "arzmq-example"));
 
     let _ = join!(publish_handle, subscribe_handle);
 

@@ -15,7 +15,7 @@ by default.
 Enables a builder API for the variouos socket types as well as the 0MQ context. Enabled by default.
 
 ### `futures`
-Enables async futures for the different send and receive traits to use with an async runner like `tokio`, `async-std`,
+Enables async futures for the different send and receive traits to use with an async runner like `tokio`, `smol`,
 and the `futures` executor crate.
 
 ## `libzmq`-related features

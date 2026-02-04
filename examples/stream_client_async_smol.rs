@@ -1,4 +1,4 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 #[rustversion::since(1.87)]
 use core::str;
 use core::{error::Error, sync::atomic::Ordering};
@@ -8,12 +8,13 @@ use std::str;
 use arzmq::prelude::{
     Context, MultipartMessage, MultipartReceiver, MultipartSender, SendFlags, StreamSocket,
 };
-use async_std::{
-    io::{ReadExt, WriteExt},
-    net::TcpListener,
-    task::spawn,
-};
 use futures::join;
+use macro_rules_attribute::apply;
+use smol::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpListener,
+};
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -58,8 +59,8 @@ async fn run_stream_socket(zmq_stream: StreamSocket, routing_id: Vec<u8>, msg: &
     KEEP_RUNNING.store(false, Ordering::Release);
 }
 
-#[async_std::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> Result<(), Box<dyn Error>> {
     ITERATIONS.store(10, Ordering::Release);
 
     let port = 5558;
@@ -77,8 +78,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut connect_msg = zmq_stream.recv_multipart_async().await;
     let routing_id = connect_msg.pop_front().unwrap();
 
-    let zmq_stream_handle = spawn(run_stream_socket(zmq_stream, routing_id.bytes(), "Hello"));
-    let tcp_handle = spawn(run_tcp_server(tcp_listener, "World"));
+    let zmq_stream_handle =
+        executor.spawn(run_stream_socket(zmq_stream, routing_id.bytes(), "Hello"));
+    let tcp_handle = executor.spawn(run_tcp_server(tcp_listener, "World"));
 
     let _ = join!(zmq_stream_handle, tcp_handle);
 

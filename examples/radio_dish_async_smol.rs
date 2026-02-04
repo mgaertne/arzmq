@@ -1,11 +1,12 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::prelude::{
     Context, DishSocket, Message, RadioSocket, Receiver, SendFlags, Sender, ZmqResult,
 };
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -33,8 +34,8 @@ async fn run_radio(radio: RadioSocket, msg: &str) -> ZmqResult<()> {
     Ok(())
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let context = Context::new()?;
@@ -47,8 +48,8 @@ async fn main() -> ZmqResult<()> {
     dish.connect(dish_endpoint)?;
     dish.join(GROUP)?;
 
-    let radio_handle = task::spawn(run_radio(radio, "important update"));
-    let dish_handle = task::spawn(run_dish(dish));
+    let radio_handle = executor.spawn(run_radio(radio, "important update"));
+    let dish_handle = executor.spawn(run_dish(dish));
 
     let _ = join!(radio_handle, dish_handle);
 

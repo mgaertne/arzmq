@@ -1,12 +1,13 @@
-#![cfg(feature = "examples-async-std")]
+#![cfg(feature = "examples-smol")]
 use core::sync::atomic::Ordering;
 
 use arzmq::{
     ZmqResult,
     prelude::{Context, GatherSocket, Receiver, ScatterSocket, SendFlags, Sender},
 };
-use async_std::task;
 use futures::join;
+use macro_rules_attribute::apply;
+use smol_macros::{Executor, main};
 
 mod common;
 
@@ -28,8 +29,8 @@ async fn run_scatter(scatter: ScatterSocket, msg: &str) {
     }
 }
 
-#[async_std::main]
-async fn main() -> ZmqResult<()> {
+#[apply(main!)]
+async fn main(executor: &Executor<'_>) -> ZmqResult<()> {
     ITERATIONS.store(10, Ordering::Release);
 
     let context = Context::new()?;
@@ -41,8 +42,8 @@ async fn main() -> ZmqResult<()> {
     let gather = GatherSocket::from_context(&context)?;
     gather.connect(gather_endpoint)?;
 
-    let scatter_handle = task::spawn(run_scatter(scatter, "important update"));
-    let gather_handle = task::spawn(run_gather(gather));
+    let scatter_handle = executor.spawn(run_scatter(scatter, "important update"));
+    let gather_handle = executor.spawn(run_gather(gather));
 
     let _ = join!(scatter_handle, gather_handle);
 
