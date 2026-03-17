@@ -509,14 +509,18 @@ fn check_pgm_config(build: &mut Build) {
     }
     #[cfg(not(target_env = "msvc"))]
     {
-        std::fs::create_dir_all(out_dir.join("openpgm")).unwrap();
+        let src_dir = base_dir.join("openpgm").join("openpgm").join("pgm");
+        let pgm_out_base_dir = out_dir.join("openpgm");
+        let pgm_src_dir = pgm_out_base_dir.join("pgm");
 
-        let mut pgm_build = autotools::Config::new(base_dir.join("openpgm/openpgm/pgm"));
+        dircpy::copy_dir(&src_dir, &pgm_src_dir).expect("unable to copy pgm sources dir");
+
+        let mut pgm_build = autotools::Config::new(&pgm_src_dir);
         pgm_build
             .reconf("-ivf")
             .disable_shared()
             .enable_static()
-            .out_dir(out_dir.join("openpgm"));
+            .out_dir(&pgm_out_base_dir);
 
         let pgm_install_dir = pgm_build.build();
 
