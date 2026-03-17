@@ -4,6 +4,9 @@
 [submodule "libnorm"]
 	path = arzmq-sys/libnorm
 	url = https://github.com/USNavalResearchLaboratory/norm.git
+[submodule "protolib"]
+	path = arzmq-sys/protolib
+	url = https://github.com/USNavalResearchLaboratory/protolib.git
 [submodule "openpgm"]
 	path = arzmq-sys/openpgm
 	url = https://github.com/steve-o/openpgm.git

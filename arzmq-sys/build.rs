@@ -342,7 +342,7 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
     build.define("ZMQ_HAVE_WS", "1");
 
     #[cfg(not(windows))]
-    let create_platform_hpp_shim = |build: &mut cc::Build| {
+    let create_platform_hpp_shim = |build: &mut Build| {
         let out_includes = PathBuf::from(env::var("OUT_DIR").unwrap());
 
         let mut f = File::create(out_includes.join("platform.hpp")).unwrap();
@@ -546,12 +546,25 @@ fn check_norm_config(build: &mut Build) {
         return;
     }
 
+    let base_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let mut norm_build = cmake::Config::new("libnorm");
+
+    let src_dir = base_dir.join("libnorm");
+    let norm_out_base_dir = out_dir.join("libnorm");
+    let norm_src_dir = norm_out_base_dir.join("libnorm");
+
+    let protolib_src_dir = base_dir.join("protolib");
+    let protolib_out_src_dir = norm_src_dir.join("protolib");
+
+    dircpy::copy_dir(&src_dir, &norm_src_dir).expect("unable to copy libnorm sources dir");
+    dircpy::copy_dir(&protolib_src_dir, &protolib_out_src_dir).expect("unable to copy protolib sources dir");
+
+    let mut norm_build = cmake::Config::new(&norm_src_dir);
 
     norm_build
         .pic(true)
         .configure_arg("-Wno-dev")
+        .define("NORM_CUSTOM_PROTOLIB_VERSION", "./protolib")
         .out_dir(out_dir.join("libnorm"))
         .profile("Release");
 
