@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![doc = include_str!("../features.md")]
-#![cfg_attr(nightly, feature(cold_path, doc_cfg, stmt_expr_attributes))]
+#![cfg_attr(all(nightly, doc), feature(doc_cfg))]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
 #![deny(
