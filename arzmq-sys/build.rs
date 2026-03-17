@@ -557,7 +557,8 @@ fn check_norm_config(build: &mut Build) {
     let protolib_out_src_dir = norm_src_dir.join("protolib");
 
     dircpy::copy_dir(&src_dir, &norm_src_dir).expect("unable to copy libnorm sources dir");
-    dircpy::copy_dir(&protolib_src_dir, &protolib_out_src_dir).expect("unable to copy protolib sources dir");
+    dircpy::copy_dir(&protolib_src_dir, &protolib_out_src_dir)
+        .expect("unable to copy protolib sources dir");
 
     let mut norm_build = cmake::Config::new(&norm_src_dir);
 
