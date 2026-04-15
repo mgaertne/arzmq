@@ -176,6 +176,53 @@ jobs:
       - run: cargo hack test --each-feature --clean-per-run --verbose
         if: runner.os == 'Linux'
 
+  minimal_tests:
+    name: unit and doctests (minimal versions)
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    needs: [ check, check-tests, clippy, clippy-tests ]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - name: install linux dependencies for optional features
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y libsodium-dev libkrb5-dev autoconf
+      - name: install macos dependencies for optional features
+        if: runner.os == 'macOS'
+        run: brew install libsodium automake libtool autoconf
+      - name: install windows dependencies for optional features
+        if: runner.os == 'Windows'
+        uses: johnwason/vcpkg-action@v7
+        with:
+          pkgs: 'libsodium:x64-windows-static-md krb5:x64-windows'
+          triplet: 'x64-windows-static-md'
+          token: ${{ github.token }}
+      - run: cargo build -Z minimal-versions --all-features
+      - run: cargo hack test --locked --each-feature --clean-per-run --verbose
+        if: runner.os == 'macOS'
+        env:
+          SYSTEM_DEPS_GSSAPI_LIB_FRAMEWORK: 'Kerberos'
+          SYSTEM_DEPS_GSSAPI_NO_PKG_CONFIG: 1
+      - run: cargo hack test --locked --each-feature --clean-per-run --verbose
+        if: runner.os == 'Windows'
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      - run: cargo hack test --locked --each-feature --clean-per-run --verbose
+        if: runner.os == 'Linux'
+
   examples:
     name: examples
     needs: [ check, check-examples, clippy, clippy-examples ]

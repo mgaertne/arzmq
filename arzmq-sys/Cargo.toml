@@ -39,7 +39,7 @@ tempfile = { version = ">=3.23" }
 bindgen = { version = ">=0.72" }
 system-deps = { version = ">=7.0.1" }
 walkdir = { version = ">=2.5" }
-cmake = { version = ">=0.1.46" }
+cmake = { version = ">=0.1.49" }
 
 [target."cfg(unix)".dependencies]
 libc = { version = ">=1.0.0-alpha.1", default-features = false }
@@ -48,7 +48,7 @@ libc = { version = ">=1.0.0-alpha.1", default-features = false }
 autotools = { version = ">=0.2" }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = { version = ">=0.2" }
+vcpkg = { version = ">=0.2.4" }
 
 [package.metadata.system-deps]
 gnutls = { version = ">=3", optional = true }
