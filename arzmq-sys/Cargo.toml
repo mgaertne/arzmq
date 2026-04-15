@@ -32,23 +32,23 @@ norm = ["draft-api"]
 vmci = []
 
 [build-dependencies]
-tap = { version = ">=1.0.1" }
-cc = { version = ">=1.2.22", features = ["parallel"] }
-dircpy = { version = ">=0.3.4" }
-tempfile = { version = ">=3.23" }
-bindgen = { version = ">=0.72" }
-system-deps = { version = ">=7.0.1" }
-walkdir = { version = ">=2.5" }
-cmake = { version = ">=0.1.49" }
+tap = { version = ">=1.0.1", default-features = false }
+cc = { version = ">=1.2.22", default-features = false, features = ["parallel"] }
+dircpy = { version = ">=0.3.4", default-features = false }
+tempfile = { version = ">=3.23", default-features = false }
+bindgen = { version = ">=0.72", default-features = false, features = ["runtime"] }
+system-deps = { version = ">=7.0.1", default-features = false }
+walkdir = { version = ">=2.5", default-features = false }
+cmake = { version = ">=0.1.49", default-features = false }
 
 [target."cfg(unix)".dependencies]
 libc = { version = ">=1.0.0-alpha.1", default-features = false }
 
 [target.'cfg(not(target_env = "msvc"))'.build-dependencies]
-autotools = { version = ">=0.2" }
+autotools = { version = ">=0.2.2", default-features = false }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = { version = ">=0.2.4" }
+vcpkg = { version = ">=0.2.4", default-features = false }
 
 [package.metadata.system-deps]
 gnutls = { version = ">=3", optional = true }
