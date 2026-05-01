@@ -1,5 +1,5 @@
 [workspace]
-members = ["arzmq-sys"]
+members = ["arzmq-sys", "openpgm-sys"]
 resolver = "3"
 
 [workspace.package]
@@ -11,6 +11,7 @@ authors = ["Markus 'ShiN0' Gaertner"]
 [workspace.dependencies]
 rustversion = { version = ">=1.0.6", default-features = false }
 arzmq-sys = { version = "0.6.4-alpha.2", path = "arzmq-sys" }
+openpgm-sys = { path = "openpgm-sys" }
 
 [workspace.lints.rust]
 non_local_definitions = "allow"
@@ -90,11 +91,11 @@ draft-api = ["arzmq-sys/draft-api"]
 
 # enables CURVE authorization through libsodium
 curve = ["arzmq-sys/curve"]
-# enables GSS-API (Kerbereos V) authoriazazion
+# enables GSS-API (Kerbereos V) authorization
 gssapi = ["arzmq-sys/gssapi"]
-# enables PGM transportation capability if available on the system.
+# enables PGM transportation capability
 pgm = ["arzmq-sys/pgm"]
-# enables NORM transportation capability if available on the system.
+# enables NORM transportation capability
 norm = ["draft-api", "arzmq-sys/norm"]
 # enables the VMCI transportation capability
 vmci = ["arzmq-sys/vmci"]

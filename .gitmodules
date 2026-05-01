@@ -8,5 +8,5 @@
 	path = arzmq-sys/protolib
 	url = https://github.com/USNavalResearchLaboratory/protolib.git
 [submodule "openpgm"]
-	path = arzmq-sys/openpgm
+	path = openpgm-sys/vendor
 	url = https://github.com/steve-o/openpgm.git

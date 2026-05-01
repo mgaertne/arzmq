@@ -203,7 +203,7 @@ where
     F: FnOnce(&mut Build) -> &mut Build,
 {
     let out_dir = env::var("OUT_DIR")?;
-    let out_dir = Path::new(&out_dir);
+    let out_dir = PathBuf::from(&out_dir);
     let check_compile = tempfile::Builder::new()
         .prefix("check_compile")
         .tempdir_in(out_dir)?;
@@ -288,7 +288,7 @@ int main(void) {
 fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
     let libraries = Config::new().probe()?;
 
-    let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
+    let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
     #[cfg(not(target_env = "msvc"))]
     build.flags(&[
@@ -480,65 +480,12 @@ fn check_pgm_config(build: &mut Build) {
         return;
     }
 
-    let base_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    build.define("ZMQ_HAVE_OPENPGM", "1");
+    #[cfg(target_os = "macos")]
+    build.define("restrict", "__restrict__");
 
-    #[cfg(target_env = "msvc")]
-    {
-        let mut pgm_build = cmake::Config::new("openpgm/openpgm/pgm");
-
-        pgm_build
-            .no_build_target(true)
-            .out_dir(out_dir.join("openpgm"))
-            .profile("Release")
-            .build_target("libpgm");
-
-        let pgm_install_dir = pgm_build.build();
-
-        let lib_dir = pgm_install_dir.join("build").join("lib");
-        build.define("ZMQ_HAVE_OPENPGM", "1");
-        build.include(
-            base_dir
-                .join("openpgm")
-                .join("openpgm")
-                .join("pgm")
-                .join("include"),
-        );
-
-        emit_static_libs_in(&lib_dir);
-    }
-    #[cfg(not(target_env = "msvc"))]
-    {
-        let src_dir = base_dir.join("openpgm").join("openpgm").join("pgm");
-        let pgm_out_base_dir = out_dir.join("openpgm");
-        let pgm_src_dir = pgm_out_base_dir.join("pgm");
-
-        dircpy::copy_dir(&src_dir, &pgm_src_dir).expect("unable to copy pgm sources dir");
-
-        let mut pgm_build = autotools::Config::new(&pgm_src_dir);
-        pgm_build
-            .reconf("-ivf")
-            .disable_shared()
-            .enable_static()
-            .out_dir(&pgm_out_base_dir);
-
-        let pgm_install_dir = pgm_build.build();
-
-        let lib_dir = pgm_install_dir.join("lib");
-        build.define("ZMQ_HAVE_OPENPGM", "1");
-        build.include(
-            base_dir
-                .join("openpgm")
-                .join("openpgm")
-                .join("pgm")
-                .join("include"),
-        );
-
-        #[cfg(target_os = "macos")]
-        build.define("restrict", "__restrict__");
-
-        emit_static_libs_in(&lib_dir);
-    }
+    build.include(env::var("DEP_PGM_INCLUDE").expect("pgm include not found"));
+    emit_static_libs_in(env::var("DEP_PGM_LIB").expect("pgm lib dir not set"))
 }
 
 fn check_norm_config(build: &mut Build) {
@@ -546,7 +493,7 @@ fn check_norm_config(build: &mut Build) {
         return;
     }
 
-    let base_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     let src_dir = base_dir.join("libnorm");
@@ -589,7 +536,7 @@ fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    let vmci = Path::new(env!("CARGO_MANIFEST_DIR")).join("vmci");
+    let vmci = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vmci");
 
     build.define("ZMQ_HAVE_VMCI", "1");
 
@@ -600,7 +547,7 @@ fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
 }
 
 fn build_zmq() -> Result<(), Box<dyn Error>> {
-    let vendor = Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
+    let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
     let mut build = Build::new();
     configure(&mut build)?;

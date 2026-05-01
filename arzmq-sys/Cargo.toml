@@ -27,9 +27,12 @@ default = []
 draft-api = []
 curve = []
 gssapi = []
-pgm = []
-norm = ["draft-api"]
+pgm = [ "dep:openpgm-sys" ]
+norm = [ "draft-api" ]
 vmci = []
+
+[dependencies]
+openpgm-sys = { workspace = true, optional = true }
 
 [build-dependencies]
 tap = { version = ">=1.0.1", default-features = false }
@@ -43,9 +46,6 @@ cmake = { version = ">=0.1.49", default-features = false }
 
 [target."cfg(unix)".dependencies]
 libc = { version = ">=1.0.0-alpha.1", default-features = false }
-
-[target.'cfg(not(target_env = "msvc"))'.build-dependencies]
-autotools = { version = ">=0.2.2", default-features = false }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
 vcpkg = { version = ">=0.2.4", default-features = false }
