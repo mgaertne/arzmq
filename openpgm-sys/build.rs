@@ -240,9 +240,7 @@ const char* pgm_build_revision = "";
         env::var("CARGO_CFG_TARGET_OS")?,
         env::var("CARGO_CFG_TARGET_ARCH")?
     );
-    version_file
-        .write_all(version_text.as_bytes())
-        .expect("could not generate version file");
+    version_file.write_all(version_text.as_bytes())?;
     println!("cargo:rerun-if-changed={}", version_path.display());
 
     Ok(version_path)
@@ -257,17 +255,14 @@ fn provide_includes() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&include_dir)?;
     }
 
-    HEADERS
-        .iter()
-        .try_for_each(|header| {
-            let header_file = vendor_base.join(header);
+    HEADERS.iter().try_for_each(|header| {
+        let header_file = vendor_base.join(header);
 
-            if let Some(file_name) = header_file.file_name() {
-                fs::copy(header_file.as_path(), include_dir.join(file_name).as_path())?;
-            }
-            Ok::<_, Box<dyn Error>>(())
-        })
-        .expect("unable to copy include dir");
+        if let Some(file_name) = header_file.file_name() {
+            fs::copy(header_file.as_path(), include_dir.join(file_name).as_path())?;
+        }
+        Ok::<_, Box<dyn Error>>(())
+    })?;
 
     println!(
         "cargo:include={}",

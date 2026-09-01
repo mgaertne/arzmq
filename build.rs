@@ -1,9 +1,11 @@
-use std::ffi::CString;
+extern crate alloc;
+
+use alloc::ffi::CString;
 
 fn main() {
-    println!("cargo::rustc-check-cfg=cfg(nightly)");
-    if rustversion::cfg!(nightly) {
-        println!("cargo:rustc-cfg=nightly");
+    println!("cargo::rustc-check-cfg=cfg(cold_path)");
+    if rustversion::cfg!(any(nightly, since(1.95))) {
+        println!("cargo:rustc-cfg=cold_path");
     }
 
     let capabilities = [

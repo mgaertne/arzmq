@@ -1,0 +1,31 @@
+[package]
+name = "protokit-sys"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+build = "build.rs"
+autotests = false
+autobins = false
+autoexamples = false
+autobenches = false
+links = "protokit"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mgaertne/arzmq"
+keywords = ["protokit", "bindings", "ffi"]
+categories = ["external-ffi-bindings"]
+description = "Low-level bindings to the protokit library"
+
+[lib]
+test = false
+doc = false
+doctest = false
+bench = false
+
+[features]
+default = []
+bindings = [ "dep:bindgen" ]
+
+[build-dependencies]
+cc = { version = ">=1.2.22", default-features = false, features = ["parallel"] }
+bindgen = { version = ">=0.72", default-features = false, features = ["runtime"], optional = true }

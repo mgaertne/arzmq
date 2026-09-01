@@ -1,5 +1,5 @@
 [workspace]
-members = ["arzmq-sys", "openpgm-sys"]
+members = ["arzmq-sys", "openpgm-sys", "protokit-sys", "libnorm-sys"]
 resolver = "3"
 
 [workspace.package]
@@ -11,7 +11,9 @@ authors = ["Markus 'ShiN0' Gaertner"]
 [workspace.dependencies]
 rustversion = { version = ">=1.0.6", default-features = false }
 arzmq-sys = { version = "0.6.4-alpha.2", path = "arzmq-sys" }
-openpgm-sys = { path = "openpgm-sys" }
+openpgm-sys = { version = "0.6.4-alpha.2", path = "openpgm-sys" }
+protokit-sys = { version = "0.6.4-alpha.2", path = "protokit-sys" }
+libnorm-sys = { version = "0.6.4-alpha.2", path = "libnorm-sys" }
 
 [workspace.lints.rust]
 non_local_definitions = "allow"

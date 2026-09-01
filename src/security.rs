@@ -401,7 +401,7 @@ mod security_mechanism_tests {
 pub mod curve {
     use alloc::ffi::CString;
     use core::ffi::c_char;
-    #[cfg(nightly)]
+    #[cfg(cold_path)]
     use core::hint::cold_path;
 
     use derive_more::Display;
@@ -452,7 +452,7 @@ pub mod curve {
         }
         .is_null()
         {
-            #[cfg(nightly)]
+            #[cfg(cold_path)]
             cold_path();
             return Err(EncodeError::EncodingFailed);
         }
@@ -522,7 +522,7 @@ pub mod curve {
         let c_str = CString::new(input).map_err(|_| DecodeError::DecodingFailed)?;
 
         if unsafe { zmq_sys_crate::zmq_z85_decode(dest.as_mut_ptr(), c_str.into_raw()) }.is_null() {
-            #[cfg(nightly)]
+            #[cfg(cold_path)]
             cold_path();
             return Err(DecodeError::DecodingFailed);
         }
@@ -581,7 +581,7 @@ pub mod curve {
             )
         } == -1
         {
-            #[cfg(nightly)]
+            #[cfg(cold_path)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
@@ -613,7 +613,7 @@ pub mod curve {
             )
         } == -1
         {
-            #[cfg(nightly)]
+            #[cfg(cold_path)]
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),

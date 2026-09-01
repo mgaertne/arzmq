@@ -2,10 +2,10 @@
 	path = arzmq-sys/vendor
 	url = https://github.com/zeromq/libzmq.git
 [submodule "libnorm"]
-	path = arzmq-sys/libnorm
+	path = libnorm-sys/vendor
 	url = https://github.com/USNavalResearchLaboratory/norm.git
-[submodule "protolib"]
-	path = arzmq-sys/protolib
+[submodule "protokit"]
+	path = protokit-sys/vendor
 	url = https://github.com/USNavalResearchLaboratory/protolib.git
 [submodule "openpgm"]
 	path = openpgm-sys/vendor

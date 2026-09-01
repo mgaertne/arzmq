@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![doc = include_str!("../features.md")]
-#![cfg_attr(all(nightly, doc), feature(doc_cfg))]
+#![cfg_attr(all(cold_path, doc), feature(doc_cfg))]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
 #![deny(
@@ -27,7 +27,7 @@ pub mod security;
 pub mod socket;
 
 use alloc::ffi::CString;
-#[cfg(nightly)]
+#[cfg(cold_path)]
 use core::hint::cold_path;
 use core::ptr;
 
@@ -232,7 +232,7 @@ where
     };
 
     if return_code == -1 {
-        #[cfg(nightly)]
+        #[cfg(cold_path)]
         cold_path();
         match unsafe { zmq_sys_crate::zmq_errno() } {
             errno @ (zmq_sys_crate::errno::ETERM

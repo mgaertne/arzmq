@@ -1,6 +1,8 @@
+extern crate core;
+
 use core::error::Error;
 use std::{
-    env,
+    env, fs,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -285,13 +287,30 @@ int main(void) {
     )
 }
 
+fn create_platform_hpp_shim(build: &mut Build) -> Result<(), Box<dyn Error>> {
+    let out_includes = PathBuf::from(env::var("OUT_DIR")?);
+
+    let mut f = File::create(out_includes.join("platform.hpp"))?;
+    f.write_all(
+        b"#ifndef __ZMQ_PLATFORM_HPP_INCLUDED__
+#define __ZMQ_PLATFORM_HPP_INCLUDED__
+#endif
+        ",
+    )?;
+    f.sync_all()?;
+
+    build.include(out_includes);
+
+    Ok(())
+}
+
 fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
     let libraries = Config::new().probe()?;
 
     let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vendor");
 
     #[cfg(not(target_env = "msvc"))]
-    build.flags(&[
+    build.flags([
         "-Wno-unused-function",
         "-Wno-deprecated",
         "-Wno-unused-parameter",
@@ -335,33 +354,25 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
     add_c_sources(build, vendor.join("external/sha1"), &["sha1.c"]);
 
-    build.define("ZMQ_USE_CV_IMPL_STL11", "1");
-    build.define("ZMQ_STATIC", "1");
-    build.define("ZMQ_USE_BUILTIN_SHA1", "1");
+    build
+        .define("ZMQ_USE_CV_IMPL_STL11", None)
+        .define("ZMQ_STATIC", None)
+        .define("ZMQ_USE_BUILTIN_SHA1", None)
+        .define("ZMQ_HAVE_WS", None);
 
-    build.define("ZMQ_HAVE_WS", "1");
-
-    #[cfg(not(windows))]
-    let create_platform_hpp_shim = |build: &mut Build| {
-        let out_includes = PathBuf::from(env::var("OUT_DIR").unwrap());
-
-        let mut f = File::create(out_includes.join("platform.hpp")).unwrap();
-        f.write_all(b"").unwrap();
-        f.sync_all().unwrap();
-
-        build.include(out_includes);
-    };
+    create_platform_hpp_shim(build)?;
 
     #[cfg(target_os = "windows")]
     {
         #[cfg(not(target_env = "gnu"))]
         add_c_sources(build, vendor.join("external/wepoll"), &["wepoll.c"]);
 
-        build.define("ZMQ_HAVE_WINDOWS", "1");
-        build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
-        build.define("ZMQ_POLL_BASED_ON_POLL", "1");
-        build.define("_WIN32_WINNT", "0x0600"); // vista
-        build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
+        build
+            .define("ZMQ_HAVE_WINDOWS", None)
+            .define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", None)
+            .define("ZMQ_POLL_BASED_ON_POLL", None)
+            .define("_WIN32_WINNT", "0x0600")
+            .define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", None);
 
         println!("cargo::rustc-link-lib=Advapi32");
         println!("cargo::rustc-link-lib=wsock32");
@@ -370,54 +381,51 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
         #[cfg(target_env = "msvc")]
         {
-            build.include(vendor.join("builds/deprecated-msvc"));
-            build.flag("/GL-");
-
-            build.flag("/EHsc");
+            build.flag_if_supported("/GL-").flag_if_supported("/EHsc");
         }
         #[cfg(not(target_env = "msvc"))]
         {
-            create_platform_hpp_shim(build);
-            build.define("HAVE_STRNLEN", "1");
+            build.define("HAVE_STRNLEN", None);
         }
 
         #[cfg(not(target_vendor = "uwp"))]
         if check_ipc_headers().unwrap_or(false) {
-            build.define("ZMQ_HAVE_IPC", "1");
+            build.define("ZMQ_HAVE_IPC", None);
         }
     }
 
     #[cfg(target_os = "linux")]
     {
-        create_platform_hpp_shim(build);
-        build.define("ZMQ_HAVE_LINUX", "1");
-        build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
-        build.define("ZMQ_POLL_BASED_ON_POLL", "1");
-        build.define("ZMQ_HAVE_IPC", "1");
+        build
+            .define("ZMQ_HAVE_LINUX", None)
+            .define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", None)
+            .define("ZMQ_POLL_BASED_ON_POLL", None)
+            .define("ZMQ_HAVE_IPC", None);
 
-        build.define("HAVE_STRNLEN", "1");
-        build.define("ZMQ_HAVE_UIO", "1");
-        build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
+        build
+            .define("HAVE_STRNLEN", None)
+            .define("ZMQ_HAVE_UIO", None)
+            .define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", None);
 
         #[cfg(any(target_os = "android", target_env = "musl"))]
-        build.define("ZMQ_HAVE_STRLCPY", "1");
+        build.define("ZMQ_HAVE_STRLCPY", None);
     }
 
     #[cfg(any(target_os = "macos", target_os = "freebsd"))]
     {
-        create_platform_hpp_shim(build);
-        build.define("ZMQ_IOTHREAD_POLLER_USE_KQUEUE", "1");
-        build.define("ZMQ_POLL_BASED_ON_POLL", "1");
-        build.define("HAVE_STRNLEN", "1");
-        build.define("ZMQ_HAVE_UIO", "1");
-        build.define("ZMQ_HAVE_IPC", "1");
-        build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
-        build.define("ZMQ_HAVE_STRLCPY", "1");
+        build
+            .define("ZMQ_IOTHREAD_POLLER_USE_KQUEUE", None)
+            .define("ZMQ_POLL_BASED_ON_POLL", None)
+            .define("HAVE_STRNLEN", None)
+            .define("ZMQ_HAVE_UIO", None)
+            .define("ZMQ_HAVE_IPC", None)
+            .define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", None)
+            .define("ZMQ_HAVE_STRLCPY", None);
     }
 
     #[cfg(target_env = "gnu")]
     if check_strlcpy().unwrap_or(false) {
-        build.define("ZMQ_HAVE_STRLCPY", "1");
+        build.define("ZMQ_HAVE_STRLCPY", None);
     }
 
     #[cfg(not(target_env = "msvc"))]
@@ -426,109 +434,92 @@ fn configure(build: &mut Build) -> Result<(), Box<dyn Error>> {
     }
 
     #[cfg(feature = "draft-api")]
-    build.define("ZMQ_BUILD_DRAFT_API", "1");
+    build.define("ZMQ_BUILD_DRAFT_API", None);
 
-    check_curve_config(build, &libraries);
-    check_gssapi_config(build, &libraries);
-    check_pgm_config(build);
-    check_norm_config(build);
+    check_curve_config(build, &libraries)?;
+    check_gssapi_config(build, &libraries)?;
+    check_pgm_config(build)?;
+    check_norm_config(build)?;
     check_vmci_config(build)
 }
 
-fn check_curve_config(build: &mut Build, libraries: &Dependencies) {
+fn check_curve_config(build: &mut Build, libraries: &Dependencies) -> Result<(), Box<dyn Error>> {
     if cfg!(not(feature = "curve")) {
-        return;
+        return Ok(());
     }
 
     libraries.get_by_name("libsodium").tap_some(|lib| {
-        build.define("ZMQ_USE_LIBSODIUM", "1");
-        build.define("ZMQ_HAVE_CURVE", "1");
+        build
+            .define("ZMQ_USE_LIBSODIUM", None)
+            .define("ZMQ_HAVE_CURVE", None);
 
         build.includes(&lib.include_paths);
     });
 
     #[cfg(target_env = "msvc")]
     let _ = vcpkg::find_package("libsodium").tap_ok(|lib| {
-        build.define("ZMQ_USE_LIBSODIUM", "1");
-        build.define("ZMQ_HAVE_CURVE", "1");
+        build
+            .define("ZMQ_USE_LIBSODIUM", None)
+            .define("ZMQ_HAVE_CURVE", None);
 
         build.includes(&lib.include_paths);
     });
+
+    Ok(())
 }
 
-fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) {
+fn check_gssapi_config(build: &mut Build, libraries: &Dependencies) -> Result<(), Box<dyn Error>> {
     if cfg!(not(feature = "gssapi")) {
-        return;
+        return Ok(());
     }
 
     libraries.get_by_name("gssapi").tap_some(|lib| {
-        build.define("HAVE_LIBGSSAPI_KRB5", "1");
+        build.define("HAVE_LIBGSSAPI_KRB5", None);
         build.includes(&lib.include_paths);
     });
 
     #[cfg(target_env = "msvc")]
     {
         let _ = vcpkg::Config::new().find_package("krb5").tap_ok(|lib| {
-            build.define("HAVE_LIBGSSAPI_KRB5", "1");
+            build.define("HAVE_LIBGSSAPI_KRB5", None);
             build.includes(&lib.include_paths);
         });
     }
+
+    Ok(())
 }
 
-fn check_pgm_config(build: &mut Build) {
+fn check_pgm_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
     if cfg!(not(feature = "pgm")) {
-        return;
+        return Ok(());
     }
 
-    build.define("ZMQ_HAVE_OPENPGM", "1");
+    build.define("ZMQ_HAVE_OPENPGM", None);
     #[cfg(target_os = "macos")]
     build.define("restrict", "__restrict__");
 
-    build.include(env::var("DEP_PGM_INCLUDE").expect("pgm include not found"));
-    emit_static_libs_in(env::var("DEP_PGM_LIB").expect("pgm lib dir not set"))
+    build.include(env::var("DEP_PGM_INCLUDE")?);
+    emit_static_libs_in(env::var("DEP_PGM_LIB")?);
+
+    Ok(())
 }
 
-fn check_norm_config(build: &mut Build) {
+fn check_norm_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
     if cfg!(not(feature = "norm")) {
-        return;
+        return Ok(());
     }
 
-    let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    build.define("ZMQ_HAVE_NORM", None);
 
-    let src_dir = base_dir.join("libnorm");
-    let norm_out_base_dir = out_dir.join("libnorm");
-    let norm_src_dir = norm_out_base_dir.join("libnorm");
-
-    let protolib_src_dir = base_dir.join("protolib");
-    let protolib_out_src_dir = norm_src_dir.join("protolib");
-
-    dircpy::copy_dir(&src_dir, &norm_src_dir).expect("unable to copy libnorm sources dir");
-    dircpy::copy_dir(&protolib_src_dir, &protolib_out_src_dir)
-        .expect("unable to copy protolib sources dir");
-
-    let mut norm_build = cmake::Config::new(&norm_src_dir);
-
-    norm_build
-        .pic(true)
-        .configure_arg("-Wno-dev")
-        .define("NORM_CUSTOM_PROTOLIB_VERSION", "./protolib")
-        .out_dir(out_dir.join("libnorm"))
-        .profile("Release");
-
-    #[cfg(target_env = "msvc")]
-    norm_build.cxxflag("/DWIN32 /_WINDOWS");
-
-    let norm_install_dir = norm_build.build();
-
-    let lib_dir = norm_install_dir.join("lib");
-    build.define("ZMQ_HAVE_NORM", "1");
-    build.include(norm_install_dir.join("include"));
-
-    emit_static_libs_in(lib_dir);
+    build.include(env::var("DEP_PROTOKIT_INCLUDE")?);
+    emit_static_libs_in(env::var("DEP_PROTOKIT_LIB")?);
+    build.include(env::var("DEP_NORM_INCLUDE")?);
+    emit_static_libs_in(env::var("DEP_NORM_LIB")?);
 
     #[cfg(target_os = "windows")]
     println!("cargo:rustc-link-lib=user32");
+
+    Ok(())
 }
 
 fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
@@ -538,7 +529,7 @@ fn check_vmci_config(build: &mut Build) -> Result<(), Box<dyn Error>> {
 
     let vmci = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vmci");
 
-    build.define("ZMQ_HAVE_VMCI", "1");
+    build.define("ZMQ_HAVE_VMCI", None);
 
     build.cpp(false);
     build.include(vmci);
@@ -561,13 +552,20 @@ fn build_zmq() -> Result<(), Box<dyn Error>> {
 
     emit_static_libs_in(&lib_dir);
 
-    let source_dir = out_dir.join("source");
-    let include_dir = source_dir.join("include");
+    let include_dir = out_dir.join("include");
+    if !include_dir.is_dir() {
+        fs::create_dir_all(&include_dir)?;
+    }
 
-    dircpy::copy_dir(vendor.join("include"), &include_dir).expect("unable to copy include dir");
-    dircpy::copy_dir(vendor.join("src"), source_dir.join("src")).expect("unable to copy src dir");
-    dircpy::copy_dir(vendor.join("external"), source_dir.join("external"))
-        .expect("unable to copy external dir");
+    let vendor_include_dir = vendor.join("include");
+
+    walkdir::WalkDir::new(vendor_include_dir)
+        .into_iter()
+        .try_for_each(|include_file| {
+            include_file
+                .map(|file| fs::copy(file.path(), include_dir.join(file.file_name())))
+                .map(|_| ())
+        })?;
 
     println!("cargo:include={}", include_dir.display());
     println!("cargo:lib={}", lib_dir.display());
@@ -596,12 +594,10 @@ fn generate_bindings() -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "draft-api")]
     let builder = builder.clang_args(vec!["-DZMQ_BUILD_DRAFT_API=1"]);
 
-    let bindings = builder.generate().expect("Unable to generate bindings");
+    let bindings = builder.generate()?;
 
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    bindings
-        .write_to_file(out_dir.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+    bindings.write_to_file(out_dir.join("bindings.rs"))?;
 
     Ok(())
 }
