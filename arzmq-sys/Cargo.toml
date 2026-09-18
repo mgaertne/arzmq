@@ -16,6 +16,9 @@ keywords = ["zmq", "zeromq", "bindings", "ffi"]
 categories = ["external-ffi-bindings"]
 description = "Low-level bindings to the zeromq library"
 
+[lints]
+workspace = true
+
 [lib]
 test = false
 doc = false
