@@ -931,7 +931,7 @@ use ::futures::FutureExt;
 #[cfg(feature = "futures")]
 use async_trait::async_trait;
 use bitflags::bitflags;
-use derive_more::From;
+use derive_more::{Debug as DebugDeriveMore, From};
 use num_traits::PrimInt;
 
 use crate::{
@@ -1056,7 +1056,7 @@ pub use xsubscribe::builder::XSubscribeBuilder;
 use crate::security::GssApiNametype;
 use crate::{auth::ZapDomain, security::SecurityMechanism};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 /// Socket type
 pub enum SocketType {
     /// [`PairSocket`]
@@ -1743,6 +1743,8 @@ mod socket_option_tests {
 }
 
 /// generic 0MQ socket
+#[derive(DebugDeriveMore)]
+#[debug("Socket {{ socket_type: {:?}, .. }}", T::raw_socket_type())]
 pub struct Socket<T: sealed::SocketType> {
     // field order matters: readiness, then socket, then context are released
     #[cfg(all(feature = "futures", unix))]
@@ -3356,7 +3358,7 @@ impl<T: sealed::SocketType> Socket<T> {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[from(u16)]
 /// Flags for setting up monitor sockets
 pub struct MonitorFlags(u16);
@@ -3447,7 +3449,7 @@ bitflags! {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Flag options for receive operations
 pub struct RecvFlags(i32);
 
@@ -3504,28 +3506,7 @@ where
 
     #[cfg(all(feature = "futures", unix))]
     async fn recv_msg_wait(&self) -> ZmqResult<Message> {
-        let source = self.readiness.source(&self.socket)?;
-
-        ::futures::future::poll_fn(|ctx| {
-            loop {
-                match self.socket.recv(RecvFlags::DONT_WAIT.bits()) {
-                    Ok(raw_msg) => {
-                        return core::task::Poll::Ready(Ok(Message::from_raw_msg(raw_msg)));
-                    }
-                    Err(ZmqError::Again) => (),
-                    Err(error) => return core::task::Poll::Ready(Err(error)),
-                }
-
-                match source.poll_readable(ctx) {
-                    core::task::Poll::Ready(Ok(())) => (),
-                    core::task::Poll::Ready(Err(error)) => {
-                        return core::task::Poll::Ready(Err(readiness::io_error(error)));
-                    }
-                    core::task::Poll::Pending => return core::task::Poll::Pending,
-                }
-            }
-        })
-        .await
+        ::futures::future::poll_fn(|ctx| self.readiness.poll_recv(&self.socket, ctx)).await
     }
 }
 
@@ -3563,7 +3544,7 @@ pub trait MultipartReceiver: Receiver {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Flag options for send operations
 pub struct SendFlags(i32);
 
@@ -3737,7 +3718,7 @@ mod futures {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Flags for poll operations on sockets
 pub struct PollEvents(i16);
 
@@ -3764,7 +3745,7 @@ bitflags! {
 
 #[cfg(feature = "draft-api")]
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Flags for the [`ReconnectStop`] socket option
 ///
 /// [`ReconnectStop`]: SocketOption::ReconnectStop

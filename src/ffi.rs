@@ -1,4 +1,4 @@
-use alloc::ffi::CString;
+use alloc::{borrow::Cow, ffi::CString};
 #[cfg(cold_path)]
 use core::hint::cold_path;
 #[rustversion::since(1.87)]
@@ -912,5 +912,32 @@ impl<'a> From<&'a str> for RawMessage {
 impl<'a> From<&'a String> for RawMessage {
     fn from(value: &'a String) -> Self {
         RawMessage::from(value.as_bytes())
+    }
+}
+
+impl From<String> for RawMessage {
+    fn from(value: String) -> Self {
+        RawMessage::from(value.into_bytes())
+    }
+}
+
+impl From<Cow<'_, str>> for RawMessage {
+    fn from(value: Cow<'_, str>) -> Self {
+        match value {
+            Cow::Borrowed(value) => RawMessage::from(value),
+            Cow::Owned(value) => RawMessage::from(value),
+        }
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for RawMessage {
+    fn from(value: [u8; N]) -> Self {
+        RawMessage::from(value.as_slice())
+    }
+}
+
+impl<const N: usize> From<&[u8; N]> for RawMessage {
+    fn from(value: &[u8; N]) -> Self {
+        RawMessage::from(value.as_slice())
     }
 }

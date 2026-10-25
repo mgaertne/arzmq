@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::zmq_sys_crate;
 
-#[derive(Error, Debug, Clone, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 /// 0MQ error codes
 pub enum ZmqError {
@@ -106,6 +106,29 @@ pub enum ZmqError {
     Other(i32),
 }
 
+impl From<ZmqError> for std::io::Error {
+    fn from(error: ZmqError) -> Self {
+        use std::io::ErrorKind;
+
+        let kind = match error {
+            ZmqError::Again => ErrorKind::WouldBlock,
+            ZmqError::Interrupted => ErrorKind::Interrupted,
+            ZmqError::InvalidArgument => ErrorKind::InvalidInput,
+            ZmqError::Unsupported => ErrorKind::Unsupported,
+            ZmqError::AddressInUse => ErrorKind::AddrInUse,
+            ZmqError::AddressNotAvailable => ErrorKind::AddrNotAvailable,
+            ZmqError::ConnectionRefused => ErrorKind::ConnectionRefused,
+            ZmqError::ConnectionAborted => ErrorKind::ConnectionAborted,
+            ZmqError::ConnectionReset => ErrorKind::ConnectionReset,
+            ZmqError::NotConnected => ErrorKind::NotConnected,
+            ZmqError::ConnectionTimeout => ErrorKind::TimedOut,
+            ZmqError::InsufficientMemory => ErrorKind::OutOfMemory,
+            _ => ErrorKind::Other,
+        };
+        std::io::Error::new(kind, error)
+    }
+}
+
 impl From<i32> for ZmqError {
     fn from(code: i32) -> Self {
         match code {
@@ -181,6 +204,28 @@ mod error_tests {
 
     use super::ZmqError;
     use crate::zmq_sys_crate;
+
+    #[rstest]
+    #[case(ZmqError::Again, std::io::ErrorKind::WouldBlock)]
+    #[case(ZmqError::AddressInUse, std::io::ErrorKind::AddrInUse)]
+    #[case(ZmqError::ConnectionRefused, std::io::ErrorKind::ConnectionRefused)]
+    #[case(ZmqError::ConnectionTimeout, std::io::ErrorKind::TimedOut)]
+    #[case(ZmqError::SocketNull, std::io::ErrorKind::Other)]
+    fn converts_into_io_error(#[case] error: ZmqError, #[case] kind: std::io::ErrorKind) {
+        let io_error = std::io::Error::from(error);
+
+        assert_eq!(io_error.kind(), kind);
+        assert_eq!(io_error.to_string(), error.to_string());
+    }
+
+    #[test]
+    fn error_is_copy_and_hashable() {
+        let error = ZmqError::Again;
+        let copy = error;
+
+        assert_eq!(error, copy);
+        assert_eq!(std::collections::HashSet::from([error, copy]).len(), 1);
+    }
 
     #[rstest]
     #[case(zmq_sys_crate::errno::EAGAIN, ZmqError::Again)]

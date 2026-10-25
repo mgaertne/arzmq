@@ -325,7 +325,7 @@ mod proxy_tests {
         assert!(
             captured
                 .pop_back()
-                .is_some_and(|message| message.to_string() == "proxied msg")
+                .is_some_and(|message| message == "proxied msg")
         );
 
         let mut received = receiving_dealer.recv_multipart(RecvFlags::empty())?;
@@ -333,7 +333,7 @@ mod proxy_tests {
         assert!(
             received
                 .pop_back()
-                .is_some_and(|message| message.to_string() == "proxied msg")
+                .is_some_and(|message| message == "proxied msg")
         );
 
         Ok(())

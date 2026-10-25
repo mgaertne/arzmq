@@ -15,7 +15,9 @@
 //! [`disconnect()`]: ConnectedEndpoint::disconnect
 
 use alloc::sync::{Arc, Weak};
-use core::{fmt, marker::PhantomData};
+use core::marker::PhantomData;
+
+use derive_more::{AsRef, Debug as DebugDeriveMore, Display as DisplayDeriveMore};
 
 use crate::{ZmqError, ZmqResult, ffi::RawSocket, sealed, socket::Socket};
 
@@ -25,8 +27,12 @@ use crate::{ZmqError, ZmqResult, ffi::RawSocket, sealed, socket::Socket};
 /// endpoint, so [`unbind()`] always addresses what has really been bound.
 ///
 /// [`unbind()`]: BoundEndpoint::unbind
+#[derive(DebugDeriveMore, DisplayDeriveMore, AsRef)]
+#[debug("BoundEndpoint {{ endpoint: {endpoint:?}, .. }}")]
+#[display("{endpoint}")]
 pub struct BoundEndpoint<T: sealed::SocketType> {
     socket: Weak<RawSocket>,
+    #[as_ref(str)]
     endpoint: String,
     marker: PhantomData<fn() -> T>,
 }
@@ -34,8 +40,12 @@ pub struct BoundEndpoint<T: sealed::SocketType> {
 /// # Handle of an endpoint a socket has been connected to
 ///
 /// Returned by [`Socket::connect_endpoint()`].
+#[derive(DebugDeriveMore, DisplayDeriveMore, AsRef)]
+#[debug("ConnectedEndpoint {{ endpoint: {endpoint:?}, .. }}")]
+#[display("{endpoint}")]
 pub struct ConnectedEndpoint<T: sealed::SocketType> {
     socket: Weak<RawSocket>,
+    #[as_ref(str)]
     endpoint: String,
     marker: PhantomData<fn() -> T>,
 }
@@ -100,22 +110,6 @@ impl<T: sealed::SocketType> ConnectedEndpoint<T> {
             .upgrade()
             .ok_or(ZmqError::SocketNull)?
             .disconnect(&self.endpoint)
-    }
-}
-
-impl<T: sealed::SocketType> fmt::Debug for BoundEndpoint<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BoundEndpoint")
-            .field("endpoint", &self.endpoint)
-            .finish_non_exhaustive()
-    }
-}
-
-impl<T: sealed::SocketType> fmt::Debug for ConnectedEndpoint<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ConnectedEndpoint")
-            .field("endpoint", &self.endpoint)
-            .finish_non_exhaustive()
     }
 }
 
@@ -304,6 +298,32 @@ mod endpoint_tests {
 
         assert_eq!(connected.disconnect(), Err(ZmqError::SocketNull));
 
+        Ok(())
+    }
+
+    #[test]
+    fn handles_display_and_borrow_their_endpoint() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let socket = PairSocket::from_context(&context)?;
+        let bound = socket.bind_endpoint("inproc://display-bound-test")?;
+        let connected = socket.connect_endpoint("inproc://display-connected-test")?;
+
+        assert_eq!(bound.to_string(), "inproc://display-bound-test");
+        assert_eq!(connected.to_string(), "inproc://display-connected-test");
+        assert_eq!(AsRef::<str>::as_ref(&bound), "inproc://display-bound-test");
+        assert_eq!(
+            AsRef::<str>::as_ref(&connected),
+            "inproc://display-connected-test"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn socket_debug_shows_socket_type() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let socket = PairSocket::from_context(&context)?;
+
+        assert_eq!(format!("{socket:?}"), "Socket { socket_type: Pair, .. }");
         Ok(())
     }
 
