@@ -18,6 +18,11 @@ Enables a builder API for the variouos socket types as well as the 0MQ context. 
 Enables async futures for the different send and receive traits to use with an async runner like `tokio`, `smol`,
 and the `futures` executor crate.
 
+Besides `recv_msg_async`/`send_msg_async`, which return immediately with `Again` when the operation would block,
+the feature provides waiting variants (`recv_msg_wait`, `send_msg_wait`, `send_multipart_wait`), the stream and sink
+types `MultipartStream`, `OwnedMultipartStream`, `MultipartSink` and `MonitorEventStream`. Waiting is based on the
+`ZMQ_FD` of the socket and therefore only available on unix.
+
 ## `libzmq`-related features
 `libzmq` offers multiple configurations to include. As it was hard for me to figure out the different compilation 
 options for me to finally succeed incorporating the different features in `libzmq`, I decided to include the approaches 

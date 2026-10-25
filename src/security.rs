@@ -593,10 +593,7 @@ pub mod curve {
         {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok((public_key.to_vec(), secret_key.to_vec()))
@@ -625,10 +622,7 @@ pub mod curve {
         {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ zmq_sys_crate::errno::ENOTSUP => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(public_key.to_vec())

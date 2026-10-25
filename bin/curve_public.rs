@@ -7,6 +7,7 @@ use core::ffi::{CStr, c_char};
 
 use arzmq_sys as zmq_sys_crate;
 
+const UNEXPECTED_ERROR: &str = "libzmq reported an unexpected error.";
 const MISSING_CURVE: &str =
     "To use curve_public, please install libsodium and then rebuild libzmq.";
 const INVALID_SECRET_KEY: &str = "Invalid secret key.";
@@ -29,7 +30,7 @@ fn public_key(secret_key: &str) -> Result<[u8; 41], &'static str> {
         match unsafe { zmq_sys_crate::zmq_errno() } {
             zmq_sys_crate::errno::ENOTSUP => return Err(MISSING_CURVE),
             zmq_sys_crate::errno::EINVAL => return Err(INVALID_SECRET_KEY),
-            _ => unreachable!(),
+            _ => return Err(UNEXPECTED_ERROR),
         }
     }
 

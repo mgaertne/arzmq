@@ -5,8 +5,9 @@ branch = true
 count = true
 no-fail-fast = true
 include-tests = false
-exclude-files = ["benches/*", "examples/*", "**/build.rs"]
+exclude-files = ["benches/*", "examples/*", "**/build.rs", "src/ffi/miri_shim.rs"]
 all-features = true
+fail-under = 90
 run-types = ["Lib", "Bins", "Tests"]
 
 [report]

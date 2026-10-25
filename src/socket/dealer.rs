@@ -123,6 +123,27 @@ impl Socket<Dealer> {
         self.get_sockopt_bytes_as_string(SocketOption::RoutingId)
     }
 
+    /// # Retrieve socket routing id as binary data `ZMQ_ROUTING_ID`
+    ///
+    /// Like [`routing_id()`], but returns the exact bytes, which are not necessarily valid UTF-8.
+    ///
+    /// [`routing_id()`]: #method.routing_id
+    pub fn routing_id_bytes(&self) -> ZmqResult<Vec<u8>> {
+        self.get_sockopt_bytes(SocketOption::RoutingId)
+    }
+
+    /// # Set socket routing id from binary data `ZMQ_ROUTING_ID`
+    ///
+    /// Like [`set_routing_id()`], but accepts arbitrary bytes.
+    ///
+    /// [`set_routing_id()`]: #method.set_routing_id
+    pub fn set_routing_id_bytes<V>(&self, value: V) -> ZmqResult<()>
+    where
+        V: AsRef<[u8]>,
+    {
+        self.set_sockopt_bytes(SocketOption::RoutingId, value)
+    }
+
     /// # bootstrap connections to ROUTER sockets `ZMQ_PROBE_ROUTER`
     ///
     /// When set to `true`, the socket will automatically send an empty message when a new
@@ -436,5 +457,21 @@ pub(crate) mod builder {
 
             Ok(())
         }
+    }
+
+    #[test]
+    fn routing_id_bytes_keeps_binary_data() -> crate::prelude::ZmqResult<()> {
+        let context = crate::prelude::Context::new()?;
+
+        let socket = crate::prelude::DealerSocket::from_context(&context)?;
+        socket.set_routing_id_bytes([1u8, 0xff, 2])?;
+
+        assert_eq!(socket.routing_id_bytes()?, [1u8, 0xff, 2]);
+        assert_eq!(
+            socket.routing_id(),
+            Err(crate::prelude::ZmqError::InvalidArgument)
+        );
+
+        Ok(())
     }
 }

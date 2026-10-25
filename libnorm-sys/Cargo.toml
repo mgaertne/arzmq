@@ -14,6 +14,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/mgaertne/arzmq"
 keywords = ["norm", "bindings", "ffi"]
 categories = ["external-ffi-bindings"]
+exclude = ["vendor/norp"]
 description = "Low-level bindings to the norm library"
 
 [lints]

@@ -57,7 +57,9 @@ pub mod prelude {
         XPublishBuilder, XSubscribeBuilder,
     };
     #[cfg(all(feature = "futures", unix))]
-    pub use crate::socket::{MultipartStream, OwnedMultipartStream};
+    pub use crate::socket::{
+        MonitorEventStream, MultipartSink, MultipartStream, OwnedMultipartStream,
+    };
     pub use crate::{
         ZmqError, ZmqResult,
         context::{Context, ContextOption},
@@ -65,9 +67,9 @@ pub mod prelude {
         socket::{
             BoundEndpoint, ConnectedEndpoint, DealerSocket, MonitorFlags, MonitorReceiver,
             MonitorSocket, MonitorSocketEvent, MultipartReceiver, MultipartSender, PairSocket,
-            PublishSocket, PullSocket, PushSocket, Receiver, RecvFlags, ReplySocket, RequestSocket,
-            RouterSocket, SendFlags, Sender, Socket, SocketOption, StreamSocket, SubscribeSocket,
-            XPublishSocket, XSubscribeSocket,
+            Poller, PublishSocket, PullSocket, PushSocket, Receiver, RecvFlags, ReplySocket,
+            RequestSocket, RouterSocket, SendFlags, Sender, Socket, SocketOption, StreamSocket,
+            SubscribeSocket, XPublishSocket, XSubscribeSocket,
         },
     };
 }
@@ -75,6 +77,7 @@ pub mod prelude {
 mod sealed {
     use crate::socket;
 
+    pub trait Sealed {}
     pub trait ReceiverFlag {}
     pub trait SenderFlag {}
     pub trait SocketType {
@@ -224,7 +227,7 @@ where
 {
     let frontend_guard = frontend.socket.socket.lock();
     let backend_guard = backend.socket.socket.lock();
-    let return_code = match capture {
+    match capture {
         None => unsafe {
             zmq_sys_crate::zmq_proxy(*frontend_guard, *backend_guard, ptr::null_mut())
         },
@@ -234,20 +237,9 @@ where
         }
     };
 
-    if return_code == -1 {
-        #[cfg(cold_path)]
-        cold_path();
-        match unsafe { zmq_sys_crate::zmq_errno() } {
-            errno @ (zmq_sys_crate::errno::ETERM
-            | zmq_sys_crate::errno::EINTR
-            | zmq_sys_crate::errno::EFAULT) => {
-                return Err(ZmqError::from(errno));
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    unreachable!()
+    #[cfg(cold_path)]
+    cold_path();
+    Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }))
 }
 
 #[cfg(test)]

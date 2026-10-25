@@ -25,7 +25,11 @@ use async_io::Async;
 use parking_lot::Mutex;
 
 use crate::{
-    ZmqError, ZmqResult, ffi::RawSocket, message::Message, socket::RecvFlags, zmq_sys_crate,
+    ZmqError, ZmqResult,
+    ffi::RawSocket,
+    message::Message,
+    socket::{RecvFlags, SendFlags},
+    zmq_sys_crate,
 };
 
 /// The descriptor is owned by 0MQ, so it is never closed from here.
@@ -89,11 +93,12 @@ impl Readiness {
             .map_err(Clone::clone)
     }
 
-    pub(super) fn poll_recv(
+    fn poll_operation<R>(
         &self,
         socket: &RawSocket,
         ctx: &mut Context<'_>,
-    ) -> Poll<ZmqResult<Message>> {
+        mut operation: impl FnMut() -> ZmqResult<R>,
+    ) -> Poll<ZmqResult<R>> {
         let source = match self.source(socket) {
             Ok(source) => source,
             Err(error) => return Poll::Ready(Err(error)),
@@ -101,10 +106,10 @@ impl Readiness {
         let mut broadcast_ctx = Context::from_waker(&self.broadcast);
 
         loop {
-            match socket.recv(RecvFlags::DONT_WAIT.bits()) {
-                Ok(raw_msg) => {
+            match operation() {
+                Ok(result) => {
                     self.broadcast.wake_by_ref();
-                    return Poll::Ready(Ok(Message::from_raw_msg(raw_msg)));
+                    return Poll::Ready(Ok(result));
                 }
                 Err(ZmqError::Again) => (),
                 Err(error) => return Poll::Ready(Err(error)),
@@ -118,10 +123,97 @@ impl Readiness {
             }
         }
     }
+
+    pub(super) fn poll_recv(
+        &self,
+        socket: &RawSocket,
+        ctx: &mut Context<'_>,
+    ) -> Poll<ZmqResult<Message>> {
+        self.poll_operation(socket, ctx, || {
+            socket
+                .recv(RecvFlags::DONT_WAIT.bits())
+                .map(Message::from_raw_msg)
+        })
+    }
+
+    pub(super) fn poll_send(
+        &self,
+        socket: &RawSocket,
+        message: &Message,
+        flags: SendFlags,
+        ctx: &mut Context<'_>,
+    ) -> Poll<ZmqResult<()>> {
+        let flags = (flags | SendFlags::DONT_WAIT).bits();
+        self.poll_operation(socket, ctx, || message.send_by_ref(socket, flags))
+    }
 }
 
 fn io_error(error: std::io::Error) -> ZmqError {
     ZmqError::Other(error.raw_os_error().unwrap_or(-1))
+}
+
+#[cfg(test)]
+mod waiters_tests {
+    use alloc::{sync::Arc, task::Wake};
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    use std::task::Waker;
+
+    use super::Waiters;
+
+    #[derive(Default)]
+    struct Counter(AtomicUsize);
+
+    impl Wake for Counter {
+        fn wake(self: Arc<Self>) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    fn counting_waker() -> (Arc<Counter>, Waker) {
+        let counter = Arc::new(Counter::default());
+        (counter.clone(), Waker::from(counter))
+    }
+
+    #[test]
+    fn broadcast_wakes_every_registered_waker_once() {
+        let waiters = Arc::new(Waiters::default());
+        let (first, first_waker) = counting_waker();
+        let (second, second_waker) = counting_waker();
+        waiters.register(&first_waker);
+        waiters.register(&second_waker);
+
+        Waker::from(waiters.clone()).wake_by_ref();
+        Waker::from(waiters).wake();
+
+        assert_eq!(first.0.load(Ordering::SeqCst), 1);
+        assert_eq!(second.0.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn registering_the_same_waker_twice_wakes_it_once() {
+        let waiters = Arc::new(Waiters::default());
+        let (counter, waker) = counting_waker();
+        waiters.register(&waker);
+        waiters.register(&waker.clone());
+
+        Waker::from(waiters).wake();
+
+        assert_eq!(counter.0.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn waker_registered_while_waking_is_kept_for_the_next_broadcast() {
+        let waiters = Arc::new(Waiters::default());
+        let broadcast = Waker::from(waiters.clone());
+        let (counter, waker) = counting_waker();
+
+        broadcast.wake_by_ref();
+        waiters.register(&waker);
+        assert_eq!(counter.0.load(Ordering::SeqCst), 0);
+
+        broadcast.wake_by_ref();
+        assert_eq!(counter.0.load(Ordering::SeqCst), 1);
+    }
 }
 
 #[cfg(test)]

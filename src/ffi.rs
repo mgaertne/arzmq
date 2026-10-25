@@ -1,3 +1,6 @@
+#[cfg(miri)]
+mod miri_shim;
+
 use alloc::{borrow::Cow, ffi::CString};
 #[cfg(cold_path)]
 use core::hint::cold_path;
@@ -34,10 +37,7 @@ impl RawContext {
             null_ptr if null_ptr.is_null() => {
                 #[cfg(cold_path)]
                 cold_path();
-                match unsafe { zmq_sys_crate::zmq_errno() } {
-                    errno @ zmq_sys_crate::errno::EMFILE => Err(ZmqError::from(errno)),
-                    _ => unreachable!(),
-                }
+                Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }))
             }
             context => Ok(RawContext {
                 context: Mutex::new(context),
@@ -50,12 +50,7 @@ impl RawContext {
         if unsafe { zmq_sys_crate::zmq_ctx_set(*context, option, value) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -78,12 +73,7 @@ impl RawContext {
         {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -112,12 +102,7 @@ impl RawContext {
             -1 => {
                 #[cfg(cold_path)]
                 cold_path();
-                match unsafe { zmq_sys_crate::zmq_errno() } {
-                    errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
-                        Err(ZmqError::from(errno))
-                    }
-                    _ => unreachable!(),
-                }
+                Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }))
             }
             value => Ok(value),
         }
@@ -140,12 +125,7 @@ impl RawContext {
         {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL | zmq_sys_crate::errno::EFAULT) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
         CStr::from_bytes_until_nul(&buffer)?
             .to_owned()
@@ -175,10 +155,7 @@ impl RawContext {
             -1 => {
                 #[cfg(cold_path)]
                 cold_path();
-                match unsafe { zmq_sys_crate::zmq_errno() } {
-                    errno @ zmq_sys_crate::errno::EFAULT => Err(ZmqError::from(errno)),
-                    _ => unreachable!(),
-                }
+                Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }))
             }
             _ => Ok(()),
         }
@@ -191,8 +168,7 @@ impl RawContext {
             cold_path();
             match unsafe { zmq_sys_crate::zmq_errno() } {
                 zmq_sys_crate::errno::EINTR => (),
-                zmq_sys_crate::errno::ETERM => break,
-                _ => unreachable!(),
+                _ => break,
             }
         }
     }
@@ -201,6 +177,40 @@ impl RawContext {
 impl Drop for RawContext {
     fn drop(&mut self) {
         self.terminate()
+    }
+}
+
+pub(crate) fn poll_sockets(
+    items: &[(&RawSocket, PollEvents)],
+    timeout_ms: i64,
+) -> ZmqResult<Vec<PollEvents>> {
+    let address = |socket: &RawSocket| socket as *const RawSocket as usize;
+
+    let mut unique: Vec<&RawSocket> = items.iter().map(|(socket, _)| *socket).collect();
+    unique.sort_by_key(|socket| address(socket));
+    unique.dedup_by_key(|socket| address(socket));
+    let guards: Vec<_> = unique.iter().map(|socket| socket.socket.lock()).collect();
+
+    let mut poll_items: Vec<_> = items
+        .iter()
+        .map(|(socket, events)| {
+            let index = unique.partition_point(|unique| address(unique) < address(socket));
+            zmq_sys_crate::zmq_pollitem_t {
+                socket: *guards[index],
+                fd: 0,
+                events: events.bits(),
+                revents: 0,
+            }
+        })
+        .collect();
+    let count = i32::try_from(poll_items.len()).map_err(|_| ZmqError::InvalidArgument)?;
+
+    match unsafe { zmq_sys_crate::zmq_poll(poll_items.as_mut_ptr(), count, timeout_ms as c_long) } {
+        -1 => Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() })),
+        _ => Ok(poll_items
+            .iter()
+            .map(|item| PollEvents::from_bits_truncate(item.revents))
+            .collect()),
     }
 }
 
@@ -215,13 +225,7 @@ impl RawSocket {
         if socket_ptr.is_null() {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EFAULT
-                | zmq_sys_crate::errno::EMFILE
-                | zmq_sys_crate::errno::ETERM) => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         drop(context_guard);
@@ -237,17 +241,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_connect(*socket_guard, c_endpoint.as_ptr()) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EPROTONOSUPPORT
-                | zmq_sys_crate::errno::ENOCOMPATPROTO
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EMTHREAD) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -260,13 +254,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_disconnect(*socket_guard, c_endpoint.as_ptr()) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::ENOENT) => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -279,20 +267,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_bind(*socket_guard, c_endpoint.as_ptr()) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EPROTONOSUPPORT
-                | zmq_sys_crate::errno::ENOCOMPATPROTO
-                | zmq_sys_crate::errno::EADDRINUSE
-                | zmq_sys_crate::errno::EADDRNOTAVAIL
-                | zmq_sys_crate::errno::ENODEV
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EMTHREAD) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -305,13 +280,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_unbind(*socket_guard, c_endpoint.as_ptr()) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::ENOENT) => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -322,15 +291,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_getsockopt(*socket, option, value_ptr, size) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EINTR) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -412,15 +373,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_setsockopt(*socket, option, value_ptr, size) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EINTR) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -460,14 +413,7 @@ impl RawSocket {
         {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::EPROTONOSUPPORT
-                | zmq_sys_crate::errno::EINVAL) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -478,19 +424,7 @@ impl RawSocket {
 
         if unsafe { zmq_sys_crate::zmq_msg_send(&mut zmq_msg.message, *socket_guard, flags) } == -1
         {
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EAGAIN
-                | zmq_sys_crate::errno::ENOTSUP
-                | zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EFSM
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EINTR
-                | zmq_sys_crate::errno::EHOSTUNREACH) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -503,41 +437,15 @@ impl RawSocket {
 
             if unsafe { zmq_sys_crate::zmq_msg_recv(&mut msg.message, *socket_guard, flags) } == -1
             {
-                match unsafe { zmq_sys_crate::zmq_errno() } {
-                    errno @ (zmq_sys_crate::errno::EAGAIN
-                    | zmq_sys_crate::errno::ENOTSUP
-                    | zmq_sys_crate::errno::EFSM
-                    | zmq_sys_crate::errno::ETERM
-                    | zmq_sys_crate::errno::ENOTSOCK
-                    | zmq_sys_crate::errno::EINTR
-                    | zmq_sys_crate::errno::EFAULT) => {
-                        return Err(ZmqError::from(errno));
-                    }
-                    _ => unreachable!(),
-                }
+                return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
             }
         }
 
         Ok(msg)
     }
 
-    pub(crate) fn poll(&self, events: PollEvents, timeout_ms: i64) -> ZmqResult<i32> {
-        let mut poll_item = zmq_sys_crate::zmq_pollitem_t {
-            socket: *self.socket.lock(),
-            fd: 0,
-            events: events.bits(),
-            revents: 0,
-        };
-
-        match unsafe { zmq_sys_crate::zmq_poll(&mut poll_item, 1, timeout_ms as c_long) } {
-            -1 => match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::EFAULT
-                | zmq_sys_crate::errno::EINTR) => Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            },
-            num_events => Ok(num_events),
-        }
+    pub(crate) fn poll(&self, events: PollEvents, timeout_ms: i64) -> ZmqResult<PollEvents> {
+        poll_sockets(&[(self, events)], timeout_ms).map(|ready| ready[0])
     }
 
     #[cfg(feature = "draft-api")]
@@ -550,19 +458,7 @@ impl RawSocket {
         if routing_id == 0 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EPROTONOSUPPORT
-                | zmq_sys_crate::errno::ENOCOMPATPROTO
-                | zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EMTHREAD
-                | zmq_sys_crate::errno::ENOTSUP
-                | zmq_sys_crate::errno::EFAULT) => {
-                    return Err(ZmqError::from(errno));
-                }
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(routing_id)
@@ -576,14 +472,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_join(*socket_guard, c_group.as_ptr()) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EINTR
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EMTHREAD) => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -597,14 +486,7 @@ impl RawSocket {
         if unsafe { zmq_sys_crate::zmq_leave(*socket_guard, c_group.as_ptr()) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                errno @ (zmq_sys_crate::errno::ETERM
-                | zmq_sys_crate::errno::EINVAL
-                | zmq_sys_crate::errno::EINTR
-                | zmq_sys_crate::errno::ENOTSOCK
-                | zmq_sys_crate::errno::EMTHREAD) => return Err(ZmqError::from(errno)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
 
         Ok(())
@@ -614,12 +496,7 @@ impl RawSocket {
 impl Drop for RawSocket {
     fn drop(&mut self) {
         let socket_guard = self.socket.lock();
-        if unsafe { zmq_sys_crate::zmq_close(*socket_guard) } == -1 {
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                zmq_sys_crate::errno::ENOTSOCK => (),
-                _ => unreachable!(),
-            }
-        }
+        unsafe { zmq_sys_crate::zmq_close(*socket_guard) };
     }
 }
 
@@ -673,10 +550,7 @@ impl RawMessage {
         if unsafe { zmq_sys_crate::zmq_msg_set_routing_id(&mut self.message, value) } == -1 {
             #[cfg(cold_path)]
             cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                event @ zmq_sys_crate::errno::EINVAL => return Err(ZmqError::from(event)),
-                _ => unreachable!(),
-            }
+            return Err(ZmqError::from(unsafe { zmq_sys_crate::zmq_errno() }));
         }
         Ok(())
     }
@@ -750,14 +624,7 @@ impl Clone for RawMessage {
 
 impl Drop for RawMessage {
     fn drop(&mut self) {
-        if unsafe { zmq_sys_crate::zmq_msg_close(&mut self.message) } == -1 {
-            #[cfg(cold_path)]
-            cold_path();
-            match unsafe { zmq_sys_crate::zmq_errno() } {
-                zmq_sys_crate::errno::EFAULT => (),
-                _ => unreachable!(),
-            }
-        }
+        unsafe { zmq_sys_crate::zmq_msg_close(&mut self.message) };
     }
 }
 

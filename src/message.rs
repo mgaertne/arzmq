@@ -250,6 +250,13 @@ impl<T: Into<RawMessage>> From<T> for Message {
     }
 }
 
+impl Message {
+    #[cfg(all(feature = "futures", unix))]
+    pub(crate) fn send_by_ref(&self, socket: &crate::ffi::RawSocket, flags: i32) -> ZmqResult<()> {
+        socket.send(&mut self.inner.lock(), flags)
+    }
+}
+
 impl<M, S: sealed::SocketType + sealed::SenderFlag> Sendable<S> for M
 where
     M: Into<Message>,

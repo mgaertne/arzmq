@@ -223,6 +223,25 @@ jobs:
       - run: cargo hack test --locked --each-feature --clean-per-run --verbose
         if: runner.os == 'Linux'
 
+  miri:
+    name: miri
+    runs-on: ubuntu-latest
+    needs: [ check, check-tests ]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: miri
+      - name: Install linux dependencies
+        run: sudo apt-get install -y autoconf
+      - name: unit tests without libzmq calls (message and waiter code run against the Rust shims in src/ffi/miri_shim.rs)
+        run: cargo miri test --all-features --lib -- message:: error:: ffi::raw_message_tests socket::readiness::waiters_tests
+
   examples:
     name: examples
     needs: [ check, check-examples, clippy, clippy-examples ]

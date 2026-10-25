@@ -459,7 +459,7 @@ impl Socket<Monitor> {}
 /// Trait for receiving [`MonitorSocketEvent`] from a monitor socket
 ///
 /// [`MonitorSocketEvent`]: MonitorSocketEvent
-pub trait MonitorReceiver {
+pub trait MonitorReceiver: sealed::Sealed {
     fn recv_monitor_event(&self) -> ZmqResult<MonitorSocketEvent>;
 
     #[cfg(feature = "futures")]

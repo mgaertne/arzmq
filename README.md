@@ -50,5 +50,16 @@ fn main() {
 }
 ```
 
+With the `futures` feature, sockets can be awaited and used as streams and sinks:
+
+```ignore
+let mut stream = socket.multipart_stream();
+while let Some(multipart) = stream.next().await {
+    handle(multipart?);
+}
+```
+
+`Poller` waits for events on several sockets at once. See [CHANGELOG.md](./CHANGELOG.md) for changes between releases.
+
 You can find more usage examples in
 <https://github.com/mgaertne/arzmq/tree/master/examples>.

@@ -4,6 +4,7 @@ use core::ffi::{CStr, c_char};
 
 use arzmq_sys as zmq_sys_crate;
 
+const UNEXPECTED_ERROR: &str = "libzmq reported an unexpected error.";
 const MISSING_CURVE: &str =
     "To use curve_keygen, please install libsodium and then rebuild libzmq.";
 
@@ -26,7 +27,7 @@ fn keypair() -> Result<(Key, Key), &'static str> {
     {
         match unsafe { zmq_sys_crate::zmq_errno() } {
             zmq_sys_crate::errno::ENOTSUP => return Err(MISSING_CURVE),
-            _ => unreachable!(),
+            _ => return Err(UNEXPECTED_ERROR),
         }
     }
 

@@ -954,10 +954,15 @@ mod endpoint;
 mod gather;
 pub(crate) mod monitor;
 #[cfg(all(feature = "futures", unix))]
+mod monitor_stream;
+#[cfg(all(feature = "futures", unix))]
+mod multipart_sink;
+#[cfg(all(feature = "futures", unix))]
 mod multipart_stream;
 mod pair;
 #[cfg(feature = "draft-api")]
 mod peer;
+mod poller;
 mod publish;
 mod pull;
 mod push;
@@ -1002,6 +1007,10 @@ pub use gather::builder::GatherBuilder;
 use monitor::Monitor;
 pub use monitor::{HandshakeProtocolError, MonitorReceiver, MonitorSocket, MonitorSocketEvent};
 #[cfg(all(feature = "futures", unix))]
+pub use monitor_stream::MonitorEventStream;
+#[cfg(all(feature = "futures", unix))]
+pub use multipart_sink::MultipartSink;
+#[cfg(all(feature = "futures", unix))]
 pub use multipart_stream::{MultipartStream, OwnedMultipartStream};
 pub use pair::PairSocket;
 #[cfg(feature = "builder")]
@@ -1010,6 +1019,7 @@ pub use pair::builder::PairBuilder;
 pub use peer::PeerSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
 pub use peer::builder::PeerBuilder;
+pub use poller::Poller;
 pub use publish::PublishSocket;
 #[cfg(feature = "builder")]
 pub use publish::builder::PublishBuilder;
@@ -1745,6 +1755,8 @@ mod socket_option_tests {
         assert_eq!(<SocketOption as Into<i32>>::into(option), expected);
     }
 }
+
+impl<T: sealed::SocketType> sealed::Sealed for Socket<T> {}
 
 /// generic 0MQ socket
 #[derive(DebugDeriveMore)]
@@ -3361,11 +3373,7 @@ impl<T: sealed::SocketType> Socket<T> {
     where
         E: Into<PollEvents>,
     {
-        self.socket
-            .poll(events.into(), timeout_ms)?
-            .try_into()
-            .map(PollEvents::from_bits_truncate)
-            .map_err(|_err| ZmqError::InvalidArgument)
+        self.socket.poll(events.into(), timeout_ms)
     }
 }
 
@@ -3474,7 +3482,7 @@ bitflags! {
 
 #[cfg_attr(feature = "futures", async_trait)]
 /// Trait for receiving single part messages
-pub trait Receiver {
+pub trait Receiver: sealed::Sealed {
     fn recv_msg<F>(&self, flags: F) -> ZmqResult<Message>
     where
         F: Into<RecvFlags> + Copy;
@@ -3578,7 +3586,7 @@ bitflags! {
 
 #[cfg_attr(feature = "futures", async_trait)]
 /// Trait for sending single part messages
-pub trait Sender {
+pub trait Sender: sealed::Sealed {
     fn send_msg<M, F>(&self, msg: M, flags: F) -> ZmqResult<()>
     where
         M: Into<Message>,
@@ -3588,6 +3596,25 @@ pub trait Sender {
     async fn send_msg_async<M, F>(&self, msg: M, flags: F) -> Option<()>
     where
         M: Into<Message> + Clone + Send,
+        F: Into<SendFlags> + Copy + Send;
+
+    /// # Send a message, waiting until the socket accepts it
+    ///
+    /// In contrast to [`send_msg_async()`], which gives up when the socket cannot accept the
+    /// message right away (for example because the high water mark has been reached), this
+    /// operation suspends the task until the message could be queued, without polling the socket
+    /// repeatedly. The task is woken up by the readiness notification of the [`FileDescriptor`]
+    /// option, driven by the `async-io` reactor, so it works with any async runtime.
+    ///
+    /// The message is owned by the operation, so it is dropped together with the operation when
+    /// that is cancelled.
+    ///
+    /// [`send_msg_async()`]: Sender::send_msg_async
+    /// [`FileDescriptor`]: SocketOption::FileDescriptor
+    #[cfg(all(feature = "futures", unix))]
+    async fn send_msg_wait<M, F>(&self, msg: M, flags: F) -> ZmqResult<()>
+    where
+        M: Into<Message> + Send,
         F: Into<SendFlags> + Copy + Send;
 }
 
@@ -3617,6 +3644,20 @@ where
             flags: flags.into(),
         }
         .now_or_never()
+    }
+
+    #[cfg(all(feature = "futures", unix))]
+    async fn send_msg_wait<M, F>(&self, msg: M, flags: F) -> ZmqResult<()>
+    where
+        M: Into<Message> + Send,
+        F: Into<SendFlags> + Copy + Send,
+    {
+        let message = msg.into();
+        let flags = flags.into();
+        ::futures::future::poll_fn(|ctx| {
+            self.readiness.poll_send(&self.socket, &message, flags, ctx)
+        })
+        .await
     }
 }
 
@@ -3662,6 +3703,32 @@ pub trait MultipartSender: Sender {
             self.send_msg_async(last, flags.into()).await
         } else {
             None
+        }
+    }
+
+    /// # Send a multipart message, waiting until the socket accepts it
+    ///
+    /// Like [`send_msg_wait()`] for all parts of the multipart message. 0MQ accepts all parts of a
+    /// multipart message or none, so only the first part can have to wait.
+    ///
+    /// [`send_msg_wait()`]: Sender::send_msg_wait
+    #[cfg(all(feature = "futures", unix))]
+    async fn send_multipart_wait<M, F>(&self, multipart: M, flags: F) -> ZmqResult<()>
+    where
+        M: Into<MultipartMessage> + Send,
+        F: Into<SendFlags> + Copy + Send,
+    {
+        let mut last_part = None;
+        for part in multipart.into() {
+            if let Some(last) = last_part.take() {
+                self.send_msg_wait(last, flags.into() | SendFlags::SEND_MORE)
+                    .await?;
+            }
+            last_part = Some(part);
+        }
+        match last_part {
+            Some(last) => self.send_msg_wait(last, flags).await,
+            None => Ok(()),
         }
     }
 }
@@ -4556,6 +4623,21 @@ mod socket_tests {
     }
 
     #[test]
+    fn poll_reports_the_events_that_occurred_instead_of_their_number() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let server = PairSocket::from_context(&context)?;
+        server.bind("inproc://poll-events-test")?;
+        let client = PairSocket::from_context(&context)?;
+        client.connect("inproc://poll-events-test")?;
+
+        assert_eq!(
+            client.poll(PollEvents::POLL_IN | PollEvents::POLL_OUT, 0)?,
+            PollEvents::POLL_OUT
+        );
+        Ok(())
+    }
+
+    #[test]
     fn poll_on_socket_when_no_events_available() -> ZmqResult<()> {
         let context = Context::new()?;
 
@@ -4581,7 +4663,10 @@ mod socket_tests {
         pair_server.send_msg("msg2", SendFlags::empty())?;
         pair_server.send_msg("msg3", SendFlags::empty())?;
 
-        assert_eq!(pair_client.poll(PollEvents::all(), 0)?, PollEvents::POLL_IN);
+        assert_eq!(
+            pair_client.poll(PollEvents::all(), 0)?,
+            PollEvents::POLL_IN | PollEvents::POLL_OUT
+        );
 
         Ok(())
     }
