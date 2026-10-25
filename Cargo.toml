@@ -27,6 +27,9 @@ opt-level = "z"
 lto = "fat"
 codegen-units = 1
 
+[profile.bench]
+opt-level = 3
+
 [package]
 name = "arzmq"
 version.workspace = true
@@ -66,6 +69,7 @@ parking_lot = { version = ">=0.12", default-features = false, features = ["arc_l
 
 derive_builder = { version = ">=0.20.2", default-features = false, features = ["alloc"], optional = true }
 serde = { version = ">=1.0", default-features = false, optional = true, features = ["derive", "alloc"] }
+async-io = { version = ">=2.6", default-features = false, optional = true }
 async-trait = { version = ">=0.1.9", default-features = false, optional = true }
 futures = { version = ">=0.3", default-features = false, features = ["async-await", "alloc"], optional = true }
 
@@ -81,13 +85,23 @@ arzmq-sys = { workspace = true }
 [dev-dependencies]
 rstest = { version = ">=0.26", default-features = false }
 futures = { version = ">=0.3", default-features = false, features = ["executor"] }
+criterion = { version = ">=0.8", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "socket"
+harness = false
+
+[[bench]]
+name = "socket_async"
+harness = false
+required-features = ["futures"]
 
 [features]
 default = ["builder"]
 # enable Builder API for the various socket types and the ZMQ context.
 builder = ["dep:serde", "dep:derive_builder"]
 # enable async futures for send and receive operations
-futures = ["dep:async-trait", "dep:futures"]
+futures = ["dep:async-io", "dep:async-trait", "dep:futures"]
 # enables Draft API features in the underlying libzmq.
 draft-api = ["arzmq-sys/draft-api"]
 
@@ -474,3 +488,7 @@ required-features = ["examples-futures", "draft-api"]
 name = "radio_dish_async_futures"
 path = "examples/radio_dish_async_futures.rs"
 required-features = ["examples-futures", "draft-api"]
+
+[[bench]]
+name = "allocations"
+harness = false

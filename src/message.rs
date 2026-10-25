@@ -4,10 +4,10 @@ use alloc::collections::{
     VecDeque,
     vec_deque::{Drain, IntoIter, Iter, IterMut},
 };
-use core::ops::RangeBounds;
+use core::ops::{Deref, RangeBounds};
 
 use derive_more::{Debug as DebugDeriveMore, Display as DisplayDeriveMore};
-use parking_lot::FairMutex;
+use parking_lot::{Mutex, MutexGuard};
 
 use crate::{
     ZmqResult,
@@ -21,11 +21,42 @@ use crate::{
 #[display("{}", inner.lock())]
 /// 0MQ single-part message
 pub struct Message {
-    inner: FairMutex<RawMessage>,
+    inner: Mutex<RawMessage>,
 }
 
 unsafe impl Send for Message {}
 unsafe impl Sync for Message {}
+
+/// # Borrowed bytes of a [`Message`]
+///
+/// Returned by [`Message::as_bytes()`]. It holds the lock of the message, so the bytes cannot be
+/// changed or sent from another thread while they are borrowed. The guard is not [`Send`], which
+/// keeps it from being held across an `.await` in a future that may move between threads:
+///
+/// ```compile_fail
+/// # use arzmq::prelude::Message;
+/// fn assert_send<T: Send>(_: T) {}
+///
+/// let msg = Message::from("Hello");
+/// assert_send(msg.as_bytes());
+/// ```
+pub struct MessageBytes<'a> {
+    guard: MutexGuard<'a, RawMessage>,
+}
+
+impl Deref for MessageBytes<'_> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.guard.as_ref()
+    }
+}
+
+impl AsRef<[u8]> for MessageBytes<'_> {
+    fn as_ref(&self) -> &[u8] {
+        self
+    }
+}
 
 impl Message {
     pub fn new() -> Self {
@@ -40,6 +71,26 @@ impl Message {
     pub(crate) fn from_raw_msg(raw_msg: RawMessage) -> Self {
         Self {
             inner: raw_msg.into(),
+        }
+    }
+
+    /// Borrows the message underlying byte representation without copying it.
+    ///
+    /// The returned [`MessageBytes`] keeps the message locked until it is dropped. Do not call
+    /// other methods of the same message, or send it, while holding on to it, as those wait for
+    /// the lock as well.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// # use arzmq::prelude::Message;
+    /// let msg = Message::from("Hello");
+    ///
+    /// assert_eq!(&*msg.as_bytes(), b"Hello");
+    /// ```
+    pub fn as_bytes(&self) -> MessageBytes<'_> {
+        MessageBytes {
+            guard: self.inner.lock(),
         }
     }
 
@@ -159,6 +210,21 @@ mod message_tests {
     fn bytes_returns_correct_bytes() {
         let msg: Message = "asdf".into();
         assert_eq!(msg.bytes(), "asdf".as_bytes());
+    }
+
+    #[test]
+    fn as_bytes_borrows_the_message_bytes() {
+        let msg: Message = "asdf".into();
+        let copied = msg.bytes();
+        assert_eq!(&*msg.as_bytes(), "asdf".as_bytes());
+        assert_eq!(msg.as_bytes().as_ref(), copied.as_slice());
+    }
+
+    #[test]
+    fn as_bytes_guard_is_released_on_drop() {
+        let msg: Message = "asdf".into();
+        drop(msg.as_bytes());
+        assert_eq!(msg.len(), 4);
     }
 
     #[test]

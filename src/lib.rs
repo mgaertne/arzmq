@@ -61,10 +61,11 @@ pub mod prelude {
         context::{Context, ContextOption},
         message::{Message, MultipartMessage},
         socket::{
-            DealerSocket, MonitorFlags, MonitorReceiver, MonitorSocket, MonitorSocketEvent,
-            MultipartReceiver, MultipartSender, PairSocket, PublishSocket, PullSocket, PushSocket,
-            Receiver, RecvFlags, ReplySocket, RequestSocket, RouterSocket, SendFlags, Sender,
-            Socket, SocketOption, StreamSocket, SubscribeSocket, XPublishSocket, XSubscribeSocket,
+            BoundEndpoint, ConnectedEndpoint, DealerSocket, MonitorFlags, MonitorReceiver,
+            MonitorSocket, MonitorSocketEvent, MultipartReceiver, MultipartSender, PairSocket,
+            PublishSocket, PullSocket, PushSocket, Receiver, RecvFlags, ReplySocket, RequestSocket,
+            RouterSocket, SendFlags, Sender, Socket, SocketOption, StreamSocket, SubscribeSocket,
+            XPublishSocket, XSubscribeSocket,
         },
     };
 }

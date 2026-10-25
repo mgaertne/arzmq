@@ -15,7 +15,7 @@ use std::str;
 
 use derive_more::{Debug as DebugDeriveMore, Display as DisplayDeriveMore};
 use num_traits::PrimInt;
-use parking_lot::FairMutex;
+use parking_lot::Mutex;
 
 use crate::{ZmqError, ZmqResult, socket::PollEvents, zmq_sys_crate};
 
@@ -25,7 +25,7 @@ const MAX_OPTION_STR_LEN: usize = u8::MAX as usize;
 #[debug("RawContext {{ ... }}")]
 #[display("RawContext")]
 pub(crate) struct RawContext {
-    context: FairMutex<*mut c_void>,
+    context: Mutex<*mut c_void>,
 }
 
 impl RawContext {
@@ -40,7 +40,7 @@ impl RawContext {
                 }
             }
             context => Ok(RawContext {
-                context: FairMutex::new(context),
+                context: Mutex::new(context),
             }),
         }
     }
@@ -205,7 +205,7 @@ impl Drop for RawContext {
 }
 
 pub(crate) struct RawSocket {
-    pub(crate) socket: FairMutex<*mut c_void>,
+    pub(crate) socket: Mutex<*mut c_void>,
 }
 
 impl RawSocket {
@@ -226,7 +226,7 @@ impl RawSocket {
 
         drop(context_guard);
         Ok(Self {
-            socket: FairMutex::new(socket_ptr),
+            socket: Mutex::new(socket_ptr),
         })
     }
 
@@ -338,25 +338,22 @@ impl RawSocket {
 
     #[cfg(zmq_has = "curve")]
     pub(crate) fn get_sockopt_curve(&self, option: i32) -> ZmqResult<Vec<u8>> {
-        let mut buffer = vec![0; 41];
+        let mut buffer = [0u8; 41];
         let mut buffer_len = buffer.len();
 
         self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
 
-        buffer.truncate(buffer_len);
-        Ok(buffer)
+        Ok(buffer[..buffer_len.min(buffer.len())].to_vec())
     }
 
     #[cfg(zmq_has = "gssapi")]
     pub(crate) fn get_sockopt_gssapi(&self, option: i32) -> ZmqResult<String> {
-        let mut buffer = vec![0; 260];
+        let mut buffer = [0u8; 260];
         let mut buffer_len = buffer.len();
 
         self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
 
-        buffer.truncate(buffer_len);
-
-        CStr::from_bytes_until_nul(&buffer)?
+        CStr::from_bytes_until_nul(&buffer[..buffer_len.min(buffer.len())])?
             .to_owned()
             .into_string()
             .map_err(ZmqError::from)
@@ -374,13 +371,14 @@ impl RawSocket {
     }
 
     pub(crate) fn get_sockopt_string(&self, option: i32) -> ZmqResult<String> {
-        let value = self.get_sockopt_bytes(option)?;
+        let mut buffer = [0u8; MAX_OPTION_STR_LEN];
+        let mut buffer_len = buffer.len();
 
-        if value.is_empty() {
-            return Ok(String::new());
-        }
+        self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
 
-        CStr::from_bytes_until_nul(&value)?
+        let value_with_terminator = &buffer[..buffer_len.saturating_add(1).min(buffer.len())];
+
+        CStr::from_bytes_until_nul(value_with_terminator)?
             .to_owned()
             .into_string()
             .map_err(ZmqError::from)
@@ -524,16 +522,14 @@ impl RawSocket {
     }
 
     pub(crate) fn poll(&self, events: PollEvents, timeout_ms: i64) -> ZmqResult<i32> {
-        let poll_item = RawPollItem::from_socket(self, events);
+        let mut poll_item = zmq_sys_crate::zmq_pollitem_t {
+            socket: *self.socket.lock(),
+            fd: 0,
+            events: events.bits(),
+            revents: 0,
+        };
 
-        let mut poll_item_guard = poll_item.item.lock();
-        match unsafe {
-            zmq_sys_crate::zmq_poll(
-                &mut *poll_item_guard as *mut zmq_sys_crate::zmq_pollitem_t,
-                1,
-                timeout_ms as c_long,
-            )
-        } {
+        match unsafe { zmq_sys_crate::zmq_poll(&mut poll_item, 1, timeout_ms as c_long) } {
             -1 => match unsafe { zmq_sys_crate::zmq_errno() } {
                 errno @ (zmq_sys_crate::errno::ETERM
                 | zmq_sys_crate::errno::EFAULT
@@ -916,27 +912,5 @@ impl<'a> From<&'a str> for RawMessage {
 impl<'a> From<&'a String> for RawMessage {
     fn from(value: &'a String) -> Self {
         RawMessage::from(value.as_bytes())
-    }
-}
-
-#[derive(DebugDeriveMore)]
-#[debug("RawPollItem {{ ... }}")]
-pub(crate) struct RawPollItem {
-    pub(crate) item: FairMutex<zmq_sys_crate::zmq_pollitem_t>,
-}
-
-impl RawPollItem {
-    pub(crate) fn from_socket(socket: &RawSocket, events: PollEvents) -> Self {
-        let socket_guard = socket.socket.lock();
-        let poll_item = zmq_sys_crate::zmq_pollitem_t {
-            socket: *socket_guard,
-            fd: 0,
-            events: events.bits(),
-            revents: 0,
-        };
-
-        Self {
-            item: FairMutex::new(poll_item),
-        }
     }
 }

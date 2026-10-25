@@ -924,10 +924,10 @@
 //! [`Reply`]: ReplySocket
 
 use alloc::sync::Arc;
-use core::{iter, marker::PhantomData, ops::ControlFlow};
+use core::marker::PhantomData;
 
 #[cfg(feature = "futures")]
-use ::futures::{FutureExt, TryStreamExt};
+use ::futures::FutureExt;
 #[cfg(feature = "futures")]
 use async_trait::async_trait;
 use bitflags::bitflags;
@@ -949,6 +949,7 @@ mod client;
 mod dealer;
 #[cfg(feature = "draft-api")]
 mod dish;
+mod endpoint;
 #[cfg(feature = "draft-api")]
 mod gather;
 pub(crate) mod monitor;
@@ -960,6 +961,8 @@ mod pull;
 mod push;
 #[cfg(feature = "draft-api")]
 mod radio;
+#[cfg(all(feature = "futures", unix))]
+mod readiness;
 mod reply;
 mod request;
 mod router;
@@ -989,6 +992,7 @@ pub use dealer::builder::DealerBuilder;
 pub use dish::DishSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
 pub use dish::builder::DishBuilder;
+pub use endpoint::{BoundEndpoint, ConnectedEndpoint};
 #[cfg(feature = "draft-api")]
 pub use gather::GatherSocket;
 #[cfg(all(feature = "draft-api", feature = "builder"))]
@@ -1740,9 +1744,12 @@ mod socket_option_tests {
 
 /// generic 0MQ socket
 pub struct Socket<T: sealed::SocketType> {
-    context: Context,
+    // field order matters: readiness, then socket, then context are released
+    #[cfg(all(feature = "futures", unix))]
+    readiness: readiness::Readiness,
     pub(crate) socket: Arc<RawSocket>,
     marker: PhantomData<T>,
+    context: Context,
 }
 
 impl<T: sealed::SocketType> Socket<T> {
@@ -1751,6 +1758,8 @@ impl<T: sealed::SocketType> Socket<T> {
         let socket = RawSocket::from_ctx(&context.inner, T::raw_socket_type() as i32)?;
         Ok(Self {
             context: context.clone(),
+            #[cfg(all(feature = "futures", unix))]
+            readiness: readiness::Readiness::default(),
             socket: socket.into(),
             marker: PhantomData,
         })
@@ -3324,6 +3333,8 @@ impl<T: sealed::SocketType> Socket<T> {
 
         Ok(Socket {
             context: self.context.clone(),
+            #[cfg(all(feature = "futures", unix))]
+            readiness: readiness::Readiness::default(),
             socket: monitor.into(),
             marker: PhantomData,
         })
@@ -3456,6 +3467,19 @@ pub trait Receiver {
 
     #[cfg(feature = "futures")]
     async fn recv_msg_async(&self) -> Option<Message>;
+
+    /// # Wait for a message
+    ///
+    /// In contrast to [`recv_msg_async()`], which returns [`None`] right away when no message is
+    /// available, this operation suspends the task until a message has arrived, without polling
+    /// the socket repeatedly. The task is woken up by the readiness notification of the
+    /// [`FileDescriptor`] option, driven by the `async-io` reactor, so it works with any async
+    /// runtime.
+    ///
+    /// [`recv_msg_async()`]: Receiver::recv_msg_async
+    /// [`FileDescriptor`]: SocketOption::FileDescriptor
+    #[cfg(all(feature = "futures", unix))]
+    async fn recv_msg_wait(&self) -> ZmqResult<Message>;
 }
 
 #[cfg_attr(feature = "futures", async_trait)]
@@ -3477,6 +3501,32 @@ where
     async fn recv_msg_async(&self) -> Option<Message> {
         futures::MessageReceivingFuture { receiver: self }.now_or_never()
     }
+
+    #[cfg(all(feature = "futures", unix))]
+    async fn recv_msg_wait(&self) -> ZmqResult<Message> {
+        let source = self.readiness.source(&self.socket)?;
+
+        ::futures::future::poll_fn(|ctx| {
+            loop {
+                match self.socket.recv(RecvFlags::DONT_WAIT.bits()) {
+                    Ok(raw_msg) => {
+                        return core::task::Poll::Ready(Ok(Message::from_raw_msg(raw_msg)));
+                    }
+                    Err(ZmqError::Again) => (),
+                    Err(error) => return core::task::Poll::Ready(Err(error)),
+                }
+
+                match source.poll_readable(ctx) {
+                    core::task::Poll::Ready(Ok(())) => (),
+                    core::task::Poll::Ready(Err(error)) => {
+                        return core::task::Poll::Ready(Err(readiness::io_error(error)));
+                    }
+                    core::task::Poll::Pending => return core::task::Poll::Pending,
+                }
+            }
+        })
+        .await
+    }
 }
 
 #[cfg_attr(feature = "futures", async_trait)]
@@ -3486,41 +3536,29 @@ pub trait MultipartReceiver: Receiver {
     where
         F: Into<RecvFlags> + Copy,
     {
-        iter::repeat_with(|| self.recv_msg(flags))
-            .try_fold(
-                MultipartMessage::new(),
-                |mut parts, zmq_result| match zmq_result {
-                    Err(e) => ControlFlow::Break(Err(e)),
-                    Ok(zmq_msg) => {
-                        let got_more = zmq_msg.get_more();
-                        parts.push_back(zmq_msg);
-                        if got_more {
-                            ControlFlow::Continue(parts)
-                        } else {
-                            ControlFlow::Break(Ok(parts))
-                        }
-                    }
-                },
-            )
-            .break_value()
-            .unwrap()
+        let mut parts = MultipartMessage::new();
+        loop {
+            let zmq_msg = self.recv_msg(flags)?;
+            let got_more = zmq_msg.get_more();
+            parts.push_back(zmq_msg);
+            if !got_more {
+                return Ok(parts);
+            }
+        }
     }
 
     #[cfg(feature = "futures")]
     async fn recv_multipart_async(&self) -> MultipartMessage {
-        ::futures::stream::repeat_with(|| Ok(self.recv_msg_async()))
-            .try_fold(MultipartMessage::new(), |mut parts, zmq_msg| async move {
-                if let Some(msg) = zmq_msg.await {
-                    let got_more = msg.get_more();
-                    parts.push_back(msg);
-                    if !got_more {
-                        return Err(parts);
-                    }
+        let mut parts = MultipartMessage::new();
+        loop {
+            if let Some(msg) = self.recv_msg_async().await {
+                let got_more = msg.get_more();
+                parts.push_back(msg);
+                if !got_more {
+                    return parts;
                 }
-                Ok(parts)
-            })
-            .await
-            .unwrap_err()
+            }
+        }
     }
 }
 
@@ -3582,7 +3620,7 @@ where
     {
         futures::MessageSendingFuture {
             receiver: self,
-            message: msg,
+            message: Some(msg.into()),
             flags: flags.into(),
         }
         .now_or_never()
@@ -3645,26 +3683,29 @@ mod futures {
         sealed,
     };
 
-    pub(super) struct MessageSendingFuture<'a, T, M>
+    pub(super) struct MessageSendingFuture<'a, T>
     where
         T: sealed::SocketType + sealed::SenderFlag + Unpin,
-        M: Into<Message> + Clone + Send,
     {
         pub(super) receiver: &'a Socket<T>,
-        pub(super) message: M,
+        pub(super) message: Option<Message>,
         pub(super) flags: SendFlags,
     }
 
     #[rustversion::attr(before(1.87), allow(clippy::needless_lifetimes))]
-    impl<'a, T, M> Future for MessageSendingFuture<'a, T, M>
+    impl<'a, T> Future for MessageSendingFuture<'a, T>
     where
         T: sealed::SocketType + sealed::SenderFlag + Unpin,
-        M: Into<Message> + Clone + Send,
     {
         type Output = ();
 
-        fn poll(self: Pin<&mut Self>, _ctx: &mut core::task::Context<'_>) -> Poll<Self::Output> {
-            let message = self.message.clone().into();
+        fn poll(
+            mut self: Pin<&mut Self>,
+            _ctx: &mut core::task::Context<'_>,
+        ) -> Poll<Self::Output> {
+            let Some(message) = self.message.take() else {
+                return Poll::Pending;
+            };
 
             message
                 .send(self.receiver, self.flags.bits())
@@ -3976,6 +4017,18 @@ mod socket_tests {
         socket.set_linger(42)?;
 
         assert_eq!(socket.linger()?, 42);
+
+        Ok(())
+    }
+
+    #[test]
+    fn dropping_last_socket_handle_after_context_handle_terminates_context() -> ZmqResult<()> {
+        let socket = {
+            let context = Context::new()?;
+            PairSocket::from_context(&context)?
+        };
+
+        drop(socket);
 
         Ok(())
     }
