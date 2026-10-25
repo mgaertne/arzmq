@@ -210,6 +210,14 @@ mod error_tests {
     #[case(ZmqError::AddressInUse, std::io::ErrorKind::AddrInUse)]
     #[case(ZmqError::ConnectionRefused, std::io::ErrorKind::ConnectionRefused)]
     #[case(ZmqError::ConnectionTimeout, std::io::ErrorKind::TimedOut)]
+    #[case(ZmqError::Interrupted, std::io::ErrorKind::Interrupted)]
+    #[case(ZmqError::InvalidArgument, std::io::ErrorKind::InvalidInput)]
+    #[case(ZmqError::Unsupported, std::io::ErrorKind::Unsupported)]
+    #[case(ZmqError::AddressNotAvailable, std::io::ErrorKind::AddrNotAvailable)]
+    #[case(ZmqError::ConnectionAborted, std::io::ErrorKind::ConnectionAborted)]
+    #[case(ZmqError::ConnectionReset, std::io::ErrorKind::ConnectionReset)]
+    #[case(ZmqError::NotConnected, std::io::ErrorKind::NotConnected)]
+    #[case(ZmqError::InsufficientMemory, std::io::ErrorKind::OutOfMemory)]
     #[case(ZmqError::SocketNull, std::io::ErrorKind::Other)]
     fn converts_into_io_error(#[case] error: ZmqError, #[case] kind: std::io::ErrorKind) {
         let io_error = std::io::Error::from(error);
@@ -264,6 +272,11 @@ mod error_tests {
     #[case(zmq_sys_crate::errno::ENOMEM, ZmqError::InsufficientMemory)]
     fn test_zmq_error(#[case] errno: i32, #[case] expected: ZmqError) {
         assert_eq!(ZmqError::from(errno), expected);
+    }
+
+    #[test]
+    fn unknown_errno_is_kept_as_other() {
+        assert_eq!(ZmqError::from(i32::MAX), ZmqError::Other(i32::MAX));
     }
 
     #[test]

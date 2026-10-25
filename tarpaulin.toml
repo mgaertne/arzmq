@@ -5,8 +5,9 @@ branch = true
 count = true
 no-fail-fast = true
 include-tests = false
+exclude-files = ["benches/*", "examples/*", "**/build.rs"]
 all-features = true
-run-types = ["AllTargets", "Tests"]
+run-types = ["Lib", "Bins", "Tests"]
 
 [report]
 out = ["Xml", "Html"]

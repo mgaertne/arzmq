@@ -40,6 +40,8 @@ pub use error::{ZmqError, ZmqResult};
 pub mod prelude {
     #[cfg(feature = "builder")]
     pub use crate::context::ContextBuilder;
+    #[cfg(all(feature = "futures", unix))]
+    pub use crate::socket::MultipartStream;
     #[cfg(all(feature = "draft-api", feature = "builder"))]
     pub use crate::socket::{
         ChannelBuilder, ClientBuilder, DishBuilder, GatherBuilder, PeerBuilder, RadioBuilder,

@@ -365,7 +365,7 @@ impl RawSocket {
 
         self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
 
-        buffer.truncate(buffer_len + 1);
+        buffer.truncate(buffer_len);
 
         Ok(buffer)
     }
@@ -376,7 +376,7 @@ impl RawSocket {
 
         self.get_sockopt(option, buffer.as_mut_ptr() as *mut c_void, &mut buffer_len)?;
 
-        let value_with_terminator = &buffer[..buffer_len.saturating_add(1).min(buffer.len())];
+        let value_with_terminator = &buffer[..buffer_len.min(buffer.len())];
 
         CStr::from_bytes_until_nul(value_with_terminator)?
             .to_owned()
@@ -939,5 +939,196 @@ impl<const N: usize> From<[u8; N]> for RawMessage {
 impl<const N: usize> From<&[u8; N]> for RawMessage {
     fn from(value: &[u8; N]) -> Self {
         RawMessage::from(value.as_slice())
+    }
+}
+
+#[cfg(test)]
+mod raw_context_tests {
+    use super::RawContext;
+    use crate::{ZmqError, ZmqResult};
+
+    const UNKNOWN_OPTION: i32 = 9999;
+
+    #[test]
+    fn setting_unknown_option_is_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+
+        assert_eq!(
+            context.set_ctxopt_int(UNKNOWN_OPTION, 1i32),
+            Err(ZmqError::InvalidArgument)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn getting_unknown_option_is_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+
+        assert_eq!(
+            context.get_ctxopt_int::<i32>(UNKNOWN_OPTION),
+            Err(ZmqError::InvalidArgument)
+        );
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn string_options_with_unknown_option_are_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+
+        assert!(context.set_ctxopt_string(UNKNOWN_OPTION, "value").is_err());
+        assert!(context.get_ctxopt_string(UNKNOWN_OPTION).is_err());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod raw_socket_tests {
+    use super::{RawContext, RawSocket};
+    use crate::{ZmqError, ZmqResult, socket::PollEvents, zmq_sys_crate};
+
+    const UNKNOWN_OPTION: i32 = 9999;
+
+    fn pair_socket(context: &RawContext) -> ZmqResult<RawSocket> {
+        RawSocket::from_ctx(context, zmq_sys_crate::ZMQ_PAIR as i32)
+    }
+
+    #[test]
+    fn unknown_socket_type_is_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+
+        assert_eq!(
+            RawSocket::from_ctx(&context, UNKNOWN_OPTION).err(),
+            Some(ZmqError::InvalidArgument)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn connecting_to_malformed_endpoint_is_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+        let socket = pair_socket(&context)?;
+
+        assert_eq!(socket.connect("malformed"), Err(ZmqError::InvalidArgument));
+        Ok(())
+    }
+
+    #[test]
+    fn releasing_unknown_endpoints_is_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+        let socket = pair_socket(&context)?;
+
+        assert_eq!(
+            socket.unbind("tcp://127.0.0.1:5555"),
+            Err(ZmqError::EndpointNotInUse)
+        );
+        assert_eq!(
+            socket.disconnect("tcp://127.0.0.1:5555"),
+            Err(ZmqError::EndpointNotInUse)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn unknown_socket_options_are_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+        let socket = pair_socket(&context)?;
+
+        assert_eq!(
+            socket.get_sockopt_int::<i32>(UNKNOWN_OPTION),
+            Err(ZmqError::InvalidArgument)
+        );
+        assert_eq!(
+            socket.set_sockopt_int(UNKNOWN_OPTION, 1i32),
+            Err(ZmqError::InvalidArgument)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn monitoring_on_malformed_endpoint_is_rejected() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+        let socket = pair_socket(&context)?;
+
+        assert!(socket.monitor("malformed", 0).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn operations_after_context_shutdown_report_termination() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+        let socket = pair_socket(&context)?;
+        context.shutdown()?;
+
+        assert_eq!(
+            socket.poll(PollEvents::POLL_IN, 0),
+            Err(ZmqError::ContextTerminated)
+        );
+        assert_eq!(socket.recv(0).err(), Some(ZmqError::ContextTerminated));
+        Ok(())
+    }
+
+    #[test]
+    fn bytes_option_is_returned_without_terminator() -> ZmqResult<()> {
+        let context = RawContext::new()?;
+        let socket = pair_socket(&context)?;
+        socket.set_sockopt_bytes(zmq_sys_crate::ZMQ_ROUTING_ID as i32, b"id")?;
+
+        let bytes = socket.get_sockopt_bytes(zmq_sys_crate::ZMQ_ROUTING_ID as i32)?;
+
+        assert_eq!(bytes, b"id");
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod raw_message_tests {
+    use alloc::borrow::Cow;
+
+    use super::RawMessage;
+
+    #[test]
+    fn non_utf8_message_is_displayed_and_debugged_as_hex() {
+        let message = RawMessage::from(vec![0xff, 0xfe]);
+
+        assert_eq!(message.to_string(), "[FF, FE]");
+        assert_eq!(format!("{message:?}"), "[FF, FE]");
+    }
+
+    #[test]
+    fn message_is_created_from_string_types() {
+        let owned = String::from("owned");
+
+        assert_eq!(&*RawMessage::from(&owned), b"owned");
+        assert_eq!(&*RawMessage::from(Cow::Borrowed("borrowed")), b"borrowed");
+        assert_eq!(&*RawMessage::from(Cow::Owned(owned)), b"owned");
+    }
+
+    #[test]
+    fn message_is_created_from_arrays() {
+        assert_eq!(&*RawMessage::from([1u8, 2, 3]), [1, 2, 3]);
+        assert_eq!(&*RawMessage::from(&[4u8, 5]), [4, 5]);
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn routing_id_and_group_are_part_of_debug_output() {
+        let mut message = RawMessage::from("payload");
+        message.set_routing_id(5).unwrap();
+        message.set_group("group").unwrap();
+
+        let debug = format!("{message:?}");
+
+        assert!(debug.contains("(routing_id: 5)"));
+        assert!(debug.contains("(group: group)"));
+        assert_eq!(message.clone().routing_id(), Some(5));
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn invalid_routing_id_is_rejected() {
+        let mut message = RawMessage::from("payload");
+
+        assert!(message.set_routing_id(0).is_err());
     }
 }

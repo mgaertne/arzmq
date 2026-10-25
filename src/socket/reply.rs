@@ -70,7 +70,7 @@ impl Socket<Reply> {
     /// [`routing_id()`]: #method.routing_id
     /// [`Router`]: super::RouterSocket
     pub fn routing_id(&self) -> ZmqResult<String> {
-        self.get_sockopt_string(SocketOption::RoutingId)
+        self.get_sockopt_bytes_as_string(SocketOption::RoutingId)
     }
 }
 

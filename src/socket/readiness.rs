@@ -5,7 +5,9 @@
 //! state again; the receiving operations do that by simply retrying.
 //!
 //! The reactor remembers only one waker per direction. All waiting tasks therefore hand the reactor
-//! the same broadcast waker, which wakes every task registered in [`Waiters`].
+//! the same broadcast waker, which wakes every task registered in [`Waiters`]. A successful receive
+//! wakes the other tasks as well, because the edge-triggered descriptor does not signal messages
+//! that were already queued when the receiving task cleared it.
 //!
 //! [`FileDescriptor`]: super::SocketOption::FileDescriptor
 
@@ -100,7 +102,10 @@ impl Readiness {
 
         loop {
             match socket.recv(RecvFlags::DONT_WAIT.bits()) {
-                Ok(raw_msg) => return Poll::Ready(Ok(Message::from_raw_msg(raw_msg))),
+                Ok(raw_msg) => {
+                    self.broadcast.wake_by_ref();
+                    return Poll::Ready(Ok(Message::from_raw_msg(raw_msg)));
+                }
                 Err(ZmqError::Again) => (),
                 Err(error) => return Poll::Ready(Err(error)),
             }
@@ -125,7 +130,7 @@ mod readiness_tests {
 
     use futures::executor::block_on;
 
-    use crate::prelude::{Context, PairSocket, Receiver, SendFlags, Sender, ZmqResult};
+    use crate::prelude::{Context, PairSocket, Receiver, SendFlags, Sender, ZmqError, ZmqResult};
 
     fn pair(context: &Context, endpoint: &str) -> ZmqResult<(PairSocket, PairSocket)> {
         let server = PairSocket::from_context(context)?;
@@ -218,6 +223,33 @@ mod readiness_tests {
 
         senders.into_iter().for_each(|s| s.join().unwrap());
         assert_eq!(received, SENDERS * PER_SENDER);
+        Ok(())
+    }
+
+    #[test]
+    fn recv_msg_wait_fails_after_context_shutdown() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let (server, client) = pair(&context, "inproc://wait-shutdown-test")?;
+        client.send_msg("Hello", SendFlags::empty())?;
+        block_on(server.recv_msg_wait())?;
+
+        context.shutdown()?;
+
+        assert_eq!(
+            block_on(server.recv_msg_wait()).unwrap_err(),
+            ZmqError::ContextTerminated
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn recv_msg_wait_fails_on_socket_of_shut_down_context() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let (server, _client) = pair(&context, "inproc://wait-shutdown-fresh-test")?;
+
+        context.shutdown()?;
+
+        assert!(block_on(server.recv_msg_wait()).is_err());
         Ok(())
     }
 

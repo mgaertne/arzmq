@@ -561,6 +561,16 @@ pub mod curve {
 
             assert!(result.is_err_and(|err| err == DecodeError::InvalidLength));
         }
+
+        #[test]
+        fn z85_decode_for_invalid_characters() {
+            assert_eq!(decode("     "), Err(DecodeError::DecodingFailed));
+        }
+
+        #[test]
+        fn z85_decode_for_input_with_interior_nul() {
+            assert_eq!(decode("abc\0e"), Err(DecodeError::DecodingFailed));
+        }
     }
 
     /// # generate a new CURVE keypair

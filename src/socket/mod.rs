@@ -953,6 +953,8 @@ mod endpoint;
 #[cfg(feature = "draft-api")]
 mod gather;
 pub(crate) mod monitor;
+#[cfg(all(feature = "futures", unix))]
+mod multipart_stream;
 mod pair;
 #[cfg(feature = "draft-api")]
 mod peer;
@@ -999,6 +1001,8 @@ pub use gather::GatherSocket;
 pub use gather::builder::GatherBuilder;
 use monitor::Monitor;
 pub use monitor::{HandshakeProtocolError, MonitorReceiver, MonitorSocket, MonitorSocketEvent};
+#[cfg(all(feature = "futures", unix))]
+pub use multipart_stream::MultipartStream;
 pub use pair::PairSocket;
 #[cfg(feature = "builder")]
 pub use pair::builder::PairBuilder;
@@ -1832,20 +1836,28 @@ impl<T: sealed::SocketType> Socket<T> {
 
     /// # get 0MQ socket options
     ///
-    /// Gets a [`SocketOption`] option on the socket. The bytes version is mostly suitable for
-    /// binary data options.
+    /// Gets a [`SocketOption`] option on the socket. The bytes version is suitable for binary
+    /// data options like [`RoutingId`], and returns exactly the bytes 0MQ reports, without a
+    /// terminating null byte.
     ///
     /// For convenience, many options have their dedicated method.
     ///
     /// [`SocketOption`]: SocketOption
+    /// [`RoutingId`]: SocketOption::RoutingId
     pub fn get_sockopt_bytes(&self, option: SocketOption) -> ZmqResult<Vec<u8>> {
         self.socket.get_sockopt_bytes(option.into())
     }
 
+    pub(crate) fn get_sockopt_bytes_as_string(&self, option: SocketOption) -> ZmqResult<String> {
+        String::from_utf8(self.get_sockopt_bytes(option)?).map_err(|_| ZmqError::InvalidArgument)
+    }
+
     /// # get 0MQ socket options
     ///
-    /// Gets a [`SocketOption`] option on the socket. The string version is mostly suitable for
-    /// character string options.
+    /// Gets a [`SocketOption`] option on the socket. The string version is suitable for character
+    /// string options, which 0MQ reports as null-terminated strings. The terminator is not part of
+    /// the returned string, and values that are not valid UTF-8 are rejected with
+    /// [`ZmqError::InvalidArgument`].
     ///
     /// For convenience, many options have their dedicated method.
     ///
@@ -3784,15 +3796,18 @@ mod socket_tests {
     #[cfg(feature = "draft-api")]
     use rstest::*;
 
+    #[cfg(feature = "futures")]
+    use super::MultipartReceiver;
     #[cfg(feature = "draft-api")]
     use super::ReconnectStop;
     use super::{
-        DealerSocket, MonitorFlags, MonitorSocketEvent, PairSocket, PollEvents, SendFlags,
+        DealerSocket, MonitorFlags, MonitorSocketEvent, MultipartMessage, MultipartSender,
+        PairSocket, PollEvents, Receiver, RecvFlags, SendFlags, SocketOption,
     };
     #[cfg(zmq_has = "gssapi")]
     use crate::security::GssApiNametype;
     use crate::{
-        prelude::{Context, MonitorReceiver, Sender, ZmqResult},
+        prelude::{Context, MonitorReceiver, Sender, ZmqError, ZmqResult},
         security::SecurityMechanism,
     };
 
@@ -4454,6 +4469,90 @@ mod socket_tests {
 
             Ok(())
         })
+    }
+
+    #[test]
+    fn get_sockopt_bytes_returns_set_bytes() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = DealerSocket::from_context(&context)?;
+        socket.set_sockopt_bytes(SocketOption::RoutingId, b"routing")?;
+
+        assert_eq!(
+            socket.get_sockopt_bytes(SocketOption::RoutingId)?,
+            b"routing"
+        );
+
+        Ok(())
+    }
+
+    #[cfg(feature = "draft-api")]
+    #[test]
+    fn set_busy_poll_accepts_flag() -> ZmqResult<()> {
+        let context = Context::new()?;
+
+        let socket = PairSocket::from_context(&context)?;
+
+        socket.set_busy_poll(true)?;
+        socket.set_busy_poll(false)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn send_multipart_without_parts_sends_nothing() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let server = PairSocket::from_context(&context)?;
+        server.bind("inproc://empty-multipart-test")?;
+        let client = PairSocket::from_context(&context)?;
+        client.connect("inproc://empty-multipart-test")?;
+
+        client.send_multipart(MultipartMessage::new(), SendFlags::empty())?;
+
+        assert_eq!(
+            server.recv_msg(RecvFlags::DONT_WAIT).unwrap_err(),
+            ZmqError::Again
+        );
+
+        Ok(())
+    }
+
+    #[cfg(feature = "futures")]
+    #[test]
+    fn async_single_and_multipart_roundtrip() -> ZmqResult<()> {
+        let context = Context::new()?;
+        let server = PairSocket::from_context(&context)?;
+        server.bind("inproc://async-roundtrip-test")?;
+        let client = PairSocket::from_context(&context)?;
+        client.connect("inproc://async-roundtrip-test")?;
+
+        futures::executor::block_on(async {
+            assert_eq!(
+                client.send_msg_async("single", SendFlags::empty()).await,
+                Some(())
+            );
+            assert_eq!(server.recv_msg_async().await.unwrap(), "single");
+
+            assert_eq!(
+                client
+                    .send_multipart_async(["a", "b", "c"], SendFlags::empty())
+                    .await,
+                Some(())
+            );
+            assert_eq!(
+                server.recv_multipart_async().await,
+                MultipartMessage::from(["a", "b", "c"])
+            );
+
+            assert_eq!(
+                client
+                    .send_multipart_async(MultipartMessage::new(), SendFlags::empty())
+                    .await,
+                None
+            );
+        });
+
+        Ok(())
     }
 
     #[test]
