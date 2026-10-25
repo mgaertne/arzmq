@@ -277,12 +277,12 @@ impl TryFrom<MultipartMessage> for MonitorSocketEvent {
             unreachable!();
         };
 
-        if first_msg.len() != 6 {
+        let bytes = first_msg.as_bytes();
+        if bytes.len() != 6 {
             return Err(ZmqError::InvalidArgument);
         }
 
-        let Some(event_id) = first_msg
-            .bytes()
+        let Some(event_id) = bytes
             .first_chunk::<2>()
             .map(|raw_event_id| u16::from_le_bytes(*raw_event_id))
             .map(MonitorFlags::from)
@@ -290,8 +290,7 @@ impl TryFrom<MultipartMessage> for MonitorSocketEvent {
             unreachable!();
         };
 
-        let Some(event_value) = first_msg
-            .bytes()
+        let Some(event_value) = bytes
             .last_chunk::<4>()
             .map(|raw_event_value| u32::from_le_bytes(*raw_event_value))
         else {

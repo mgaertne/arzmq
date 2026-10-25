@@ -1002,7 +1002,7 @@ pub use gather::builder::GatherBuilder;
 use monitor::Monitor;
 pub use monitor::{HandshakeProtocolError, MonitorReceiver, MonitorSocket, MonitorSocketEvent};
 #[cfg(all(feature = "futures", unix))]
-pub use multipart_stream::MultipartStream;
+pub use multipart_stream::{MultipartStream, OwnedMultipartStream};
 pub use pair::PairSocket;
 #[cfg(feature = "builder")]
 pub use pair::builder::PairBuilder;

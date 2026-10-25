@@ -73,11 +73,6 @@ async-io = { version = ">=2.6", default-features = false, optional = true }
 async-trait = { version = ">=0.1.9", default-features = false, optional = true }
 futures = { version = ">=0.3", default-features = false, features = ["async-await", "alloc"], optional = true }
 
-# for async examples
-tokio = { version = ">=1.48", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"], optional = true }
-smol = { version = ">=2.0.2", default-features = false, optional = true }
-smol-macros = { version = ">=0.1.1", default-features = false, optional = true }
-
 [build-dependencies]
 rustversion = { workspace = true }
 arzmq-sys = { workspace = true }
@@ -86,6 +81,10 @@ arzmq-sys = { workspace = true }
 rstest = { version = ">=0.26", default-features = false }
 futures = { version = ">=0.3", default-features = false, features = ["executor"] }
 criterion = { version = ">=0.8", default-features = false, features = ["cargo_bench_support"] }
+# for async examples
+tokio = { version = ">=1.48", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"] }
+smol = { version = ">=2.0.2", default-features = false }
+smol-macros = { version = ">=0.1.1", default-features = false }
 
 [[bench]]
 name = "socket"
@@ -116,8 +115,8 @@ norm = ["draft-api", "arzmq-sys/norm"]
 # enables the VMCI transportation capability
 vmci = ["arzmq-sys/vmci"]
 
-examples-tokio = ["futures", "dep:tokio"]
-examples-smol = ["futures", "dep:smol", "dep:smol-macros"]
+examples-tokio = ["futures"]
+examples-smol = ["futures"]
 examples-futures = ["futures", "futures/executor", "futures/thread-pool"]
 examples-draft-api = ["draft-api", "arzmq-sys/draft-api"]
 
