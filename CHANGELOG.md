@@ -12,6 +12,9 @@ Contains breaking changes for downstream code, hence the minor bump of the `0.y.
 - `get_sockopt_bytes` returns the option value without the trailing NUL byte. Use `get_sockopt_string` for string
   options. `routing_id()` getters read binary-safe.
 - `Socket::poll` returns the occurred `PollEvents` instead of silently mapping the event count.
+- The sys crates no longer compile with `-march=native` by default. Enable the new feature `native` to get it back.
+- `protokit-sys`, `libnorm-sys` and `openpgm-sys` no longer have the `bindings` feature. The C++ headers of the first two
+  cannot be processed by `bindgen`, and nothing used the generated bindings.
 - `tokio`, `smol` and `smol-macros` are dev-dependencies. The features `examples-tokio` and `examples-smol` imply
   `futures`.
 
@@ -28,6 +31,7 @@ Contains breaking changes for downstream code, hence the minor bump of the `0.y.
 
 ### Fixed
 
+- `libnorm-sys` no longer scans the self-referencing `vendor/norp` directory when packaging.
 - Lost wake-ups with several tasks waiting on the same socket.
 - Panics (`unreachable!`) on unexpected errno values in the ffi layer now surface as `ZmqError`.
 - `proxy()` returns the error of `zmq_proxy` instead of panicking.

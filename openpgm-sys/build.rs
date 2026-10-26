@@ -88,8 +88,10 @@ fn configure(build: &mut Build, root: impl AsRef<Path>) -> Result<(), Box<dyn Er
     #[cfg(not(target_env = "msvc"))]
     build.std("gnu99");
 
+    #[cfg(feature = "native")]
+    build.flag_if_supported("-march=native");
+
     build
-        .flag_if_supported("-march=native")
         .flag_if_supported("-Wall")
         .flag_if_supported("-Wextra")
         .flag_if_supported("-Wfloat-equal")
@@ -301,33 +303,9 @@ fn compile() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[cfg(feature = "bindings")]
-fn generate_bindings() -> Result<(), Box<dyn Error>> {
-    let vendor_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vendor");
-    let include_dir = vendor_dir.join("openpgm").join("pgm").join("include");
-
-    let builder = bindgen::Builder::default()
-        .header(include_dir.join("pgm").join("pgm.h").to_string_lossy())
-        .clang_arg(format!("-I{}", include_dir.display()))
-        .size_t_is_usize(true)
-        .derive_default(true)
-        .derive_debug(true)
-        .use_core();
-
-    let bindings = builder.generate()?;
-
-    bindings.write_to_file(PathBuf::from(env::var("OUT_DIR")?).join("bindings.rs"))?;
-
-    Ok(())
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=PROFILE");
 
-    compile()?;
-    #[cfg(feature = "bindings")]
-    generate_bindings()?;
-
-    Ok(())
+    compile()
 }

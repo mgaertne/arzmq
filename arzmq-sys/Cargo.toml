@@ -33,6 +33,7 @@ gssapi = []
 pgm = [ "dep:openpgm-sys" ]
 norm = [ "draft-api", "dep:libnorm-sys", "dep:protokit-sys" ]
 vmci = []
+native = [ "openpgm-sys?/native", "libnorm-sys?/native", "protokit-sys?/native" ]
 
 [dependencies]
 openpgm-sys = { workspace = true, optional = true }

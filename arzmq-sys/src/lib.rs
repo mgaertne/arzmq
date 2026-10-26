@@ -1,3 +1,8 @@
+#[cfg(feature = "norm")]
+use libnorm_sys as _;
+#[cfg(feature = "pgm")]
+use openpgm_sys as _;
+
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]

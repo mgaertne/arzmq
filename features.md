@@ -23,6 +23,10 @@ the feature provides waiting variants (`recv_msg_wait`, `send_msg_wait`, `send_m
 types `MultipartStream`, `OwnedMultipartStream`, `MultipartSink` and `MonitorEventStream`. Waiting is based on the
 `ZMQ_FD` of the socket and therefore only available on unix.
 
+### `native`
+Compiles the bundled C and C++ sources with `-march=native`. The binaries then only run on CPUs that are at least as
+capable as the build machine. Disabled by default.
+
 ## `libzmq`-related features
 `libzmq` offers multiple configurations to include. As it was hard for me to figure out the different compilation 
 options for me to finally succeed incorporating the different features in `libzmq`, I decided to include the approaches 

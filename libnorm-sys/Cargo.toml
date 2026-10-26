@@ -28,11 +28,10 @@ bench = false
 
 [features]
 default = []
-bindings = [ "dep:bindgen" ]
+native = []
 
 [dependencies]
 protokit-sys = { workspace = true }
 
 [build-dependencies]
 cc = { version = ">=1.2.22", default-features = false, features = ["parallel"] }
-bindgen = { version = ">=0.72", default-features = false, features = ["runtime"], optional = true }

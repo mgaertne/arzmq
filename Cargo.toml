@@ -114,6 +114,7 @@ pgm = ["arzmq-sys/pgm"]
 norm = ["draft-api", "arzmq-sys/norm"]
 # enables the VMCI transportation capability
 vmci = ["arzmq-sys/vmci"]
+native = ["arzmq-sys/native"]
 
 examples-tokio = ["futures"]
 examples-smol = ["futures"]
