@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.1
+
+Patch release without changes to the public API.
+
+### Fixed
+
+- The minimum version of `parking_lot` is `0.12.5` now. With `-Z minimal-versions` the former bound `>=0.12` resolved to
+  `parking_lot 0.12.0` and `lock_api 0.4.6`, with which the test binary crashed with an access violation on Windows.
+
+### Internal
+
+- The unit tests of `curve_keygen` and `curve_public` only expect working keys if libzmq was built with curve and check
+  the error message otherwise.
+- The CI runs on `ubuntu-26.04` instead of `ubuntu-latest`.
+
 ## 0.7.0
 
 Contains breaking changes for downstream code, hence the minor bump of the `0.y.z` version.

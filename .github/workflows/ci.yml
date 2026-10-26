@@ -159,7 +159,7 @@ jobs:
         run: brew install libsodium automake libtool autoconf
       - name: install windows dependencies for optional features
         if: runner.os == 'Windows'
-        uses: johnwason/vcpkg-action@v7
+        uses: johnwason/vcpkg-action@v8
         with:
           pkgs: 'libsodium:x64-windows-static-md krb5:x64-windows'
           triplet: 'x64-windows-static-md'
@@ -205,7 +205,7 @@ jobs:
         run: brew install libsodium automake libtool autoconf
       - name: install windows dependencies for optional features
         if: runner.os == 'Windows'
-        uses: johnwason/vcpkg-action@v7
+        uses: johnwason/vcpkg-action@v8
         with:
           pkgs: 'libsodium:x64-windows-static-md krb5:x64-windows'
           triplet: 'x64-windows-static-md'
