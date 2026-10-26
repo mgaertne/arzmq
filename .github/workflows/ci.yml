@@ -211,6 +211,12 @@ jobs:
           triplet: 'x64-windows-static-md'
           token: ${{ github.token }}
       - run: cargo build -Z minimal-versions --all-features
+      - name: find the crashing test (windows, minimal versions)
+        run: cargo test --locked --all-features --lib -- --test-threads=1 --nocapture
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
       - run: cargo hack test --locked --each-feature --clean-per-run --verbose
         if: runner.os == 'macOS'
         env:
