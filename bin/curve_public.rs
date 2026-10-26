@@ -67,7 +67,22 @@ pub fn main() -> Result<(), &'static str> {
     run(std::env::args().nth(1))
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(zmq_has = "curve")))]
+mod curve_public_without_curve_tests {
+    use super::{MISSING_CURVE, public_key, run};
+
+    #[test]
+    fn public_key_reports_missing_curve() {
+        assert_eq!(public_key("any secret key"), Err(MISSING_CURVE));
+    }
+
+    #[test]
+    fn run_reports_missing_curve() {
+        assert_eq!(run(None), Err(MISSING_CURVE));
+    }
+}
+
+#[cfg(all(test, zmq_has = "curve"))]
 mod curve_public_tests {
     use core::ffi::{CStr, c_char};
 

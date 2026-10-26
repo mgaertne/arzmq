@@ -57,7 +57,22 @@ key distributed (securely!) to peers wishing to connect to it."
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(zmq_has = "curve")))]
+mod curve_keygen_without_curve_tests {
+    use super::{MISSING_CURVE, keypair, main};
+
+    #[test]
+    fn keypair_reports_missing_curve() {
+        assert_eq!(keypair(), Err(MISSING_CURVE));
+    }
+
+    #[test]
+    fn main_reports_missing_curve() {
+        assert_eq!(main(), Err(MISSING_CURVE));
+    }
+}
+
+#[cfg(all(test, zmq_has = "curve"))]
 mod curve_keygen_tests {
     use core::ffi::CStr;
 
