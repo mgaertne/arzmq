@@ -211,24 +211,6 @@ jobs:
           triplet: 'x64-windows-static-md'
           token: ${{ github.token }}
       - run: cargo build -Z minimal-versions --all-features
-      - name: find the crashing dependency (windows, minimal versions)
-        shell: bash
-        run: |
-          for group in "cc find-msvc-tools" "vcpkg" "bindgen clang-sys libloading" "system-deps" "parking_lot parking_lot_core lock_api" "ALL"; do
-            if [ "$group" = "ALL" ]; then cargo update; else for crate in $group; do cargo update -p "$crate" || true; done; fi
-            echo "::group::after updating $group"
-            if cargo test --locked --all-features --lib context_builder_with_custom_settings; then
-              echo "::endgroup::"
-              echo "::notice::the test passes after updating $group"
-              break
-            fi
-            echo "::endgroup::"
-            echo "::warning::the test still crashes after updating $group"
-          done
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
       - run: cargo hack test --locked --each-feature --clean-per-run --verbose
         if: runner.os == 'macOS'
         env:
