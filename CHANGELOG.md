@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0-alpha.1
+## 0.7.0
 
 Contains breaking changes for downstream code, hence the minor bump of the `0.y.z` version.
 
