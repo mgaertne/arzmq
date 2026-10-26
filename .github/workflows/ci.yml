@@ -7,7 +7,7 @@ jobs:
   check:
     name: Check
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout sources
@@ -25,7 +25,7 @@ jobs:
   check-tests:
     name: Check (tests)
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout sources
@@ -43,7 +43,7 @@ jobs:
   check-examples:
     name: Check (examples)
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout sources
@@ -61,7 +61,7 @@ jobs:
   clippy:
     name: Clippy
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout sources
@@ -80,7 +80,7 @@ jobs:
   clippy-tests:
     name: Clippy (tests)
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout sources
@@ -99,7 +99,7 @@ jobs:
   clippy-examples:
     name: Clippy (examples)
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout sources
@@ -117,7 +117,7 @@ jobs:
 
   rust-doc:
     name: rust-documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [ check, clippy ]
     steps:
       - name: Checkout sources
@@ -135,7 +135,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -181,7 +181,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -225,7 +225,7 @@ jobs:
 
   miri:
     name: miri
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [ check, check-tests ]
     steps:
       - name: Checkout sources
@@ -248,7 +248,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -296,7 +296,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -354,7 +354,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -410,7 +410,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -466,7 +466,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
