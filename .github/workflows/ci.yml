@@ -240,7 +240,7 @@ jobs:
       - name: Install linux dependencies
         run: sudo apt-get install -y autoconf
       - name: unit tests without libzmq calls (message and waiter code run against the Rust shims in src/ffi/miri_shim.rs)
-        run: cargo miri test --all-features --lib -- message:: error:: ffi::raw_message_tests socket::readiness::waiters_tests
+        run: "cargo miri test --all-features --lib -- message:: error:: ffi::raw_message_tests socket::readiness::waiters_tests"
 
   examples:
     name: examples
