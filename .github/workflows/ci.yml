@@ -251,6 +251,7 @@ jobs:
         os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout sources
@@ -299,6 +300,7 @@ jobs:
         os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout sources
@@ -357,6 +359,7 @@ jobs:
         os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout sources
@@ -413,6 +416,7 @@ jobs:
         os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout sources
@@ -469,6 +473,7 @@ jobs:
         os: [ubuntu-26.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout sources
