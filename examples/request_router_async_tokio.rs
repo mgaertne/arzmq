@@ -9,7 +9,7 @@ mod common;
 use common::{ITERATIONS, KEEP_RUNNING};
 
 async fn run_router(router: RouterSocket, msg: &str) {
-    while ITERATIONS.load(Ordering::Acquire) > 1 {
+    for _ in 0..ITERATIONS.load(Ordering::Acquire) {
         common::run_multipart_recv_reply_async(&router, msg).await;
     }
 }

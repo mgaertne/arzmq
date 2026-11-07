@@ -21,7 +21,7 @@ async fn run_stream_server(zmq_stream: StreamSocket, msg: &str) {
     let mut connect_msg = zmq_stream.recv_multipart_async().await;
     let _routing_id = connect_msg.pop_front().unwrap();
 
-    while ITERATIONS.load(Ordering::Acquire) > 1 {
+    for _ in 0..ITERATIONS.load(Ordering::Acquire) {
         common::run_multipart_recv_reply_async(&zmq_stream, msg).await;
     }
 }
