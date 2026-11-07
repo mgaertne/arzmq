@@ -1,5 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![doc = include_str!("../features.md")]
+#![cfg_attr(feature = "document-features", doc = "\n## Feature list\n")]
+#![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
 #![cfg_attr(all(cold_path, doc), feature(doc_cfg))]
 #![allow(clippy::items_after_test_module)]
 #![doc(test(no_crate_inject))]
