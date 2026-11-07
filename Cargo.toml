@@ -85,6 +85,7 @@ criterion = { version = ">=0.8", default-features = false, features = ["cargo_be
 # for async examples
 tokio = { version = ">=1.48", default-features = false, features = ["macros", "rt", "rt-multi-thread", "time", "net", "io-util"] }
 smol = { version = ">=2.0.2", default-features = false }
+async-fs = { version = ">=2.1", default-features = false }
 smol-macros = { version = ">=0.1.1", default-features = false }
 
 [[bench]]
